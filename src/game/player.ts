@@ -83,10 +83,7 @@ export function setConnected(
  * @param now - Optional timestamp (defaults to new Date())
  * @returns New player state with fresh timestamp
  */
-export function updateLastAction(
-  player: PlayerState,
-  now?: Date,
-): PlayerState {
+export function updateLastAction(player: PlayerState, now?: Date): PlayerState {
   return { ...player, lastActionAt: now ?? new Date() };
 }
 

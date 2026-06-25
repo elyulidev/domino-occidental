@@ -1,13 +1,9 @@
-import { incrementPasses, setConnected, updateLastAction } from "./player";
 import { isBlocked } from "./board";
 import { handleHandEnd } from "./match";
+import { incrementPasses, setConnected, updateLastAction } from "./player";
 import { advanceTurn, calculateDeadline } from "./turn";
-import {
-  ABANDONMENT_THRESHOLD_MS,
-  RECONNECT_WINDOW_MS,
-  TURN_TIMEOUT_MS,
-} from "./types";
 import type { ActionResult, GameEvent, MatchState } from "./types";
+import { ABANDONMENT_THRESHOLD_MS, RECONNECT_WINDOW_MS } from "./types";
 
 /**
  * Creates a game_error event.
@@ -128,9 +124,7 @@ export function reconnectPlayer(
     players: newPlayers,
   };
 
-  const events: GameEvent[] = [
-    { type: "player_reconnected", playerId },
-  ];
+  const events: GameEvent[] = [{ type: "player_reconnected", playerId }];
 
   return { match: newMatch, events };
 }
@@ -182,9 +176,7 @@ export function forcePassForDisconnected(
   if (playerIndex < 0 || playerIndex > 3) {
     return {
       match,
-      events: [
-        gameError("INVALID_PLAYER_INDEX", "Player index must be 0-3"),
-      ],
+      events: [gameError("INVALID_PLAYER_INDEX", "Player index must be 0-3")],
     };
   }
 
@@ -195,10 +187,7 @@ export function forcePassForDisconnected(
 
   // 3. Get player and apply forced pass
   const player = match.players[playerIndex];
-  const updatedPlayer = updateLastAction(
-    incrementPasses(player),
-    now,
-  );
+  const updatedPlayer = updateLastAction(incrementPasses(player), now);
 
   // 4. Build new players array
   const newPlayers = [...match.players] as MatchState["players"];
@@ -218,11 +207,19 @@ export function forcePassForDisconnected(
   const blocked = isBlocked(intermediateMatch.board, intermediateMatch.players);
 
   if (blocked) {
-    const handEndResult = handleHandEnd(intermediateMatch, playerIndex, "blocked");
+    const handEndResult = handleHandEnd(
+      intermediateMatch,
+      playerIndex,
+      "blocked",
+    );
     return {
       match: handEndResult.match,
       events: [
-        { type: "turn_timeout" as const, playerId: player.id, forcedPass: true },
+        {
+          type: "turn_timeout" as const,
+          playerId: player.id,
+          forcedPass: true,
+        },
         ...handEndResult.events,
       ],
     };
@@ -230,7 +227,9 @@ export function forcePassForDisconnected(
 
   return {
     match: intermediateMatch,
-    events: [{ type: "turn_timeout" as const, playerId: player.id, forcedPass: true }],
+    events: [
+      { type: "turn_timeout" as const, playerId: player.id, forcedPass: true },
+    ],
   };
 }
 

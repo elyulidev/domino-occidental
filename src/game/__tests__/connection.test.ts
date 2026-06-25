@@ -1,23 +1,21 @@
 import { describe, expect, it } from "bun:test";
 import {
-  disconnectPlayer,
-  reconnectPlayer,
-  checkReconnectWindow,
-  forcePassForDisconnected,
   checkAbandonment,
+  checkReconnectWindow,
+  disconnectPlayer,
+  forcePassForDisconnected,
   forfeitMatch,
+  reconnectPlayer,
 } from "../connection";
-import { createPlayer } from "../player";
-import { setCurrentTurn, calculateDeadline } from "../turn";
-import { place } from "../board";
 import { initializeMatch } from "../match";
+import { setCurrentTurn } from "../turn";
+import type { BoardState, MatchState, Tile } from "../types";
 import {
-  RECONNECT_WINDOW_MS,
-  HEARTBEAT_MS,
   ABANDONMENT_THRESHOLD_MS,
+  HEARTBEAT_MS,
+  RECONNECT_WINDOW_MS,
   TURN_TIMEOUT_MS,
 } from "../types";
-import type { MatchState, Tile, BoardState } from "../types";
 
 // Helper to create a basic match for testing
 function createTestMatch(): MatchState {
@@ -70,7 +68,11 @@ describe("disconnectPlayer", () => {
     const match = createTestMatch();
     const now = new Date();
     const first = disconnectPlayer(match, "p0", now);
-    const second = disconnectPlayer(first.match, "p0", new Date(now.getTime() + 1000));
+    const second = disconnectPlayer(
+      first.match,
+      "p0",
+      new Date(now.getTime() + 1000),
+    );
 
     expect(second.events).toHaveLength(0);
     expect(second.match.players[0].isConnected).toBe(false);
@@ -108,7 +110,11 @@ describe("reconnectPlayer", () => {
     const match = createTestMatch();
     const now = new Date();
     const disconnected = disconnectPlayer(match, "p0", now);
-    const reconnectResult = reconnectPlayer(disconnected.match, "p0", new Date(now.getTime() + 1000));
+    const reconnectResult = reconnectPlayer(
+      disconnected.match,
+      "p0",
+      new Date(now.getTime() + 1000),
+    );
 
     expect(reconnectResult.match.players[0].isConnected).toBe(true);
   });
@@ -126,7 +132,11 @@ describe("reconnectPlayer", () => {
     const match = createTestMatch();
     const now = new Date();
     const disconnected = disconnectPlayer(match, "p0", now);
-    const reconnectResult = reconnectPlayer(disconnected.match, "p0", new Date(now.getTime() + 1000));
+    const reconnectResult = reconnectPlayer(
+      disconnected.match,
+      "p0",
+      new Date(now.getTime() + 1000),
+    );
 
     expect(reconnectResult.events).toHaveLength(1);
     expect(reconnectResult.events[0]).toEqual({
@@ -153,7 +163,10 @@ describe("checkReconnectWindow", () => {
   it("within window returns windowExpired: false", () => {
     const disconnectedAt = new Date(1000);
     const now = new Date(1000 + 20_000); // 20s elapsed, window is 30s
-    const result = checkReconnectWindow({ disconnectedAt, playerId: "p0" }, now);
+    const result = checkReconnectWindow(
+      { disconnectedAt, playerId: "p0" },
+      now,
+    );
 
     expect(result.windowExpired).toBe(false);
     expect(result.secondsLeft).toBe(10);
@@ -162,7 +175,10 @@ describe("checkReconnectWindow", () => {
   it("past window returns windowExpired: true", () => {
     const disconnectedAt = new Date(1000);
     const now = new Date(1000 + 31_000); // 31s elapsed, window is 30s
-    const result = checkReconnectWindow({ disconnectedAt, playerId: "p0" }, now);
+    const result = checkReconnectWindow(
+      { disconnectedAt, playerId: "p0" },
+      now,
+    );
 
     expect(result.windowExpired).toBe(true);
     expect(result.secondsLeft).toBe(0);
@@ -171,7 +187,10 @@ describe("checkReconnectWindow", () => {
   it("boundary test: exactly at RECONNECT_WINDOW_MS", () => {
     const disconnectedAt = new Date(1000);
     const now = new Date(1000 + RECONNECT_WINDOW_MS); // exactly 30s
-    const result = checkReconnectWindow({ disconnectedAt, playerId: "p0" }, now);
+    const result = checkReconnectWindow(
+      { disconnectedAt, playerId: "p0" },
+      now,
+    );
 
     expect(result.windowExpired).toBe(true);
     expect(result.secondsLeft).toBe(0);
