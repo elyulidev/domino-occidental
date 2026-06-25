@@ -1,15 +1,17 @@
 import { canPlay, createBoard, isBlocked, place } from "./board";
-import { createPlayer, hasTile, incrementPasses, removeTile, resetPasses, updateLastAction } from "./player";
-import { createScoreState } from "./scoring";
+import { createPlayer, hasTile, incrementPasses, removeTile, resetPasses, sumHand, updateLastAction } from "./player";
+import { applyHandResult, calculateTotal, checkMatchEnd, createScoreState, getPairIndex, scoreHand } from "./scoring";
 import {
   advanceTurn,
   calculateDeadline,
   checkTurnTimeout,
   createTurnState,
   getFirstPlayer,
+  incrementNullRounds,
+  resetNullRounds,
   setCurrentTurn,
 } from "./turn";
-import type { ActionResult, GameEvent, MatchState, Side, Tile } from "./types";
+import type { ActionResult, GameEvent, MatchState, PairIndex, Side, Tile } from "./types";
 
 /**
  * Initializes a new match state from pre-dealt hands and pool.
@@ -361,12 +363,154 @@ export function checkTimeout(
  * @param reason - Why the hand ended
  * @returns ActionResult with updated state and events
  */
-function handleHandEnd(
+export function handleHandEnd(
   match: MatchState,
   lastPlayerIndex: number,
   reason: "empty_hand" | "blocked",
 ): ActionResult {
-  // This will be implemented in T8
-  // For now, return a basic result
-  return { match, events: [] };
+  const hands = match.players.map((p) => p.hand);
+  const isBlockedBoard = reason === "blocked";
+
+  // Score the hand
+  const result = scoreHand(hands, isBlockedBoard, match.turn.consecutiveNullRounds);
+
+  // Handle annulled hand
+  if (result.isAnnulled) {
+    // Check if we need to force a winner (4th+ consecutive)
+    if (match.turn.consecutiveNullRounds >= 3) {
+      // Find player with minimum individual sum
+      let minSum = Number.POSITIVE_INFINITY;
+      let minIndex = 0;
+      for (let i = 0; i < 4; i++) {
+        const playerSum = sumHand(match.players[i].hand);
+        if (playerSum < minSum) {
+          minSum = playerSum;
+          minIndex = i;
+        }
+      }
+
+      const winningPair = getPairIndex(minIndex);
+      // Points = sum of the losing pair's tiles
+      const losers = winningPair === 0 ? [1, 3] : [0, 2];
+      const points = losers.reduce((sum, i) => sum + sumHand(match.players[i].hand), 0);
+
+      // Apply score
+      const newScores = applyHandResult(match.scores, {
+        winningPair,
+        points,
+        isBlocked: true,
+        isAnnulled: false,
+      });
+
+      // Reset null rounds
+      let newTurn = resetNullRounds(match.turn);
+      newTurn = { ...newTurn, lastHandWinner: minIndex as 0 | 1 | 2 | 3 };
+
+      const newMatch: MatchState = {
+        ...match,
+        scores: newScores,
+        turn: newTurn,
+      };
+
+      const events: GameEvent[] = [
+        { type: "hand_ended", winner: minIndex, reason: "forced_winner" },
+        { type: "hand_scored", winningPair, points, scores: newScores.scores },
+      ];
+
+      // Check match end
+      const matchResult = checkMatchEnd(newScores);
+      if (matchResult.isOver) {
+        events.push({
+          type: "match_ended",
+          winner: matchResult.winner!,
+          finalScores: newScores.scores,
+          reason: matchResult.reason,
+        });
+        return { match: { ...newMatch, status: "finished" }, events };
+      }
+
+      return { match: newMatch, events };
+    }
+
+    // Annulled but not 4th cascade — increment null rounds
+    let newTurn = incrementNullRounds(match.turn);
+
+    const newMatch: MatchState = {
+      ...match,
+      turn: newTurn,
+    };
+
+    return {
+      match: newMatch,
+      events: [{ type: "hand_ended", winner: null, reason: "annulled" }],
+    };
+  }
+
+  // Normal or blocked win (not annulled)
+  // Determine winner player index for the event
+  let winnerPlayerIndex: number;
+  let eventReason: "empty_hand" | "blocked" | "forced_winner";
+
+  if (reason === "empty_hand") {
+    winnerPlayerIndex = lastPlayerIndex;
+    eventReason = "empty_hand";
+  } else {
+    // Blocked: check if this was a forced winner (4th+ cascade with tied pair sums)
+    const totals = hands.map((h) => calculateTotal(h));
+    const pair0Sum = totals[0] + totals[2];
+    const pair1Sum = totals[1] + totals[3];
+    const isForcedWinner =
+      pair0Sum === pair1Sum && match.turn.consecutiveNullRounds >= 3;
+
+    if (isForcedWinner) {
+      // scoreHand already picked the lowest individual sum player as winner
+      // Find the player index that scoreHand would have selected
+      let minSum = Number.POSITIVE_INFINITY;
+      let minIndex = 0;
+      for (let i = 0; i < 4; i++) {
+        if (totals[i] < minSum) {
+          minSum = totals[i];
+          minIndex = i;
+        }
+      }
+      winnerPlayerIndex = minIndex;
+      eventReason = "forced_winner";
+    } else {
+      // Normal blocked win: winner is the first player of the winning pair
+      winnerPlayerIndex = result.winningPair === 0 ? 0 : 1;
+      eventReason = "blocked";
+    }
+  }
+
+  // Apply score
+  const newScores = applyHandResult(match.scores, result);
+
+  // Reset null rounds
+  let newTurn = resetNullRounds(match.turn);
+  newTurn = { ...newTurn, lastHandWinner: winnerPlayerIndex as 0 | 1 | 2 | 3 };
+
+  const newMatch: MatchState = {
+    ...match,
+    scores: newScores,
+    turn: newTurn,
+  };
+
+  const events: GameEvent[] = [
+    { type: "hand_ended", winner: winnerPlayerIndex, reason: eventReason },
+    { type: "hand_scored", winningPair: result.winningPair, points: result.points, scores: newScores.scores },
+  ];
+
+  // Check match end
+  const matchResult = checkMatchEnd(newScores);
+  if (matchResult.isOver) {
+    events.push({
+      type: "match_ended",
+      winner: matchResult.winner!,
+      finalScores: newScores.scores,
+      reason: matchResult.reason,
+    });
+    return { match: { ...newMatch, status: "finished" }, events };
+  }
+
+  return { match: newMatch, events };
 }

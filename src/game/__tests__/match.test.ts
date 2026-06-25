@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { checkTimeout, initializeMatch, passTurn, playTile, startHand } from "../match";
-import type { PlayerState, Tile } from "../types";
+import { checkTimeout, handleHandEnd, initializeMatch, passTurn, playTile, startHand } from "../match";
+import type { BoardState, PlayerState, ScoreState, Tile, TurnState } from "../types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -556,5 +556,264 @@ describe("checkTimeout", () => {
 
     expect(result.events).toEqual([]);
     expect(result.match.turn.turnDeadline).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// handleHandEnd
+// ---------------------------------------------------------------------------
+
+describe("handleHandEnd", () => {
+  function makeMatch(overrides: {
+    players?: Partial<PlayerState>[];
+    board?: BoardState;
+    turn?: Partial<TurnState>;
+    scores?: ScoreState;
+  } = {}) {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+
+    if (overrides.players) {
+      (started as any).players = started.players.map((p, i) => ({
+        ...p,
+        ...overrides.players![i],
+      }));
+    }
+    if (overrides.board) {
+      started.board = overrides.board;
+    }
+    if (overrides.turn) {
+      started.turn = { ...started.turn, ...overrides.turn };
+    }
+    if (overrides.scores) {
+      started.scores = overrides.scores;
+    }
+    return started;
+  }
+
+  describe("empty_hand win", () => {
+    it("emits hand_ended with winner player index", () => {
+      const match = makeMatch({
+        players: [{ hand: [] }, { hand: [t(1, 2)] }, { hand: [t(3, 4)] }, { hand: [t(5, 6)] }],
+      });
+
+      const result = handleHandEnd(match, 0, "empty_hand");
+
+      const handEndEvent = result.events.find((e) => e.type === "hand_ended");
+      expect(handEndEvent).toBeDefined();
+      if (handEndEvent?.type === "hand_ended") {
+        expect(handEndEvent.winner).toBe(0);
+        expect(handEndEvent.reason).toBe("empty_hand");
+      }
+    });
+
+    it("awards points equal to sum of losers' tiles", () => {
+      const match = makeMatch({
+        players: [
+          { hand: [] },
+          { hand: [t(1, 2)] }, // sum = 3
+          { hand: [t(3, 4)] }, // sum = 7
+          { hand: [t(5, 6)] }, // sum = 11
+        ],
+      });
+
+      const result = handleHandEnd(match, 0, "empty_hand");
+
+      const scoredEvent = result.events.find((e) => e.type === "hand_scored");
+      expect(scoredEvent).toBeDefined();
+      if (scoredEvent?.type === "hand_scored") {
+        expect(scoredEvent.winningPair).toBe(0); // P1 is pair 0
+        expect(scoredEvent.points).toBe(21); // 3 + 7 + 11
+        expect(scoredEvent.scores[0]).toBe(21);
+        expect(scoredEvent.scores[1]).toBe(0);
+      }
+    });
+
+    it("updates turn's lastHandWinner", () => {
+      const match = makeMatch({
+        players: [{ hand: [] }, { hand: [t(1, 2)] }, { hand: [t(3, 4)] }, { hand: [t(5, 6)] }],
+      });
+
+      const result = handleHandEnd(match, 0, "empty_hand");
+
+      expect(result.match.turn.lastHandWinner).toBe(0);
+    });
+  });
+
+  describe("blocked board win", () => {
+    it("emits hand_ended with correct winner for pair 0", () => {
+      // Pair 0 (P1+P3) has lower sum than pair 1 (P2+P4)
+      const match = makeMatch({
+        board: { leftEnd: 9, rightEnd: 9, tiles: [] },
+        players: [
+          { hand: [t(0, 1)] }, // sum = 1
+          { hand: [t(2, 3)] }, // sum = 5
+          { hand: [t(0, 2)] }, // sum = 2
+          { hand: [t(4, 5)] }, // sum = 9
+        ],
+      });
+
+      const result = handleHandEnd(match, 0, "blocked");
+
+      const handEndEvent = result.events.find((e) => e.type === "hand_ended");
+      expect(handEndEvent).toBeDefined();
+      if (handEndEvent?.type === "hand_ended") {
+        expect(handEndEvent.winner).toBe(0); // First player of winning pair
+        expect(handEndEvent.reason).toBe("blocked");
+      }
+    });
+
+    it("awards points equal to losing pair's total", () => {
+      // Pair 0 sum = 1+2 = 3, Pair 1 sum = 5+9 = 14
+      const match = makeMatch({
+        board: { leftEnd: 9, rightEnd: 9, tiles: [] },
+        players: [
+          { hand: [t(0, 1)] }, // sum = 1
+          { hand: [t(2, 3)] }, // sum = 5
+          { hand: [t(0, 2)] }, // sum = 2
+          { hand: [t(4, 5)] }, // sum = 9
+        ],
+      });
+
+      const result = handleHandEnd(match, 0, "blocked");
+
+      const scoredEvent = result.events.find((e) => e.type === "hand_scored");
+      expect(scoredEvent).toBeDefined();
+      if (scoredEvent?.type === "hand_scored") {
+        expect(scoredEvent.winningPair).toBe(0);
+        expect(scoredEvent.points).toBe(14); // Losing pair total
+      }
+    });
+  });
+
+  describe("annulled hand", () => {
+    it("emits hand_ended with winner null for tied blocked hand", () => {
+      // Both pairs have equal sums → annulled
+      const match = makeMatch({
+        board: { leftEnd: 9, rightEnd: 9, tiles: [] },
+        turn: { consecutiveNullRounds: 0 },
+        players: [
+          { hand: [t(0, 1)] }, // sum = 1
+          { hand: [t(0, 2)] }, // sum = 2
+          { hand: [t(0, 3)] }, // sum = 3
+          { hand: [t(0, 4)] }, // sum = 4
+        ],
+        // Pair 0 sum = 1+3 = 4, Pair 1 sum = 2+4 = 6 → NOT tied
+        // Let me fix: need equal pair sums
+        // Pair 0: P1+P3 = 1+3 = 4, Pair 1: P2+P4 = 2+2 = 4 → tied
+      });
+
+      // Actually let me create a properly tied scenario
+      const match2 = makeMatch({
+        board: { leftEnd: 9, rightEnd: 9, tiles: [] },
+        turn: { consecutiveNullRounds: 0 },
+        players: [
+          { hand: [t(0, 1)] }, // sum = 1
+          { hand: [t(0, 2)] }, // sum = 2
+          { hand: [t(0, 3)] }, // sum = 3
+          { hand: [t(1, 1)] }, // sum = 2
+        ],
+        // Pair 0: 1+3 = 4, Pair 1: 2+2 = 4 → tied
+      });
+
+      const result = handleHandEnd(match2, 0, "blocked");
+
+      const handEndEvent = result.events.find((e) => e.type === "hand_ended");
+      expect(handEndEvent).toBeDefined();
+      if (handEndEvent?.type === "hand_ended") {
+        expect(handEndEvent.winner).toBeNull();
+        expect(handEndEvent.reason).toBe("annulled");
+      }
+    });
+
+    it("increments consecutiveNullRounds", () => {
+      const match = makeMatch({
+        board: { leftEnd: 9, rightEnd: 9, tiles: [] },
+        turn: { consecutiveNullRounds: 1 },
+        players: [
+          { hand: [t(0, 1)] }, // sum = 1
+          { hand: [t(0, 2)] }, // sum = 2
+          { hand: [t(0, 3)] }, // sum = 3
+          { hand: [t(1, 1)] }, // sum = 2
+        ],
+      });
+
+      const result = handleHandEnd(match, 0, "blocked");
+
+      expect(result.match.turn.consecutiveNullRounds).toBe(2);
+    });
+  });
+
+  describe("4th cascade forced winner", () => {
+    it("forces a winner when 4th consecutive annulled hand", () => {
+      // Pair 0: 1+3 = 4, Pair 1: 2+2 = 4 → tied
+      const match = makeMatch({
+        board: { leftEnd: 9, rightEnd: 9, tiles: [] },
+        turn: { consecutiveNullRounds: 3 }, // 4th consecutive
+        players: [
+          { hand: [t(0, 1)] }, // sum = 1
+          { hand: [t(0, 2)] }, // sum = 2
+          { hand: [t(0, 3)] }, // sum = 3
+          { hand: [t(1, 1)] }, // sum = 2
+        ],
+      });
+
+      const result = handleHandEnd(match, 0, "blocked");
+
+      const handEndEvent = result.events.find((e) => e.type === "hand_ended");
+      expect(handEndEvent).toBeDefined();
+      if (handEndEvent?.type === "hand_ended") {
+        expect(handEndEvent.winner).toBe(0); // P1 has lowest sum (1)
+        expect(handEndEvent.reason).toBe("forced_winner");
+      }
+    });
+
+    it("resets consecutiveNullRounds after forced winner", () => {
+      const match = makeMatch({
+        board: { leftEnd: 9, rightEnd: 9, tiles: [] },
+        turn: { consecutiveNullRounds: 3 },
+        players: [
+          { hand: [t(0, 1)] }, // sum = 1
+          { hand: [t(0, 2)] }, // sum = 2
+          { hand: [t(0, 3)] }, // sum = 3
+          { hand: [t(1, 1)] }, // sum = 2
+        ],
+      });
+
+      const result = handleHandEnd(match, 0, "blocked");
+
+      expect(result.match.turn.consecutiveNullRounds).toBe(0);
+    });
+  });
+
+  describe("match end detection", () => {
+    it("emits match_ended when score reaches target", () => {
+      const match = makeMatch({
+        scores: { scores: [190, 50], isTiebreaker: false },
+        players: [{ hand: [] }, { hand: [t(1, 2)] }, { hand: [t(3, 4)] }, { hand: [t(5, 6)] }],
+      });
+
+      const result = handleHandEnd(match, 0, "empty_hand");
+
+      const matchEndEvent = result.events.find((e) => e.type === "match_ended");
+      expect(matchEndEvent).toBeDefined();
+      if (matchEndEvent?.type === "match_ended") {
+        expect(matchEndEvent.winner).toBe(0);
+        expect(matchEndEvent.reason).toBe("reached_target");
+      }
+    });
+
+    it("sets match status to finished when match ends", () => {
+      const match = makeMatch({
+        scores: { scores: [190, 50], isTiebreaker: false },
+        players: [{ hand: [] }, { hand: [t(1, 2)] }, { hand: [t(3, 4)] }, { hand: [t(5, 6)] }],
+      });
+
+      const result = handleHandEnd(match, 0, "empty_hand");
+
+      expect(result.match.status).toBe("finished");
+    });
   });
 });
