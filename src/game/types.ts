@@ -27,3 +27,36 @@ export interface DealResult {
   /** 15 remaining tiles not dealt to any player */
   pool: Tile[];
 }
+
+/**
+ * Side of the board where a tile is placed.
+ */
+export type Side = "left" | "right";
+
+/**
+ * A tile placed on the board, recording its position and owner.
+ */
+export interface PlacedTile {
+  /** The domino tile (stored in canonical orientation after auto-flip) */
+  tile: Tile;
+  /** Which side of the board it was placed on */
+  side: Side;
+  /** Player who placed the tile */
+  playerId: string;
+}
+
+/**
+ * Immutable representation of the domino line-of-play.
+ *
+ * The board is a linear chain with two open ends.
+ * `leftEnd` and `rightEnd` track the exposed values;
+ * `tiles` is the ordered list of all placed tiles.
+ */
+export interface BoardState {
+  /** Value exposed at the left end (null if empty) */
+  leftEnd: number | null;
+  /** Value exposed at the right end (null if empty) */
+  rightEnd: number | null;
+  /** Ordered list of placed tiles */
+  tiles: PlacedTile[];
+}
