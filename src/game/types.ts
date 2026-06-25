@@ -113,3 +113,51 @@ export interface TimeoutResult {
   /** The player index whose turn was checked */
   playerIndex: 0 | 1 | 2 | 3;
 }
+
+/**
+ * Target score to win a match (200 points by default).
+ * @see AGENTS.md §5 for game rules
+ */
+export const TARGET_SCORE = 200;
+
+/**
+ * Index of a pair in the match: 0 or 1.
+ * Pairs: P1+P3 = pair 0, P2+P4 = pair 1.
+ */
+export type PairIndex = 0 | 1;
+
+/**
+ * Immutable snapshot of accumulated scores for both pairs.
+ */
+export interface ScoreState {
+  /** [pair0, pair1] — accumulated points per pair */
+  scores: [number, number];
+  /** Whether the match is in tiebreaker mode (exact tie at 200+) */
+  isTiebreaker: boolean;
+}
+
+/**
+ * Result of scoring a single hand.
+ */
+export interface HandResult {
+  /** Pair that won the hand */
+  winningPair: PairIndex;
+  /** Points awarded to the winning pair */
+  points: number;
+  /** Whether the hand ended in a blocked board */
+  isBlocked: boolean;
+  /** Whether the hand was annulled (blocked tie, below cascade threshold) */
+  isAnnulled: boolean;
+}
+
+/**
+ * Result of checking whether the match has ended.
+ */
+export interface MatchResult {
+  /** Whether the match is over */
+  isOver: boolean;
+  /** Winning pair index, or null if not over */
+  winner: PairIndex | null;
+  /** Reason: "reached_target" | "both_over_200" | "tiebreaker" */
+  reason: string;
+}
