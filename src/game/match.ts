@@ -1,6 +1,21 @@
 import { canPlay, createBoard, isBlocked, place } from "./board";
-import { createPlayer, hasTile, incrementPasses, removeTile, resetPasses, sumHand, updateLastAction } from "./player";
-import { applyHandResult, calculateTotal, checkMatchEnd, createScoreState, getPairIndex, scoreHand } from "./scoring";
+import {
+  createPlayer,
+  hasTile,
+  incrementPasses,
+  removeTile,
+  resetPasses,
+  sumHand,
+  updateLastAction,
+} from "./player";
+import {
+  applyHandResult,
+  calculateTotal,
+  checkMatchEnd,
+  createScoreState,
+  getPairIndex,
+  scoreHand,
+} from "./scoring";
 import {
   advanceTurn,
   calculateDeadline,
@@ -11,7 +26,7 @@ import {
   resetNullRounds,
   setCurrentTurn,
 } from "./turn";
-import type { ActionResult, GameEvent, MatchState, PairIndex, Side, Tile } from "./types";
+import type { ActionResult, GameEvent, MatchState, Side, Tile } from "./types";
 
 /**
  * Initializes a new match state from pre-dealt hands and pool.
@@ -38,7 +53,12 @@ export function initializeMatch(
       currentHand = [...currentHand, tile];
     }
     return { ...player, hand: currentHand };
-  }) as [MatchState["players"][0], MatchState["players"][1], MatchState["players"][2], MatchState["players"][3]];
+  }) as [
+    MatchState["players"][0],
+    MatchState["players"][1],
+    MatchState["players"][2],
+    MatchState["players"][3],
+  ];
 
   const match: MatchState = {
     matchId,
@@ -66,11 +86,16 @@ export function initializeMatch(
  */
 export function startHand(match: MatchState): ActionResult {
   // Reset all players' passes
-  const players = match.players.map((p) => resetPasses(p)) as MatchState["players"];
+  const players = match.players.map((p) =>
+    resetPasses(p),
+  ) as MatchState["players"];
 
   // Determine first player
   const hands = players.map((p) => p.hand);
-  const firstPlayer = getFirstPlayer(hands, match.turn.lastHandWinner ?? undefined);
+  const firstPlayer = getFirstPlayer(
+    hands,
+    match.turn.lastHandWinner ?? undefined,
+  );
 
   // Set turn
   let newTurn = setCurrentTurn(match.turn, firstPlayer);
@@ -111,26 +136,43 @@ function findPlayerIndex(match: MatchState, playerId: string): number {
 function validateAction(
   match: MatchState,
   playerId: string,
-): { playerIndex: number; error: null } | { playerIndex: number; error: GameEvent } {
+):
+  | { playerIndex: number; error: null }
+  | { playerIndex: number; error: GameEvent } {
   if (match.status === "finished") {
-    return { playerIndex: -1, error: gameError("MATCH_ALREADY_OVER", "Match has already ended") };
+    return {
+      playerIndex: -1,
+      error: gameError("MATCH_ALREADY_OVER", "Match has already ended"),
+    };
   }
   if (match.status !== "in_progress") {
-    return { playerIndex: -1, error: gameError("MATCH_NOT_ACTIVE", "Match is not in progress") };
+    return {
+      playerIndex: -1,
+      error: gameError("MATCH_NOT_ACTIVE", "Match is not in progress"),
+    };
   }
 
   const playerIndex = findPlayerIndex(match, playerId);
   if (playerIndex === -1) {
-    return { playerIndex: -1, error: gameError("PLAYER_NOT_FOUND", "Player not found in match") };
+    return {
+      playerIndex: -1,
+      error: gameError("PLAYER_NOT_FOUND", "Player not found in match"),
+    };
   }
 
   const player = match.players[playerIndex];
   if (!player.isConnected) {
-    return { playerIndex, error: gameError("PLAYER_DISCONNECTED", "Player is disconnected") };
+    return {
+      playerIndex,
+      error: gameError("PLAYER_DISCONNECTED", "Player is disconnected"),
+    };
   }
 
   if (match.turn.currentTurn !== playerIndex) {
-    return { playerIndex, error: gameError("NOT_YOUR_TURN", "It is not your turn") };
+    return {
+      playerIndex,
+      error: gameError("NOT_YOUR_TURN", "It is not your turn"),
+    };
   }
 
   return { playerIndex, error: null };
@@ -164,15 +206,27 @@ export function playTile(
 
   // Check tile exists in hand
   if (!hasTile(player.hand, tileId)) {
-    return { match, events: [gameError("TILE_NOT_FOUND", "Tile not found in hand")] };
+    return {
+      match,
+      events: [gameError("TILE_NOT_FOUND", "Tile not found in hand")],
+    };
   }
 
-  // Find the tile
-  const tile = player.hand.find((t) => t.id === tileId)!;
+  // Find the tile (safe: hasTile confirmed existence above)
+  const tile = player.hand.find((t) => t.id === tileId);
+  if (!tile) {
+    return {
+      match,
+      events: [gameError("TILE_NOT_FOUND", "Tile not found in hand")],
+    };
+  }
 
   // Check if the tile can be played on the specified side
   if (!canPlay(tile, side, match.board)) {
-    return { match, events: [gameError("INVALID_PLAY", "Tile cannot be played on this side")] };
+    return {
+      match,
+      events: [gameError("INVALID_PLAY", "Tile cannot be played on this side")],
+    };
   }
 
   // Place the tile
@@ -240,10 +294,7 @@ export function playTile(
  * @param playerId - ID of the player passing
  * @returns ActionResult with updated state and events
  */
-export function passTurn(
-  match: MatchState,
-  playerId: string,
-): ActionResult {
+export function passTurn(match: MatchState, playerId: string): ActionResult {
   const validation = validateAction(match, playerId);
   if (validation.error) {
     return { match, events: [validation.error] };
@@ -280,9 +331,7 @@ export function passTurn(
     turn: newTurn,
   };
 
-  const events: GameEvent[] = [
-    { type: "player_passed", playerId },
-  ];
+  const events: GameEvent[] = [{ type: "player_passed", playerId }];
 
   // Check if board is now blocked
   if (isBlocked(match.board, newPlayers)) {
@@ -303,10 +352,7 @@ export function passTurn(
  * @param now - Current time in Unix ms
  * @returns ActionResult with updated state and events
  */
-export function checkTimeout(
-  match: MatchState,
-  now: number,
-): ActionResult {
+export function checkTimeout(match: MatchState, now: number): ActionResult {
   const timeoutResult = checkTurnTimeout(match.turn, now);
 
   if (!timeoutResult.timedOut) {
@@ -372,7 +418,11 @@ export function handleHandEnd(
   const isBlockedBoard = reason === "blocked";
 
   // Score the hand
-  const result = scoreHand(hands, isBlockedBoard, match.turn.consecutiveNullRounds);
+  const result = scoreHand(
+    hands,
+    isBlockedBoard,
+    match.turn.consecutiveNullRounds,
+  );
 
   // Handle annulled hand
   if (result.isAnnulled) {
@@ -392,7 +442,10 @@ export function handleHandEnd(
       const winningPair = getPairIndex(minIndex);
       // Points = sum of the losing pair's tiles
       const losers = winningPair === 0 ? [1, 3] : [0, 2];
-      const points = losers.reduce((sum, i) => sum + sumHand(match.players[i].hand), 0);
+      const points = losers.reduce(
+        (sum, i) => sum + sumHand(match.players[i].hand),
+        0,
+      );
 
       // Apply score
       const newScores = applyHandResult(match.scores, {
@@ -419,10 +472,10 @@ export function handleHandEnd(
 
       // Check match end
       const matchResult = checkMatchEnd(newScores);
-      if (matchResult.isOver) {
+      if (matchResult.isOver && matchResult.winner !== null) {
         events.push({
           type: "match_ended",
-          winner: matchResult.winner!,
+          winner: matchResult.winner,
           finalScores: newScores.scores,
           reason: matchResult.reason,
         });
@@ -433,7 +486,7 @@ export function handleHandEnd(
     }
 
     // Annulled but not 4th cascade — increment null rounds
-    let newTurn = incrementNullRounds(match.turn);
+    const newTurn = incrementNullRounds(match.turn);
 
     const newMatch: MatchState = {
       ...match,
@@ -497,15 +550,20 @@ export function handleHandEnd(
 
   const events: GameEvent[] = [
     { type: "hand_ended", winner: winnerPlayerIndex, reason: eventReason },
-    { type: "hand_scored", winningPair: result.winningPair, points: result.points, scores: newScores.scores },
+    {
+      type: "hand_scored",
+      winningPair: result.winningPair,
+      points: result.points,
+      scores: newScores.scores,
+    },
   ];
 
   // Check match end
   const matchResult = checkMatchEnd(newScores);
-  if (matchResult.isOver) {
+  if (matchResult.isOver && matchResult.winner !== null) {
     events.push({
       type: "match_ended",
-      winner: matchResult.winner!,
+      winner: matchResult.winner,
       finalScores: newScores.scores,
       reason: matchResult.reason,
     });
