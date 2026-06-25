@@ -1,4 +1,4 @@
-import type { BoardState, PlacedTile, Side, Tile } from "./types";
+import type { BoardState, PlacedTile, PlayerState, Side, Tile } from "./types";
 
 /**
  * Creates an empty domino board.
@@ -120,4 +120,29 @@ export function place(
     rightEnd: newEnd,
     tiles: newTiles,
   };
+}
+
+/**
+ * Checks whether the board is blocked for all players.
+ *
+ * A board is blocked when no player with a non-empty hand can place any tile
+ * on either side. Players with empty hands are ignored (they already won).
+ *
+ * @param board - Current board state
+ * @param players - The four player states
+ * @returns true if no valid moves exist for any player
+ */
+export function isBlocked(
+  board: BoardState,
+  players: readonly PlayerState[],
+): boolean {
+  for (const player of players) {
+    if (player.hand.length === 0) continue;
+    for (const tile of player.hand) {
+      if (canPlay(tile, "left", board) || canPlay(tile, "right", board)) {
+        return false;
+      }
+    }
+  }
+  return true;
 }

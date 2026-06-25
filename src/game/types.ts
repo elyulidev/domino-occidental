@@ -161,3 +161,88 @@ export interface MatchResult {
   /** Reason: "reached_target" | "both_over_200" | "tiebreaker" */
   reason: string;
 }
+
+// ---------------------------------------------------------------------------
+// Module 6: Round-Match-Flow types
+// ---------------------------------------------------------------------------
+
+/**
+ * Lifecycle status of a match.
+ */
+export type MatchStatus = "waiting" | "in_progress" | "finished" | "abandoned";
+
+/**
+ * Complete immutable state of a domino match.
+ *
+ * Encapsulates the board, turn ordering, scores, and player states.
+ * All mutations are performed via pure functions in `match.ts`.
+ */
+export interface MatchState {
+  /** Unique match identifier */
+  matchId: string;
+  /** The four player states (indices 0–3) */
+  players: [PlayerState, PlayerState, PlayerState, PlayerState];
+  /** Current board state */
+  board: BoardState;
+  /** Current turn state */
+  turn: TurnState;
+  /** Accumulated scores */
+  scores: ScoreState;
+  /** Tiles remaining in the pool (face-down, server-only) */
+  pool: Tile[];
+  /** Number of tiles in the pool (for client communication) */
+  poolCount: number;
+  /** Current lifecycle status */
+  status: MatchStatus;
+  /** Target score to win the match */
+  targetScore: number;
+}
+
+/**
+ * Result returned by every match action function.
+ *
+ * Contains the updated MatchState and a list of events to broadcast.
+ * Errors are represented as `game_error` events, never thrown.
+ */
+export interface ActionResult {
+  /** The updated match state (may be identical to input if action was invalid) */
+  match: MatchState;
+  /** Ordered list of events to emit to connected clients */
+  events: GameEvent[];
+}
+
+/**
+ * Discriminated union of all game events emitted by match actions.
+ *
+ * Events are emitted in deterministic order:
+ * action → hand_ended → hand_scored → match_ended
+ */
+export type GameEvent =
+  | { type: "round_started"; firstPlayer: number }
+  | {
+      type: "tile_played";
+      playerId: string;
+      tileId: string;
+      side: Side;
+      board: BoardState;
+    }
+  | { type: "player_passed"; playerId: string }
+  | { type: "turn_timeout"; playerId: string; forcedPass: boolean }
+  | {
+      type: "hand_ended";
+      winner: number | null;
+      reason: "empty_hand" | "blocked" | "annulled" | "forced_winner";
+    }
+  | {
+      type: "hand_scored";
+      winningPair: PairIndex;
+      points: number;
+      scores: [number, number];
+    }
+  | {
+      type: "match_ended";
+      winner: PairIndex;
+      finalScores: [number, number];
+      reason: string;
+    }
+  | { type: "game_error"; code: string; message: string };
