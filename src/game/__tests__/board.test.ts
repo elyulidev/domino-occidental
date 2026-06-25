@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { canPlay, createBoard, place } from "../board";
-import type { BoardState, Tile } from "../types";
+import { canPlay, createBoard, isBlocked, place } from "../board";
+import type { BoardState, PlayerState, Tile } from "../types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -234,5 +234,95 @@ describe("place", () => {
     expect(board3.tiles).toHaveLength(2);
     // board2.tiles should not be the same reference as board3.tiles
     expect(board2.tiles).not.toBe(board3.tiles);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isBlocked
+// ---------------------------------------------------------------------------
+
+function makePlayer(id: string, hand: Tile[]): PlayerState {
+  return {
+    id,
+    hand,
+    consecutivePasses: 0,
+    isConnected: true,
+    lastActionAt: new Date(),
+  };
+}
+
+describe("isBlocked", () => {
+  it("returns false on an empty board with full hands (anyone can play)", () => {
+    const board = createBoard();
+    const players = [
+      makePlayer("p0", [tile(1, 2), tile(3, 4)]),
+      makePlayer("p1", [tile(5, 6), tile(7, 8)]),
+      makePlayer("p2", [tile(0, 1), tile(2, 3)]),
+      makePlayer("p3", [tile(4, 5), tile(6, 7)]),
+    ];
+    expect(isBlocked(board, players as any)).toBe(false);
+  });
+
+  it("returns true when no player can play on either side", () => {
+    const board: BoardState = {
+      leftEnd: 9,
+      rightEnd: 9,
+      tiles: [],
+    };
+    // All players only have tiles with values 0–8 (none match 9)
+    const players = [
+      makePlayer("p0", [tile(0, 1), tile(2, 3)]),
+      makePlayer("p1", [tile(4, 5), tile(6, 7)]),
+      makePlayer("p2", [tile(0, 2), tile(1, 3)]),
+      makePlayer("p3", [tile(4, 6), tile(5, 7)]),
+    ];
+    expect(isBlocked(board, players as any)).toBe(true);
+  });
+
+  it("returns false when at least one player has a valid move", () => {
+    const board: BoardState = {
+      leftEnd: 9,
+      rightEnd: 9,
+      tiles: [],
+    };
+    // p0 has tile(9, 0) which can play on left or right
+    const players = [
+      makePlayer("p0", [tile(9, 0), tile(2, 3)]),
+      makePlayer("p1", [tile(4, 5), tile(6, 7)]),
+      makePlayer("p2", [tile(0, 2), tile(1, 3)]),
+      makePlayer("p3", [tile(4, 6), tile(5, 7)]),
+    ];
+    expect(isBlocked(board, players as any)).toBe(false);
+  });
+
+  it("ignores players with empty hands", () => {
+    const board: BoardState = {
+      leftEnd: 9,
+      rightEnd: 9,
+      tiles: [],
+    };
+    // p0 has empty hand (already won), others have no matching tiles
+    const players = [
+      makePlayer("p0", []),
+      makePlayer("p1", [tile(4, 5), tile(6, 7)]),
+      makePlayer("p2", [tile(0, 2), tile(1, 3)]),
+      makePlayer("p3", [tile(4, 6), tile(5, 7)]),
+    ];
+    expect(isBlocked(board, players as any)).toBe(true);
+  });
+
+  it("detects a single playable tile among many unplayable ones", () => {
+    const board: BoardState = {
+      leftEnd: 3,
+      rightEnd: 7,
+      tiles: [],
+    };
+    const players = [
+      makePlayer("p0", [tile(1, 2), tile(4, 5)]),
+      makePlayer("p1", [tile(6, 8), tile(0, 1)]),
+      makePlayer("p2", [tile(3, 9), tile(0, 2)]), // tile(3,9) matches leftEnd=3
+      makePlayer("p3", [tile(4, 6), tile(5, 8)]),
+    ];
+    expect(isBlocked(board, players as any)).toBe(false);
   });
 });
