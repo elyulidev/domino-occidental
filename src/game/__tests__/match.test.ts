@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { initializeMatch, startHand } from "../match";
+import { checkTimeout, initializeMatch, passTurn, playTile, startHand } from "../match";
 import type { PlayerState, Tile } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -182,5 +182,379 @@ describe("startHand", () => {
     // But the players array and board should be new references
     expect(result.match.players).not.toBe(match.players);
     expect(result.match.board).not.toBe(match.board);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// playTile
+// ---------------------------------------------------------------------------
+
+describe("playTile", () => {
+  it("places a tile on the board and removes it from the player's hand", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+    const tileToPlay = started.players[currentTurn].hand[0];
+
+    const result = playTile(started, playerId, tileToPlay.id, "left");
+
+    // Tile should be removed from hand
+    expect(result.match.players[currentTurn].hand).toHaveLength(9);
+    // Board should have one tile
+    expect(result.match.board.tiles).toHaveLength(1);
+  });
+
+  it("emits tile_played event", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+    const tileToPlay = started.players[currentTurn].hand[0];
+
+    const result = playTile(started, playerId, tileToPlay.id, "left");
+
+    const tileEvent = result.events.find((e) => e.type === "tile_played");
+    expect(tileEvent).toBeDefined();
+    if (tileEvent?.type === "tile_played") {
+      expect(tileEvent.playerId).toBe(playerId);
+      expect(tileEvent.tileId).toBe(tileToPlay.id);
+    }
+  });
+
+  it("advances the turn after a valid play", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+    const tileToPlay = started.players[currentTurn].hand[0];
+
+    const result = playTile(started, playerId, tileToPlay.id, "left");
+
+    expect(result.match.turn.currentTurn).not.toBe(currentTurn);
+  });
+
+  it("returns game_error when match is already over", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const overMatch = { ...match, status: "finished" as const };
+
+    const result = playTile(overMatch, "p0", "any-tile", "left");
+
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("MATCH_ALREADY_OVER");
+    }
+  });
+
+  it("returns game_error when match is not in_progress", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const waitingMatch = { ...match, status: "waiting" as const };
+
+    const result = playTile(waitingMatch, "p0", "any-tile", "left");
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("MATCH_NOT_ACTIVE");
+    }
+  });
+
+  it("returns game_error when player is disconnected", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+
+    const disconnectedMatch = {
+      ...started,
+      players: started.players.map((p, i) =>
+        i === currentTurn ? { ...p, isConnected: false } : p,
+      ) as any,
+    };
+
+    const result = playTile(disconnectedMatch, playerId, "any-tile", "left");
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("PLAYER_DISCONNECTED");
+    }
+  });
+
+  it("returns game_error when it's not the player's turn", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    // Pick a player who is NOT the current turn
+    const wrongPlayer = (currentTurn + 1) % 4;
+    const playerId = started.players[wrongPlayer].id;
+
+    const result = playTile(started, playerId, "any-tile", "left");
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("NOT_YOUR_TURN");
+    }
+  });
+
+  it("returns game_error when tile is not in player's hand", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+
+    const result = playTile(started, playerId, "nonexistent-tile-id", "left");
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("TILE_NOT_FOUND");
+    }
+  });
+
+  it("resets consecutive passes after a valid play", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    // Give the player some passes
+    const modifiedMatch = {
+      ...started,
+      players: started.players.map((p, i) =>
+        i === currentTurn ? { ...p, consecutivePasses: 3 } : p,
+      ) as any,
+    };
+    const playerId = modifiedMatch.players[currentTurn].id;
+    const tileToPlay = modifiedMatch.players[currentTurn].hand[0];
+
+    const result = playTile(modifiedMatch, playerId, tileToPlay.id, "left");
+
+    expect(result.match.players[currentTurn].consecutivePasses).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// passTurn
+// ---------------------------------------------------------------------------
+
+describe("passTurn", () => {
+  it("increments the player's consecutive passes", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+
+    const result = passTurn(started, playerId);
+
+    expect(result.match.players[currentTurn].consecutivePasses).toBe(1);
+  });
+
+  it("advances the turn", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+
+    const result = passTurn(started, playerId);
+
+    expect(result.match.turn.currentTurn).not.toBe(currentTurn);
+  });
+
+  it("emits player_passed event", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+
+    const result = passTurn(started, playerId);
+
+    const passEvent = result.events.find((e) => e.type === "player_passed");
+    expect(passEvent).toBeDefined();
+    if (passEvent?.type === "player_passed") {
+      expect(passEvent.playerId).toBe(playerId);
+    }
+  });
+
+  it("returns game_error when match is already over", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const overMatch = { ...match, status: "finished" as const };
+
+    const result = passTurn(overMatch, "p0");
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("MATCH_ALREADY_OVER");
+    }
+  });
+
+  it("returns game_error when match is not in_progress", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const waitingMatch = { ...match, status: "waiting" as const };
+
+    const result = passTurn(waitingMatch, "p0");
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("MATCH_NOT_ACTIVE");
+    }
+  });
+
+  it("returns game_error when player is disconnected", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+
+    const disconnectedMatch = {
+      ...started,
+      players: started.players.map((p, i) =>
+        i === currentTurn ? { ...p, isConnected: false } : p,
+      ) as any,
+    };
+    const playerId = disconnectedMatch.players[currentTurn].id;
+
+    const result = passTurn(disconnectedMatch, playerId);
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("PLAYER_DISCONNECTED");
+    }
+  });
+
+  it("returns game_error when it's not the player's turn", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const wrongPlayer = (currentTurn + 1) % 4;
+    const playerId = started.players[wrongPlayer].id;
+
+    const result = passTurn(started, playerId);
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("NOT_YOUR_TURN");
+    }
+  });
+
+  it("returns game_error when player's hand is empty", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const playerId = started.players[currentTurn].id;
+
+    // Empty the player's hand
+    const emptyHandMatch = {
+      ...started,
+      players: started.players.map((p, i) =>
+        i === currentTurn ? { ...p, hand: [] } : p,
+      ) as any,
+    };
+
+    const result = passTurn(emptyHandMatch, playerId);
+
+    expect(result.events[0].type).toBe("game_error");
+    if (result.events[0].type === "game_error") {
+      expect(result.events[0].code).toBe("HAND_EMPTY");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// checkTimeout
+// ---------------------------------------------------------------------------
+
+describe("checkTimeout", () => {
+  it("returns unchanged match when turn has not timed out", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const now = Date.now();
+
+    const result = checkTimeout(started, now);
+
+    expect(result.events).toEqual([]);
+    expect(result.match.turn.currentTurn).toBe(started.turn.currentTurn);
+  });
+
+  it("forces a pass when turn has timed out", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const deadline = started.turn.turnDeadline!;
+
+    const result = checkTimeout(started, deadline + 1);
+
+    // Should have advanced turn
+    expect(result.match.turn.currentTurn).not.toBe(currentTurn);
+    // Should have emitted turn_timeout event
+    const timeoutEvent = result.events.find((e) => e.type === "turn_timeout");
+    expect(timeoutEvent).toBeDefined();
+    if (timeoutEvent?.type === "turn_timeout") {
+      expect(timeoutEvent.playerId).toBe(started.players[currentTurn].id);
+      expect(timeoutEvent.forcedPass).toBe(true);
+    }
+  });
+
+  it("increments pass count on timeout", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    const currentTurn = started.turn.currentTurn;
+    const deadline = started.turn.turnDeadline!;
+
+    const result = checkTimeout(started, deadline + 1);
+
+    expect(result.match.players[currentTurn].consecutivePasses).toBe(1);
+  });
+
+  it("does not change match when turnDeadline is null", () => {
+    const hands = makeHands();
+    const pool = makePool();
+    const match = initializeMatch("match-1", hands, pool).match;
+    const started = startHand(match).match;
+    // Manually set deadline to null
+    const noDeadlineMatch = {
+      ...started,
+      turn: { ...started.turn, turnDeadline: null },
+    };
+
+    const result = checkTimeout(noDeadlineMatch, Date.now());
+
+    expect(result.events).toEqual([]);
+    expect(result.match.turn.turnDeadline).toBeNull();
   });
 });
