@@ -16,6 +16,25 @@ export interface Tile {
 }
 
 /**
+ * Individual player state within a game session.
+ *
+ * Tracks the player's hand tiles, connection status, and pass count.
+ * All fields are managed via pure functions in `player.ts`.
+ */
+export interface PlayerState {
+  /** Player identifier (e.g. "p1" through "p4") */
+  id: string;
+  /** Current hand of domino tiles */
+  hand: Tile[];
+  /** Number of consecutive passes (resets when a tile is played) */
+  consecutivePasses: number;
+  /** Whether the player's WebSocket connection is active */
+  isConnected: boolean;
+  /** Timestamp of the player's last action (play, pass, or reconnect) */
+  lastActionAt: Date;
+}
+
+/**
  * Named return type for the deal() function.
  *
  * Distributes 55 tiles into exactly 4 hands of 10 tiles each,
