@@ -79,3 +79,37 @@ export interface BoardState {
   /** Ordered list of placed tiles */
   tiles: PlacedTile[];
 }
+
+/**
+ * Constants for turn management.
+ */
+export const TURN_TIMEOUT_MS = 45_000;
+export const PLAYER_COUNT = 4;
+
+/**
+ * Immutable state for turn ordering, timeout enforcement, and round tracking.
+ *
+ * All functions in turn.ts accept and return this type without mutation.
+ */
+export interface TurnState {
+  /** Index of the current player (0–3) */
+  currentTurn: 0 | 1 | 2 | 3;
+  /** Deadline for the current turn in Unix ms, or null if not yet set */
+  turnDeadline: number | null;
+  /** Number of consecutive null (blocked) rounds */
+  consecutiveNullRounds: number;
+  /** Current round number (0-indexed) */
+  roundNumber: number;
+  /** Winner of the last hand, or null for the first hand of the match */
+  lastHandWinner: 0 | 1 | 2 | 3 | null;
+}
+
+/**
+ * Result of a turn timeout check.
+ */
+export interface TimeoutResult {
+  /** Whether the turn has exceeded its deadline */
+  timedOut: boolean;
+  /** The player index whose turn was checked */
+  playerIndex: 0 | 1 | 2 | 3;
+}
