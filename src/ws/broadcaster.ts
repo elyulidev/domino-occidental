@@ -26,12 +26,6 @@ export type WsServerMessage = {
 };
 
 // ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const ALL_PLAYER_IDS = ["1", "2", "3", "4"];
-
-// ---------------------------------------------------------------------------
 // broadcastEvents
 // ---------------------------------------------------------------------------
 
@@ -63,7 +57,7 @@ export function broadcastEvents(
     const recipients =
       event.type === "game_error"
         ? [actingPlayerId]
-        : (playerIds ?? ALL_PLAYER_IDS);
+        : (playerIds ?? ["1", "2", "3", "4"]);
 
     for (const playerId of recipients) {
       try {

@@ -246,6 +246,9 @@ describe("broadcastEvents", () => {
     });
 
     it("sendFn error is caught and doesn't crash, remaining recipients still receive", () => {
+      // Suppress expected console.error from broadcastEvents
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       const sendFn = vi.fn((playerId: string) => {
         if (playerId === "2") {
           throw new Error("send failed");
@@ -261,6 +264,8 @@ describe("broadcastEvents", () => {
         (c: readonly unknown[]) => c[0],
       );
       expect(calledPlayerIds).toEqual(ALL_PLAYER_IDS);
+
+      errorSpy.mockRestore();
     });
 
     it("game_error with playerIds override still only sends to actingPlayerId", () => {
@@ -275,6 +280,38 @@ describe("broadcastEvents", () => {
         "1",
         expect.objectContaining({ type: "game_events" }),
       );
+    });
+
+    it("dynamic UUID-based playerIds are used as recipients", () => {
+      const sendFn = vi.fn();
+      const event = makePlayerPassed();
+      const uuids = [
+        "550e8400-e29b-41d4-a716-446655440001",
+        "550e8400-e29b-41d4-a716-446655440002",
+        "550e8400-e29b-41d4-a716-446655440003",
+        "550e8400-e29b-41d4-a716-446655440004",
+      ];
+
+      broadcastEvents([event], MATCH_ID, uuids[0], sendFn, uuids);
+
+      expect(sendFn).toHaveBeenCalledTimes(4);
+      const calledPlayerIds = sendFn.mock.calls.map(
+        (c: readonly unknown[]) => c[0],
+      );
+      expect(calledPlayerIds).toEqual(uuids);
+    });
+
+    it("fallback to [1,2,3,4] when playerIds is undefined", () => {
+      const sendFn = vi.fn();
+      const event = makePlayerPassed();
+
+      broadcastEvents([event], MATCH_ID, "1", sendFn, undefined);
+
+      expect(sendFn).toHaveBeenCalledTimes(4);
+      const calledPlayerIds = sendFn.mock.calls.map(
+        (c: readonly unknown[]) => c[0],
+      );
+      expect(calledPlayerIds).toEqual(["1", "2", "3", "4"]);
     });
   });
 

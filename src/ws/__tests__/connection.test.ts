@@ -358,6 +358,79 @@ describe("wsPlugin open handler", () => {
     expect(plugin.manager.getConnection("p1")).toBe(ws);
     expect(mockReconnectPlayer).toHaveBeenCalledTimes(1);
   });
+
+  it("sends sendState on first join when reconnectPlayer returns 0 events", () => {
+    const match = makeMatch();
+    const mockReconnectPlayer = vi.fn(() => ({
+      match,
+      events: [],
+    }));
+    const mockBroadcastEvents = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: mockReconnectPlayer,
+      broadcastEvents: mockBroadcastEvents,
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    // sendState should be called: first join delivers full state
+    expect(ws.send).toHaveBeenCalled();
+    const sent = JSON.parse(ws.send.mock.calls[0][0]);
+    expect(sent.type).toBe("game_events");
+    expect(sent.state).toBeDefined();
+    expect(sent.state.matchId).toBe(match.matchId);
+  });
+
+  it("sends sendState on reconnect as well", () => {
+    const match = makeMatch();
+    const mockReconnectPlayer = vi.fn(() => ({
+      match,
+      events: [{ type: "player_reconnected", playerId: "p1" }],
+    }));
+    const mockBroadcastEvents = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: mockReconnectPlayer,
+      broadcastEvents: mockBroadcastEvents,
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    // sendState should be called even on reconnect
+    expect(ws.send).toHaveBeenCalled();
+    const sent = JSON.parse(ws.send.mock.calls[0][0]);
+    expect(sent.type).toBe("game_events");
+    expect(sent.state).toBeDefined();
+  });
+
+  it("does NOT send sendState when match is not found", () => {
+    const mockReconnectPlayer = vi.fn(() => ({
+      match: makeMatch(),
+      events: [],
+    }));
+
+    const plugin = createWsPlugin({
+      store: makeStore(null), // match not found
+      disconnectPlayer: vi.fn(() => ({ match: makeMatch(), events: [] })),
+      reconnectPlayer: mockReconnectPlayer,
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    // sendState should NOT be called when match is null
+    expect(ws.send).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -673,5 +746,233 @@ describe("wsPlugin timerManager integration", () => {
 
     // No errors thrown — optional dep is silently ignored
     expect(plugin.manager.getConnection("p1")).toBeUndefined();
+  });
+
+  it("startMatch called when 4th player connects via auth path", () => {
+    const match = makeMatch();
+    const mockStartMatch = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      verifyToken: vi.fn(() => ({ userId: "u4" })),
+      timerManager: {
+        cancelDisconnect: vi.fn(),
+        registerDisconnect: vi.fn(),
+        startMatch: mockStartMatch,
+        stopMatch: vi.fn(),
+        stop: vi.fn(),
+        getDisconnectRecord: vi.fn(() => null),
+      },
+    });
+
+    // Pre-register 3 players
+    const wsType = createMockWs("u1") as unknown as Parameters<
+      ConnectionManager["register"]
+    >[2];
+    plugin.manager.register("match-1", "u1", wsType);
+    plugin.manager.register(
+      "match-1",
+      "u2",
+      createMockWs("u2") as unknown as Parameters<
+        ConnectionManager["register"]
+      >[2],
+    );
+    plugin.manager.register(
+      "match-1",
+      "u3",
+      createMockWs("u3") as unknown as Parameters<
+        ConnectionManager["register"]
+      >[2],
+    );
+
+    // 4th player connects via auth
+    const ws4 = {
+      send: vi.fn(),
+      subscribe: vi.fn(),
+      publish: vi.fn(),
+      data: { matchId: "match-1", query: { token: "valid-token" } },
+      close: vi.fn(),
+      remoteAddress: "127.0.0.1",
+    };
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws4 as unknown as Parameters<typeof handlers.open>[0]);
+
+    expect(mockStartMatch).toHaveBeenCalledTimes(1);
+    const calledPlayerIds = mockStartMatch.mock.calls[0][1];
+    expect(calledPlayerIds).toHaveLength(4);
+    expect(calledPlayerIds).toContain("u1");
+    expect(calledPlayerIds).toContain("u2");
+    expect(calledPlayerIds).toContain("u3");
+    expect(calledPlayerIds).toContain("u4");
+  });
+
+  it("startMatch NOT called when only 3 players connected", () => {
+    const match = makeMatch();
+    const mockStartMatch = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      verifyToken: vi.fn(() => ({ userId: "u3" })),
+      timerManager: {
+        cancelDisconnect: vi.fn(),
+        registerDisconnect: vi.fn(),
+        startMatch: mockStartMatch,
+        stopMatch: vi.fn(),
+        stop: vi.fn(),
+        getDisconnectRecord: vi.fn(() => null),
+      },
+    });
+
+    // Pre-register 2 players
+    const wsType = createMockWs("u1") as unknown as Parameters<
+      ConnectionManager["register"]
+    >[2];
+    plugin.manager.register("match-1", "u1", wsType);
+    plugin.manager.register(
+      "match-1",
+      "u2",
+      createMockWs("u2") as unknown as Parameters<
+        ConnectionManager["register"]
+      >[2],
+    );
+
+    // 3rd player connects
+    const ws3 = {
+      send: vi.fn(),
+      subscribe: vi.fn(),
+      publish: vi.fn(),
+      data: { matchId: "match-1", query: { token: "valid-token" } },
+      close: vi.fn(),
+      remoteAddress: "127.0.0.1",
+    };
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws3 as unknown as Parameters<typeof handlers.open>[0]);
+
+    expect(mockStartMatch).not.toHaveBeenCalled();
+  });
+
+  it("startMatch NOT called on reconnect (already started)", () => {
+    const match = makeMatch();
+    const mockStartMatch = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      verifyToken: vi.fn(({ userId }: { userId: string }) => ({ userId })),
+      timerManager: {
+        cancelDisconnect: vi.fn(),
+        registerDisconnect: vi.fn(),
+        startMatch: mockStartMatch,
+        stopMatch: vi.fn(),
+        stop: vi.fn(),
+        getDisconnectRecord: vi.fn(() => null),
+      },
+    });
+
+    // Register all 4 players
+    const wsType = createMockWs("u1") as unknown as Parameters<
+      ConnectionManager["register"]
+    >[2];
+    plugin.manager.register("match-1", "u1", wsType);
+    plugin.manager.register(
+      "match-1",
+      "u2",
+      createMockWs("u2") as unknown as Parameters<
+        ConnectionManager["register"]
+      >[2],
+    );
+    plugin.manager.register(
+      "match-1",
+      "u3",
+      createMockWs("u3") as unknown as Parameters<
+        ConnectionManager["register"]
+      >[2],
+    );
+    plugin.manager.register(
+      "match-1",
+      "u4",
+      createMockWs("u4") as unknown as Parameters<
+        ConnectionManager["register"]
+      >[2],
+    );
+
+    // Simulate: startMatch was already called (e.g. from previous 4th connect)
+    // Now u1 reconnects — should NOT call startMatch again
+    const ws1New = {
+      send: vi.fn(),
+      subscribe: vi.fn(),
+      publish: vi.fn(),
+      data: { matchId: "match-1", query: { token: "u1" } },
+      close: vi.fn(),
+      remoteAddress: "127.0.0.1",
+    };
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws1New as unknown as Parameters<typeof handlers.open>[0]);
+
+    // startMatch should NOT be called again since match already started
+    expect(mockStartMatch).not.toHaveBeenCalled();
+  });
+
+  it("getPlayerIdsForMatch returns UUIDs of connected players for a match", () => {
+    const plugin = createWsPlugin({
+      store: makeStore(makeMatch()),
+      disconnectPlayer: vi.fn(() => ({ match: makeMatch(), events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match: makeMatch(), events: [] })),
+    });
+
+    const ws1 = createMockWs("u1", "match-1");
+    const ws2 = createMockWs("u2", "match-1");
+    const ws3 = createMockWs("u3", "match-2");
+    const wsType = ws1 as unknown as Parameters<
+      ConnectionManager["register"]
+    >[2];
+    plugin.manager.register("match-1", "u1", wsType);
+    plugin.manager.register(
+      "match-1",
+      "u2",
+      ws2 as unknown as Parameters<ConnectionManager["register"]>[2],
+    );
+    plugin.manager.register(
+      "match-2",
+      "u3",
+      ws3 as unknown as Parameters<ConnectionManager["register"]>[2],
+    );
+
+    const playerIds = plugin.manager.getPlayerIdsForMatch("match-1");
+    expect(playerIds).toEqual(["u1", "u2"]);
+  });
+
+  it("broadcastEvents in message handler receives dynamic playerIds from match", () => {
+    const match = makeMatch();
+    const mockHandleMessage = vi.fn(() => makeMessageResult());
+    const mockBroadcastEvents = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      handleMessage: mockHandleMessage,
+      broadcastEvents: mockBroadcastEvents,
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    plugin.manager.register(
+      "match-1",
+      "p1",
+      ws as unknown as Parameters<ConnectionManager["register"]>[2],
+    );
+
+    const handlers = getHandler(plugin, "message");
+    handlers.message(ws as unknown, JSON.stringify({ type: "pass" }));
+
+    expect(mockBroadcastEvents).toHaveBeenCalledTimes(1);
+    const callArgs = mockBroadcastEvents.mock.calls[0];
+    // playerIds should be match.players.map(p => p.id)
+    expect(callArgs[4]).toEqual(["p1", "p2", "p3", "p4"]);
   });
 });
