@@ -1,4 +1,10 @@
-import type { BoardState, PlacedTile, PlayerState, Side, Tile } from "./types";
+import type {
+  BoardState,
+  PlacedTile,
+  PlayerState,
+  Side,
+  Tile,
+} from "@domino/shared";
 
 /**
  * Creates an empty domino board.

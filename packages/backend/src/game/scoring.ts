@@ -4,8 +4,8 @@ import type {
   PairIndex,
   ScoreState,
   Tile,
-} from "./types";
-import { TARGET_SCORE } from "./types";
+} from "@domino/shared";
+import { TARGET_SCORE } from "@domino/shared";
 
 /**
  * Maps a player index (0–3) to its pair index.

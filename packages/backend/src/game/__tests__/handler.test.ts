@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "bun:test";
-import { handleMessage, sanitizeState } from "../handler";
-import type { MatchState, PlayerState } from "../types";
+import type { MatchState, PlayerState } from "@domino/shared";
+import { sanitizeState } from "@domino/shared";
+import { handleMessage } from "../handler";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -69,7 +70,10 @@ describe("sanitizeState", () => {
   });
 
   it("includes poolCount from pool length", () => {
-    const match = makeMatch({ pool: [{ id: "x", top: 0, bottom: 1 }], poolCount: 1 });
+    const match = makeMatch({
+      pool: [{ id: "x", top: 0, bottom: 1 }],
+      poolCount: 1,
+    });
     const sanitized = sanitizeState(match);
     expect(sanitized.poolCount).toBe(1);
   });
