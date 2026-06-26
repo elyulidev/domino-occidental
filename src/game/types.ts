@@ -87,6 +87,13 @@ export const TURN_TIMEOUT_MS = 45_000;
 export const PLAYER_COUNT = 4;
 
 /**
+ * Module 7: Connection management constants.
+ */
+export const HEARTBEAT_MS = 5_000;
+export const RECONNECT_WINDOW_MS = 30_000;
+export const ABANDONMENT_THRESHOLD_MS = 60_000;
+
+/**
  * Immutable state for turn ordering, timeout enforcement, and round tracking.
  *
  * All functions in turn.ts accept and return this type without mutation.
@@ -245,4 +252,8 @@ export type GameEvent =
       finalScores: [number, number];
       reason: string;
     }
+  | { type: "player_disconnected"; playerId: string; reconnectWindowMs: number }
+  | { type: "player_reconnected"; playerId: string }
+  | { type: "reconnection_window_expiring"; playerId: string; secondsLeft: number }
+  | { type: "match_abandoned"; disconnectedPlayerId: string; reason: "abandonment" | "forfeit" }
   | { type: "game_error"; code: string; message: string };
