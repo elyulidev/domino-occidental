@@ -9,6 +9,7 @@ import { handleMessage as defaultHandleMessage } from "../game/handler";
 import type { GameEvent, MatchState } from "../game/types";
 import type { SendFn, WsServerMessage } from "./broadcaster";
 import { broadcastEvents as defaultBroadcastEvents } from "./broadcaster";
+import type { TimerManager } from "./timer-manager";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -72,6 +73,8 @@ export interface WsPluginDeps {
   verifyToken?: (token: string) => { userId: string } | null;
   /** Optional rate limiter. When provided, messages are throttled per-playerId. */
   rateLimiter?: RateLimiterApi;
+  /** Optional timer manager for heartbeat and abandonment timers. */
+  timerManager?: TimerManager;
 }
 
 /** Return type for createWsPlugin — exposes manager for testing. */
@@ -190,6 +193,9 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                 }
               }
             }
+
+            // Cancel abandonment timer on reconnect
+            deps.timerManager?.cancelDisconnect(matchId, playerId);
           } else {
             // No auth configured — use playerId from upstream (dev/testing)
             const playerId = ws.data.playerId as string;
@@ -204,6 +210,9 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                 }
               }
             }
+
+            // Cancel abandonment timer on reconnect
+            deps.timerManager?.cancelDisconnect(matchId, playerId);
           }
         },
 
@@ -278,6 +287,9 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
               }
             }
           }
+
+          // Schedule abandonment timer on disconnect
+          deps.timerManager?.registerDisconnect(matchId, playerId, new Date());
         },
       },
     },
