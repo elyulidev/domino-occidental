@@ -5,25 +5,53 @@
     "": {
       "name": "domino-occidental",
       "dependencies": {
-        "@elysia/eden": "^1.4.10",
         "@paralleldrive/cuid2": "^3.3.0",
-        "drizzle-orm": "^0.45.2",
-        "elysia": "^1.4.29",
-        "next": "16.2.9",
-        "postgres": "^3.4.9",
-        "react": "19.2.4",
-        "react-dom": "19.2.4",
-        "stripe": "^22.3.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.2.0",
-        "@tailwindcss/postcss": "^4",
         "@types/bun": "^1.3.14",
+        "typescript": "^5",
+      },
+    },
+    "packages/backend": {
+      "name": "@domino/backend",
+      "version": "0.1.0",
+      "dependencies": {
+        "@domino/shared": "workspace:*",
+        "@elysia/eden": "^1.4.10",
+        "@paralleldrive/cuid2": "^3.3.0",
+        "drizzle-orm": "^0.45.2",
+        "elysia": "latest",
+        "postgres": "^3.4.9",
+        "stripe": "^22.3.0",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+      },
+    },
+    "packages/frontend": {
+      "name": "@domino/frontend",
+      "version": "0.1.0",
+      "dependencies": {
+        "@domino/shared": "workspace:*",
+        "next": "16.2.9",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
+      },
+      "devDependencies": {
+        "@tailwindcss/postcss": "^4",
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "babel-plugin-react-compiler": "1.0.0",
         "tailwindcss": "^4",
+        "typescript": "^5",
+      },
+    },
+    "packages/shared": {
+      "name": "@domino/shared",
+      "version": "0.1.0",
+      "devDependencies": {
         "typescript": "^5",
       },
     },
@@ -59,6 +87,12 @@
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.2.0", "", { "os": "win32", "cpu": "x64" }, "sha512-Nawu5nHjP/zPKTIryh2AavzTc/KEg4um/MxWdXW0A6P/RZOyIpa7+QSjeXwAwX/utJGaCoXRPWtF3m5U/bB3Ww=="],
 
     "@borewit/text-codec": ["@borewit/text-codec@0.2.2", "", {}, "sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ=="],
+
+    "@domino/backend": ["@domino/backend@workspace:packages/backend"],
+
+    "@domino/frontend": ["@domino/frontend@workspace:packages/frontend"],
+
+    "@domino/shared": ["@domino/shared@workspace:packages/shared"],
 
     "@elysia/eden": ["@elysia/eden@1.4.10", "", { "peerDependencies": { "elysia": ">=1.4.19" } }, "sha512-vcZXQcW6wZj6rhTxaiTkuCbVuS/yAJQ9jqCM6b83a5hu99F5Aj3HOyWXL17iod2Rz+pJpYsQGX0XaeoCsMpw2g=="],
 
