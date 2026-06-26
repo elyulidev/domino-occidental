@@ -5,7 +5,10 @@ import type {
   SanitizedMatchState,
   WsClientMessage,
 } from "../game/handler";
-import { handleMessage as defaultHandleMessage } from "../game/handler";
+import {
+  handleMessage as defaultHandleMessage,
+  sanitizeState,
+} from "../game/handler";
 import type { GameEvent, MatchState } from "../game/types";
 import type { SendFn, WsServerMessage } from "./broadcaster";
 import { broadcastEvents as defaultBroadcastEvents } from "./broadcaster";
@@ -183,6 +186,16 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
 
             manager.register(matchId, playerId, ws);
 
+            // Send initial state on every join (first join or reconnect)
+            const match = deps.store.getGame(matchId);
+            if (match) {
+              sendFn(playerId, {
+                type: "game_events",
+                events: [],
+                state: sanitizeState(match),
+              });
+            }
+
             // Attempt reconnect if player was previously disconnected
             if (reconnectPlayerFn) {
               const match = deps.store.getGame(matchId);
@@ -200,6 +213,16 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             // No auth configured — use playerId from upstream (dev/testing)
             const playerId = ws.data.playerId as string;
             manager.register(matchId, playerId, ws);
+
+            // Send initial state on every join (first join or reconnect)
+            const match = deps.store.getGame(matchId);
+            if (match) {
+              sendFn(playerId, {
+                type: "game_events",
+                events: [],
+                state: sanitizeState(match),
+              });
+            }
 
             if (reconnectPlayerFn) {
               const match = deps.store.getGame(matchId);

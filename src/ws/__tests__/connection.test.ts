@@ -358,6 +358,79 @@ describe("wsPlugin open handler", () => {
     expect(plugin.manager.getConnection("p1")).toBe(ws);
     expect(mockReconnectPlayer).toHaveBeenCalledTimes(1);
   });
+
+  it("sends sendState on first join when reconnectPlayer returns 0 events", () => {
+    const match = makeMatch();
+    const mockReconnectPlayer = vi.fn(() => ({
+      match,
+      events: [],
+    }));
+    const mockBroadcastEvents = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: mockReconnectPlayer,
+      broadcastEvents: mockBroadcastEvents,
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    // sendState should be called: first join delivers full state
+    expect(ws.send).toHaveBeenCalled();
+    const sent = JSON.parse(ws.send.mock.calls[0][0]);
+    expect(sent.type).toBe("game_events");
+    expect(sent.state).toBeDefined();
+    expect(sent.state.matchId).toBe(match.matchId);
+  });
+
+  it("sends sendState on reconnect as well", () => {
+    const match = makeMatch();
+    const mockReconnectPlayer = vi.fn(() => ({
+      match,
+      events: [{ type: "player_reconnected", playerId: "p1" }],
+    }));
+    const mockBroadcastEvents = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: mockReconnectPlayer,
+      broadcastEvents: mockBroadcastEvents,
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    // sendState should be called even on reconnect
+    expect(ws.send).toHaveBeenCalled();
+    const sent = JSON.parse(ws.send.mock.calls[0][0]);
+    expect(sent.type).toBe("game_events");
+    expect(sent.state).toBeDefined();
+  });
+
+  it("does NOT send sendState when match is not found", () => {
+    const mockReconnectPlayer = vi.fn(() => ({
+      match: makeMatch(),
+      events: [],
+    }));
+
+    const plugin = createWsPlugin({
+      store: makeStore(null), // match not found
+      disconnectPlayer: vi.fn(() => ({ match: makeMatch(), events: [] })),
+      reconnectPlayer: mockReconnectPlayer,
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    // sendState should NOT be called when match is null
+    expect(ws.send).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
