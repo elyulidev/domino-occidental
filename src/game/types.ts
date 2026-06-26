@@ -224,6 +224,34 @@ export interface ActionResult {
  * Events are emitted in deterministic order:
  * action → hand_ended → hand_scored → match_ended
  */
+// ---------------------------------------------------------------------------
+// Module 13: Matchmaking types
+// ---------------------------------------------------------------------------
+
+/**
+ * Configuration for ELO calculation.
+ */
+export interface EloConfig {
+  /** K-factor (32, 48, or 16) */
+  kFactor: number;
+  /** Whether this is a tournament match */
+  isTournament: boolean;
+}
+
+/**
+ * Result of applying ELO changes to two players.
+ */
+export interface EloResult {
+  /** ELO delta for player 1 */
+  player1Delta: number;
+  /** ELO delta for player 2 */
+  player2Delta: number;
+  /** New ELO for player 1 */
+  player1NewElo: number;
+  /** New ELO for player 2 */
+  player2NewElo: number;
+}
+
 export type GameEvent =
   | { type: "round_started"; firstPlayer: number }
   | {
@@ -254,6 +282,14 @@ export type GameEvent =
     }
   | { type: "player_disconnected"; playerId: string; reconnectWindowMs: number }
   | { type: "player_reconnected"; playerId: string }
-  | { type: "reconnection_window_expiring"; playerId: string; secondsLeft: number }
-  | { type: "match_abandoned"; disconnectedPlayerId: string; reason: "abandonment" | "forfeit" }
+  | {
+      type: "reconnection_window_expiring";
+      playerId: string;
+      secondsLeft: number;
+    }
+  | {
+      type: "match_abandoned";
+      disconnectedPlayerId: string;
+      reason: "abandonment" | "forfeit";
+    }
   | { type: "game_error"; code: string; message: string };
