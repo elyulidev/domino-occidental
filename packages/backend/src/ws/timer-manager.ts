@@ -1,7 +1,11 @@
-import type { GameStore } from "../game/handler";
-import type { ActionResult, GameEvent, MatchState } from "../game/types";
-import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS } from "../game/types";
-import type { SendFn } from "./broadcaster";
+import type {
+  ActionResult,
+  GameEvent,
+  GameStore,
+  MatchState,
+  SendFn,
+} from "@domino/shared";
+import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Types

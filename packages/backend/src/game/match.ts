@@ -1,3 +1,10 @@
+import type {
+  ActionResult,
+  GameEvent,
+  MatchState,
+  Side,
+  Tile,
+} from "@domino/shared";
 import { canPlay, createBoard, isBlocked, place } from "./board";
 import {
   createPlayer,
@@ -26,7 +33,6 @@ import {
   resetNullRounds,
   setCurrentTurn,
 } from "./turn";
-import type { ActionResult, GameEvent, MatchState, Side, Tile } from "./types";
 
 /**
  * Initializes a new match state from pre-dealt hands and pool.

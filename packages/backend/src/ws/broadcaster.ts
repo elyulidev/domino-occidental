@@ -1,29 +1,9 @@
-import type { SanitizedMatchState } from "../game/handler";
-import type { GameEvent } from "../game/types";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-/**
- * Synchronous send function that delivers a WsServerMessage to a specific player.
- *
- * Higher layers may wrap async WebSocket writes; the broadcaster treats this
- * as synchronous. Errors are caught per-recipient to protect remaining deliveries.
- */
-export type SendFn = (playerId: string, event: WsServerMessage) => void;
-
-/**
- * Server→client envelope for game events.
- *
- * Discriminated union root — `'game_events'` is the initial variant.
- * Future variants (e.g. `'presence_update'`) can extend this union.
- */
-export type WsServerMessage = {
-  type: "game_events";
-  events: GameEvent[];
-  state?: SanitizedMatchState;
-};
+import type {
+  GameEvent,
+  SanitizedMatchState,
+  SendFn,
+  WsServerMessage,
+} from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // broadcastEvents

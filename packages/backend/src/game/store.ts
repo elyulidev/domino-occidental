@@ -1,4 +1,4 @@
-import type { MatchState } from "./types";
+import type { MatchState } from "@domino/shared";
 
 const store = new Map<string, MatchState>();
 

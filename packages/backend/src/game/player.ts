@@ -1,4 +1,4 @@
-import type { PlayerState, Tile } from "./types";
+import type { PlayerState, Tile } from "@domino/shared";
 
 /**
  * Creates a new player with default state.

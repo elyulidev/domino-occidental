@@ -7,21 +7,7 @@
  * @see AGENTS.md §8 for WebSocket message types
  */
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-export interface UserWsConnection {
-  send(data: string): void;
-  close(code?: number, reason?: string): void;
-}
-
-export interface UserChannelManager {
-  register(userId: string, ws: UserWsConnection): void;
-  disconnect(userId: string): void;
-  getChannel(userId: string): UserWsConnection | undefined;
-  pushToUser(userId: string, event: Record<string, unknown>): boolean;
-}
+import type { UserChannelManager, UserWsConnection } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Factory

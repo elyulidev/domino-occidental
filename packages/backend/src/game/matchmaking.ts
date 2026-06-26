@@ -8,9 +8,8 @@
  * @see AGENTS.md §6 for matchmaking rules
  */
 
-import type { UserChannelManager } from "../ws/user-channel";
+import type { GameStore, UserChannelManager } from "@domino/shared";
 import { createDeck, deal, shuffle } from "./deck";
-import type { GameStore } from "./handler";
 import { initializeMatch, startHand } from "./match";
 import { createGame } from "./store";
 
