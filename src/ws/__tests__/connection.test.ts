@@ -552,3 +552,126 @@ describe("full message routing", () => {
     expect(ws2.send).toHaveBeenCalledWith(JSON.stringify(event));
   });
 });
+
+// ---------------------------------------------------------------------------
+// wsPlugin — timerManager integration
+// ---------------------------------------------------------------------------
+
+describe("wsPlugin timerManager integration", () => {
+  it("open hook calls cancelDisconnect when timerManager provided (no auth)", () => {
+    const match = makeMatch();
+    const mockCancelDisconnect = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      timerManager: {
+        cancelDisconnect: mockCancelDisconnect,
+        registerDisconnect: vi.fn(),
+        startMatch: vi.fn(),
+        stopMatch: vi.fn(),
+        stop: vi.fn(),
+        getDisconnectRecord: vi.fn(() => null),
+      },
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    expect(mockCancelDisconnect).toHaveBeenCalledWith("match-1", "p1");
+  });
+
+  it("open hook calls cancelDisconnect when timerManager provided (with auth)", () => {
+    const match = makeMatch();
+    const mockCancelDisconnect = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      verifyToken: vi.fn(() => ({ userId: "verified-p1" })),
+      timerManager: {
+        cancelDisconnect: mockCancelDisconnect,
+        registerDisconnect: vi.fn(),
+        startMatch: vi.fn(),
+        stopMatch: vi.fn(),
+        stop: vi.fn(),
+        getDisconnectRecord: vi.fn(() => null),
+      },
+    });
+
+    const ws = {
+      send: vi.fn(),
+      subscribe: vi.fn(),
+      publish: vi.fn(),
+      data: {
+        matchId: "match-1",
+        query: { token: "valid-token" },
+      },
+      close: vi.fn(),
+      remoteAddress: "127.0.0.1",
+    };
+
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    expect(mockCancelDisconnect).toHaveBeenCalledWith("match-1", "verified-p1");
+  });
+
+  it("close hook calls registerDisconnect when timerManager provided", () => {
+    const match = makeMatch();
+    const mockRegisterDisconnect = vi.fn();
+
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      timerManager: {
+        cancelDisconnect: vi.fn(),
+        registerDisconnect: mockRegisterDisconnect,
+        startMatch: vi.fn(),
+        stopMatch: vi.fn(),
+        stop: vi.fn(),
+        getDisconnectRecord: vi.fn(() => null),
+      },
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    plugin.manager.register(
+      "match-1",
+      "p1",
+      ws as unknown as Parameters<ConnectionManager["register"]>[2],
+    );
+
+    const handlers = getHandler(plugin, "close");
+    handlers.close({ data: ws.data });
+
+    expect(mockRegisterDisconnect).toHaveBeenCalledTimes(1);
+    expect(mockRegisterDisconnect).toHaveBeenCalledWith(
+      "match-1",
+      "p1",
+      expect.any(Date),
+    );
+  });
+
+  it("works without timerManager (optional dep)", () => {
+    const match = makeMatch();
+    const plugin = createWsPlugin({
+      store: makeStore(match),
+      disconnectPlayer: vi.fn(() => ({ match, events: [] })),
+      reconnectPlayer: vi.fn(() => ({ match, events: [] })),
+    });
+
+    const ws = createMockWs("p1", "match-1");
+    const handlers = getHandler(plugin, "open");
+    handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+
+    const handlersClose = getHandler(plugin, "close");
+    handlersClose.close({ data: ws.data });
+
+    // No errors thrown — optional dep is silently ignored
+    expect(plugin.manager.getConnection("p1")).toBeUndefined();
+  });
+});
