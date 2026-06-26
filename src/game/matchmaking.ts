@@ -1,11 +1,18 @@
 /**
- * Matchmaking queue and matching algorithm.
+ * Matchmaking queue, matching algorithm, and match processing.
  *
  * Stateful queue (Map) for managing players waiting for a match.
  * Matching uses sliding ELO windows based on wait time.
+ * processMatchmaking() bridges queue → game creation → player notification.
  *
  * @see AGENTS.md §6 for matchmaking rules
  */
+
+import type { UserChannelManager } from "../ws/user-channel";
+import { createDeck, deal, shuffle } from "./deck";
+import type { GameStore } from "./handler";
+import { initializeMatch, startHand } from "./match";
+import { createGame } from "./store";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,12 +31,25 @@ export interface MatchGroup {
   waitTimeMs: number;
 }
 
+/** Result of a successful processMatchmaking call. */
+export interface MatchCreated {
+  matchId: string;
+  playerIds: string[];
+}
+
+export interface ProcessMatchmakingDeps {
+  queue: ReturnType<typeof createMatchmakingQueue>;
+  store: GameStore;
+  userChannelManager: UserChannelManager;
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const QUEUE_CLEANUP_THRESHOLD_MS = 60_000;
 const PLAYER_COUNT = 4;
+const CLEANUP_INTERVAL_MS = 30_000;
 
 /** Sliding window definitions for ELO matching. */
 interface EloWindow {
@@ -147,6 +167,82 @@ export function createMatchmakingQueue() {
     getQueue,
     cleanupStale,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Match processing (bridge between queue, game engine, and WS notification)
+// ---------------------------------------------------------------------------
+
+/**
+ * Processes the matchmaking queue: finds a match, creates the game,
+ * and notifies players via their user channel.
+ *
+ * @returns The created match info, or null if no match was found.
+ */
+export function processMatchmaking(
+  deps: ProcessMatchmakingDeps,
+): MatchCreated | null {
+  const group = deps.queue.findMatch();
+  if (!group) return null;
+
+  // Deal tiles for the match
+  const deck = shuffle(createDeck());
+  const { hands, pool } = deal(deck);
+
+  // Create match ID
+  const matchId = `match-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // Initialize match state
+  const { match } = initializeMatch(matchId, hands, pool);
+  const { match: startedMatch } = startHand(match);
+
+  // Override player IDs with actual UUIDs (keep positional order)
+  const updatedPlayers = startedMatch.players.map((p, i) => ({
+    ...p,
+    id: group.playerIds[i],
+  })) as typeof startedMatch.players;
+  startedMatch.players = updatedPlayers;
+
+  // Status starts as "waiting" until all 4 players WS-connect
+  startedMatch.status = "waiting";
+
+  // Store the match
+  createGame(matchId, startedMatch);
+
+  // Remove matched players from queue
+  for (const playerId of group.playerIds) {
+    deps.queue.dequeue(playerId);
+  }
+
+  // Push match_found event to each player's user channel
+  const matchFoundPayload = {
+    type: "match_found",
+    matchId,
+    playerIds: group.playerIds,
+    timestamp: new Date().toISOString(),
+  };
+  for (const playerId of group.playerIds) {
+    deps.userChannelManager.pushToUser(playerId, matchFoundPayload);
+  }
+
+  return { matchId, playerIds: group.playerIds };
+}
+
+// ---------------------------------------------------------------------------
+// Auto-cleanup scheduler
+// ---------------------------------------------------------------------------
+
+/**
+ * Starts a periodic queue cleanup interval.
+ * Returns a function to cancel the interval (for cleanup on shutdown).
+ */
+export function startCleanupScheduler(
+  queue: ReturnType<typeof createMatchmakingQueue>,
+): () => void {
+  const id = setInterval(() => {
+    queue.cleanupStale();
+  }, CLEANUP_INTERVAL_MS);
+  return () => clearInterval(id);
 }
 
 // ---------------------------------------------------------------------------
