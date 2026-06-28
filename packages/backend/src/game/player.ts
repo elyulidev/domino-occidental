@@ -122,3 +122,20 @@ export function resetPasses(player: PlayerState): PlayerState {
 export function sumHand(hand: Tile[]): number {
   return hand.reduce((sum, tile) => sum + tile.top + tile.bottom, 0);
 }
+
+/**
+ * Checks whether every non-empty-handed player has passed consecutively.
+ *
+ * Used in `passTurn` and `checkTimeout` to detect a blocked hand even when
+ * `isBlocked()` returns false (e.g. empty board where every tile is playable).
+ *
+ * @param players - The four player states
+ * @returns true if all non-empty-handed players have consecutivePasses >= 1
+ */
+export function allPlayersPassed(players: readonly PlayerState[]): boolean {
+  for (const player of players) {
+    if (player.hand.length === 0) continue;
+    if (player.consecutivePasses === 0) return false;
+  }
+  return true;
+}

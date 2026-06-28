@@ -7,6 +7,7 @@ import type {
 } from "@domino/shared";
 import { canPlay, createBoard, isBlocked, place } from "./board";
 import {
+  allPlayersPassed,
   createPlayer,
   hasTile,
   incrementPasses,
@@ -339,8 +340,8 @@ export function passTurn(match: MatchState, playerId: string): ActionResult {
 
   const events: GameEvent[] = [{ type: "player_passed", playerId }];
 
-  // Check if board is now blocked
-  if (isBlocked(match.board, newPlayers)) {
+  // Check if board is now blocked or all players passed consecutively
+  if (isBlocked(match.board, newPlayers) || allPlayersPassed(newPlayers)) {
     const handEndResult = handleHandEnd(newMatch, playerIndex, "blocked");
     return {
       match: handEndResult.match,
@@ -392,8 +393,8 @@ export function checkTimeout(match: MatchState, now: number): ActionResult {
     { type: "turn_timeout", playerId: player.id, forcedPass: true },
   ];
 
-  // Check if board is now blocked
-  if (isBlocked(match.board, newPlayers)) {
+  // Check if board is now blocked or all players passed consecutively
+  if (isBlocked(match.board, newPlayers) || allPlayersPassed(newPlayers)) {
     const handEndResult = handleHandEnd(newMatch, playerIndex, "blocked");
     return {
       match: handEndResult.match,

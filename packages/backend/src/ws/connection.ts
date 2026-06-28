@@ -84,14 +84,11 @@ export interface WsPluginDeps {
 /** Return type for createWsPlugin — exposes manager for testing. */
 export interface WsPlugin {
   manager: ConnectionManager;
-  ws: Record<
-    string,
-    {
-      open: (ws: ElysiaWS) => void;
-      message: (ws: ElysiaWS, rawData: string | Buffer) => void;
-      close: (ws: ElysiaWS) => void;
-    }
-  >;
+  ws: {
+    open: (ws: ElysiaWS) => void;
+    message: (ws: ElysiaWS, rawData: string | Buffer) => void;
+    close: (ws: ElysiaWS) => void;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -171,9 +168,9 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
   return {
     manager,
     ws: {
-      "/ws/game/:matchId": {
         open(ws: ElysiaWS) {
-          const matchId = ws.data.matchId as string;
+          const matchId = ws.data.params.matchId as string;
+          (ws.data as Record<string, unknown>).matchId = matchId;
 
           // --- JWT Authentication ---
           if (deps.verifyToken) {
@@ -239,7 +236,8 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             }
           } else {
             // No auth configured — use playerId from upstream (dev/testing)
-            const playerId = ws.data.playerId as string;
+            const playerId = ws.data.params.playerId as string;
+            (ws.data as Record<string, unknown>).playerId = playerId;
             manager.register(matchId, playerId, ws);
 
             // Send initial state on every join (first join or reconnect)
@@ -283,7 +281,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
           }
         },
 
-        message(ws: ElysiaWS, rawData: string | Buffer) {
+        message(ws: ElysiaWS, rawData: string | Buffer | Record<string, unknown>) {
           const matchId = ws.data.matchId as string;
           const playerId = ws.data.playerId as string;
 
@@ -302,29 +300,33 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             return;
           }
 
+          // Elysia 1.x auto-parses JSON WS messages — rawData may be already parsed or raw string
           let parsed: WsClientMessage;
-          try {
-            parsed = JSON.parse(
-              typeof rawData === "string" ? rawData : rawData.toString(),
-            );
-          } catch {
-            // JSON parse error — send game_error back to sender
-            sendFn(playerId, {
-              type: "game_events",
-              events: [
-                {
-                  type: "game_error",
-                  code: "INVALID_MESSAGE",
-                  message: "Invalid JSON",
-                },
-              ],
-            });
-            return;
+          if (typeof rawData === "object" && !Buffer.isBuffer(rawData)) {
+            parsed = rawData as unknown as WsClientMessage;
+          } else {
+            try {
+              parsed = JSON.parse(
+                typeof rawData === "string" ? rawData : (rawData as Buffer).toString(),
+              );
+            } catch {
+              sendFn(playerId, {
+                type: "game_events",
+                events: [
+                  {
+                    type: "game_error",
+                    code: "INVALID_MESSAGE",
+                    message: "Invalid JSON",
+                  },
+                ],
+              });
+              return;
+            }
           }
 
           const result = handleMessage(deps.store, matchId, playerId, parsed);
 
-          // Broadcast events to all recipients with dynamic playerIds
+          // Broadcast events to ALL recipients with sanitized state included
           if (result.events.length > 0) {
             const match = deps.store.getGame(matchId);
             const playerIds = match?.players.map((p) => p.id);
@@ -334,11 +336,11 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
               playerId,
               sendFn,
               playerIds,
+              result.sanitizedState,
             );
           }
-
-          // Send sanitized state to acting player if present
-          if (result.sanitizedState) {
+          // If no events but there is state (e.g. initial join), send state directly
+          if (result.events.length === 0 && result.sanitizedState) {
             sendFn(playerId, {
               type: "game_events",
               events: [],
@@ -373,7 +375,6 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
           // Schedule abandonment timer on disconnect
           deps.timerManager?.registerDisconnect(matchId, playerId, new Date());
         },
-      },
     },
   };
 }
