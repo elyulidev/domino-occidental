@@ -2,7 +2,6 @@ import type {
   GameEvent,
   GameStore,
   MatchState,
-  MessageResult,
   SanitizedMatchState,
   SendFn,
   WsClientMessage,
@@ -198,10 +197,12 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             // Send initial state on every join (first join or reconnect)
             const match = deps.store.getGame(matchId);
             if (match) {
+              const player = match.players.find((p) => p.id === playerId);
               sendFn(playerId, {
                 type: "game_events",
                 events: [],
                 state: sanitizeState(match),
+                yourHand: player?.hand,
               });
             }
 
@@ -243,10 +244,12 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             // Send initial state on every join (first join or reconnect)
             const match = deps.store.getGame(matchId);
             if (match) {
+              const player = match.players.find((p) => p.id === playerId);
               sendFn(playerId, {
                 type: "game_events",
                 events: [],
                 state: sanitizeState(match),
+                yourHand: player?.hand,
               });
             }
 
@@ -279,6 +282,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
               }
             }
           }
+
         },
 
         message(ws: ElysiaWS, rawData: string | Buffer | Record<string, unknown>) {
@@ -338,6 +342,18 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
               playerIds,
               result.sanitizedState,
             );
+
+            // After a hand redeal: each player needs their new hand
+            if (match && result.events.some((e) => e.type === "round_started")) {
+              for (const p of match.players) {
+                sendFn(p.id, {
+                  type: "game_events",
+                  events: [],
+                  state: sanitizeState(match),
+                  yourHand: p.hand,
+                });
+              }
+            }
           }
           // If no events but there is state (e.g. initial join), send state directly
           if (result.events.length === 0 && result.sanitizedState) {

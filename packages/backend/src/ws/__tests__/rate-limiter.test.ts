@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import type { ElysiaWS } from "elysia/ws";
-import type { GameStore } from "../../game/handler";
 import type { WsPlugin } from "../connection";
 import { createWsPlugin } from "../connection";
 import type { RateLimiter } from "../rate-limiter";
 import { createRateLimiter } from "../rate-limiter";
+import { GameStore } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // RateLimiter unit tests
@@ -151,14 +151,15 @@ function makeStore(
 function createMockWs(playerId = "p1", matchId = "match-1") {
   return {
     send: () => {},
-    data: { playerId, matchId },
+    data: { params: { matchId, playerId }, playerId, matchId },
   } as unknown as ElysiaWS;
 }
 
 function getHandler(plugin: WsPlugin) {
-  return (plugin as unknown as Record<string, unknown>).ws[
-    "/ws/game/:matchId"
-  ] as Record<string, (...args: unknown[]) => void>;
+  return plugin.ws as unknown as Record<
+    string,
+    (...args: unknown[]) => void
+  >;
 }
 
 // ---------------------------------------------------------------------------

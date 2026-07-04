@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import crypto from "node:crypto";
 import type { ElysiaWS } from "elysia/ws";
-import type { GameStore } from "../../game/handler";
 import { verifyToken } from "../auth";
 import type { WsPlugin } from "../connection";
 import { createWsPlugin } from "../connection";
+import { GameStore } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -31,6 +31,7 @@ function createTestJwt(
 
 function createMockWs(overrides?: Partial<Record<string, unknown>>) {
   const data: Record<string, unknown> = {
+    params: { matchId: "match-1" },
     playerId: "p1",
     matchId: "match-1",
     ...overrides,
@@ -107,9 +108,10 @@ function makeStore(
 // ---------------------------------------------------------------------------
 
 function getHandler(plugin: WsPlugin) {
-  return (plugin as unknown as Record<string, unknown>).ws[
-    "/ws/game/:matchId"
-  ] as Record<string, (...args: unknown[]) => void>;
+  return plugin.ws as unknown as Record<
+    string,
+    (...args: unknown[]) => void
+  >;
 }
 
 // ---------------------------------------------------------------------------

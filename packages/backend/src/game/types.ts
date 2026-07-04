@@ -62,6 +62,10 @@ export interface PlacedTile {
   side: Side;
   /** Player who placed the tile */
   playerId: string;
+  /** Slot index: center=0, right→1..N, left→-1..-N */
+  slotIndex: number;
+  /** True when tile.top connects to the board end (renderer swaps top/bottom) */
+  flipped: boolean;
 }
 
 /**

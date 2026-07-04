@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-domino-950: #0a0a0f;
-  --color-domino-900: #12121a;
-  --color-domino-800: #1a1a2e;
-  --color-domino-700: #25253d;
-  --color-domino-600: #32325a;
-  --color-domino-500: #4a4a7a;
-  --color-domino-400: #6c6ca0;
-  --color-domino-300: #9898c0;
-  --color-domino-200: #c0c0da;
-  --color-domino-100: #e0e0ee;
-  --color-domino-50: #f0f0f8;
+  --color-domino-950: var(--c-domino-950);
+  --color-domino-900: var(--c-domino-900);
+  --color-domino-800: var(--c-domino-800);
+  --color-domino-700: var(--c-domino-700);
+  --color-domino-600: var(--c-domino-600);
+  --color-domino-500: var(--c-domino-500);
+  --color-domino-400: var(--c-domino-400);
+  --color-domino-300: var(--c-domino-300);
+  --color-domino-200: var(--c-domino-200);
+  --color-domino-100: var(--c-domino-100);
+  --color-domino-50: var(--c-domino-50);
 
   --color-gold-500: #d4a843;
   --color-gold-400: #e0b85a;
@@ -22,24 +22,42 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Light mode (default on :root) */
+/* ─── Light mode (default) ─── */
 :root {
-  --color-bg: #f8f8fc;
-  --color-text: #1a1a2e;
-  --color-card: #ffffff;
-  --color-card-border: #e2e2f0;
+  --c-domino-950: #f5f5fa;
+  --c-domino-900: #ffffff;
+  --c-domino-800: #e8e8f0;
+  --c-domino-700: #d5d5e0;
+  --c-domino-600: #b8b8cc;
+  --c-domino-500: #9a9ab8;
+  --c-domino-400: #7a7aa0;
+  --c-domino-300: #5a5a88;
+  --c-domino-200: #3a3a6a;
+  --c-domino-100: #1e1e48;
+  --c-domino-50: #12123a;
 }
 
-/* Dark mode overrides */
+/* ─── Dark mode ─── */
 .dark {
-  --color-bg: #0a0a0f;
-  --color-text: #e0e0ee;
-  --color-card: #12121a;
-  --color-card-border: #1a1a2e;
+  --c-domino-950: #0a0a0f;
+  --c-domino-900: #12121a;
+  --c-domino-800: #1a1a2e;
+  --c-domino-700: #25253d;
+  --c-domino-600: #32325a;
+  --c-domino-500: #4a4a7a;
+  --c-domino-400: #6c6ca0;
+  --c-domino-300: #9898c0;
+  --c-domino-200: #c0c0da;
+  --c-domino-100: #e0e0ee;
+  --c-domino-50: #f0f0f8;
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-text);
   font-family: var(--font-sans);
+}
+
+/* ─── Animations ─── */
+@keyframes shrink {
+  from { width: 100%; }
+  to   { width: 0%; }
 }

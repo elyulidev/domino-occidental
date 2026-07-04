@@ -1,5 +1,5 @@
 import type { SanitizedMatchState } from "./handler";
-import type { GameEvent } from "./types";
+import type { GameEvent, Tile } from "./types";
 
 /**
  * Synchronous send function that delivers a WsServerMessage to a specific player.
@@ -13,6 +13,8 @@ export type WsServerMessage = {
   type: "game_events";
   events: GameEvent[];
   state?: SanitizedMatchState;
+  /** Player's own hand tiles — populated only for the connecting player's first message */
+  yourHand?: Tile[];
 };
 
 /**

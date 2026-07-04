@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Grid — Dominó Occidental</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  h1 { font-size: 18px; color: #f0c040; }
+  .subtitle { font-size: 13px; color: #888; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    align-items: center; background: #16213e;
+    padding: 12px 16px; border-radius: 10px; border: 1px solid #2a2a4a;
+  }
+  .controls label { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 4px; }
+  .controls input, .controls select {
+    background: #0f3460; border: 1px solid #2a4a7a; color: #e0e0e0;
+    padding: 4px 6px; border-radius: 5px; font-size: 12px; width: 44px;
+  }
+  .controls select { width: auto; }
+  .controls button {
+    background: #f0c040; color: #1a1a2e; border: none; padding: 6px 14px;
+    border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px;
+  }
+  .controls button:hover { background: #ffd866; }
+  .controls button.sec { background: #2a2a4a; color: #e0e0e0; }
+  .controls button.dng { background: #c0392b; color: white; }
+  .info { font-size: 12px; color: #888; }
+  .stat { background: #16213e; padding: 8px 16px; border-radius: 8px; font-size: 12px; color: #aaa; border: 1px solid #2a2a4a; font-family: monospace; white-space: pre; line-height: 1.5; }
+
+  .board-wrap {
+    background: #0f3460; border-radius: 10px; border: 1px solid #2a4a7a; padding: 20px;
+    overflow-x: auto; max-width: 100%;
+  }
+  .board { position: relative; margin: 0 auto; }
+
+  /* ── GRID CELLS ── */
+  .grid-cell {
+    position: absolute; width: 48px; height: 48px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    z-index: 1;
+  }
+  .grid-cell.odd { background: rgba(255,255,255,0.035); }
+  .grid-cell.used { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }
+
+  .row-label {
+    position: absolute; font-size: 10px; color: #555;
+    top: -18px; text-align: center; width: 100%; pointer-events: none;
+  }
+
+  /* ── TILE RENDERING ── */
+  .tile {
+    position: absolute; z-index: 2; cursor: pointer;
+    transition: all 0.15s ease; border-radius: 4px;
+    display: flex; align-items: stretch;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    border: 2px solid rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  .tile:hover { filter: brightness(1.2); z-index: 10; }
+  .tile.first { border-color: #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
+  .tile.first::after {
+    content: "★"; position: absolute; top: -8px; left: -8px;
+    font-size: 10px; color: #00ff88; text-shadow: 0 0 4px currentColor;
+  }
+  .tile .half {
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  .tile .pip { width: 8px; height: 8px; border-radius: 50%; background: #3d2b1f; margin: 1px; }
+  .tile .sep-v { width: 2px; background: rgba(0,0,0,0.2); }
+  .tile .sep-h { height: 2px; background: rgba(0,0,0,0.2); }
+
+  /* Colors */
+  .tile.normal { background: linear-gradient(135deg, #f5deb3, #e0cfa0); }
+  .tile.double { background: linear-gradient(135deg, #f0c040, #d4a830); border-color: #b8860b; }
+  .tile.normal .half { color: #3d2b1f; }
+  .tile.double .half { color: #3d2b1f; }
+
+  .arrow { position: absolute; z-index: 0; font-size: 14px; color: rgba(255,255,255,0.08); pointer-events: none; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: #888; flex-wrap: wrap; justify-content: center; }
+  .leg { display: flex; align-items: center; gap: 4px; }
+  .swatch { display: inline-block; width: 16px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.3); }
+
+  .tip {
+    position: absolute; z-index: 100; background: #0f3460; color: #e0e0e0;
+    padding: 6px 10px; border-radius: 6px; font-size: 11px; border: 1px solid #2a4a7a;
+    pointer-events: none; white-space: nowrap;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎲 Simulador — Grid 16×8</h1>
+<p class="subtitle">1 celda = media ficha (48px). Fichas ocupan 2 celdas horizontales.</p>
+
+<div class="controls">
+  <label>Lado:
+    <select id="side">
+      <option value="right">Derecha</option>
+      <option value="left">Izquierda</option>
+    </select>
+  </label>
+  <label>H: <input type="number" id="valH" value="6" min="0" max="9"></label>
+  <label>T: <input type="number" id="valT" value="4" min="0" max="9"></label>
+  <label><input type="checkbox" id="isD"> Doble (perpendicular)</label>
+  <button id="addBtn">➕ Poner</button>
+  <button id="popBtn" class="sec">✖ Quitar</button>
+  <button id="clrBtn" class="dng">🗑 Reiniciar</button>
+  <span class="info" id="cntInfo">0 fichas</span>
+</div>
+
+<div class="stat" id="statInfo">Sin fichas todavía</div>
+
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="legend">
+  <span class="leg"><span class="swatch" style="background:#f5deb3;"></span> Normal</span>
+  <span class="leg"><span class="swatch" style="background:#f0c040;"></span> Doble</span>
+  <span class="leg"><span class="swatch" style="background:transparent;border:2px solid #00ff88;"></span> Apertura</span>
+  <span class="leg">★ Apertura | → Dirección fila</span>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const CELL = 48;      // 1 cell = half tile = 48×48
+const ROW_GAP = 96;   // center-to-center distance between rows
+const COLS = 16;      // cells per row
+const ROWS = 8;       // max rows needed
+const SLOTS = 109;    // total snake slots
+const TPR = 8;        // tiles per row
+const OPENING = 54;   // opening slot index in the path
+
+// ─── Snake path: each entry = 1 TILE (spans 2 cells) ─────────────────────────
+function buildPath() {
+  const p = [];
+  let col = 0, row = 0, dir = 'R';
+  for (let s = 0; s < SLOTS; s++) {
+    const isCorner = (dir === 'R' && col === COLS-2) || (dir === 'L' && col === 0);
+    p.push({
+      slot: s, row, cellLeft: col, cellRight: col+1, dir,
+      isCorner,
+      cornerWall: (dir === 'R' && col === COLS-2) ? 'R' : (dir === 'L' && col === 0) ? 'L' : null,
+    });
+    if (isCorner) { row++; dir = dir === 'R' ? 'L' : 'R'; }
+    else { col += dir === 'R' ? 2 : -2; }
+  }
+  return p;
+}
+const PATH = buildPath();
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let tiles = [];  // { side, slotIdx, head, tail, isDbl, isFirst, id }
+
+function slotToPath(slotIdx) {
+  const i = OPENING + slotIdx;
+  if (i < 0 || i >= SLOTS) return null;
+  return PATH[i];
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  document.getElementById('cntInfo').textContent = tiles.length + ' fichas';
+
+  if (tiles.length === 0) {
+    board.style.width = (COLS * CELL) + 'px';
+    board.style.height = '120px';
+    document.getElementById('statInfo').textContent = 'Sin fichas — poné la primera (apertura, slot 0)';
+    return;
+  }
+
+  // Determine visible rows
+  let maxR = 0;
+  tiles.forEach(t => { const ps = slotToPath(t.slotIdx); if (ps && ps.row > maxR) maxR = ps.row; });
+  const rows = Math.max(maxR + 1, 1);
+
+  // Grid cells
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const el = document.createElement('div');
+      el.className = 'grid-cell' + (c % 2 === 1 ? ' odd' : '') + (c % 2 === 0 ? ' used' : '');
+      
+      // Check if this specific cell is used by a tile
+      let used = false;
+      for (const t of tiles) {
+        const ps = slotToPath(t.slotIdx);
+        if (ps && ps.row === r && (c === ps.cellLeft || c === ps.cellRight)) { used = true; break; }
+        // Corner tail at cellRight on next row
+        if (ps && ps.isCorner && c === ps.cellRight && r === ps.row + 1 && !t.isDbl) { used = true; break; }
+        // Perpendicular double at cellRight on current and next row
+        if (ps && ps.isCorner && t.isDbl && c === ps.cellLeft && (r === ps.row || r === ps.row + 1)) { used = true; break; }
+      }
+      if (used) { el.classList.add('used'); }
+
+      const y = r * ROW_GAP;
+      el.style.left = (c * CELL) + 'px';
+      el.style.top = y + 'px';
+      board.appendChild(el);
+    }
+    // Arrows
+    const ar = document.createElement('div');
+    ar.className = 'arrow';
+    ar.style.left = (COLS * CELL + 4) + 'px';
+    ar.style.top = (r * ROW_GAP - 8) + 'px';
+    ar.textContent = r % 2 === 0 ? '→' : '←';
+    board.appendChild(ar);
+  }
+
+  // Tiles
+  for (const t of tiles) {
+    const ps = slotToPath(t.slotIdx);
+    if (!ps) continue;
+
+    const el = document.createElement('div');
+    const isFirst = t.isFirst;
+    const isCorner = ps.isCorner;
+    const isDbl = t.isDbl;
+
+    // Determine layout
+    // RIGHT corner: head uses [cL,cR] at row, tail goes vertically at cR at row+1
+    // LEFT corner: head uses [cL,cR] at row, tail goes vertically at cL at row+1
+    // Perpendicular: 1 cell wide, 2 cells tall, centered
+    // Normal: 2 cells wide, 1 cell tall
+
+    let x, y, w, h, layout;
+
+    if (isCorner && !isDbl) {
+      // L-shape: bounding box = 2×2 cells
+      if (ps.cornerWall === 'R') {
+        // Right wall: head goes RIGHT, tail goes DOWN from right cell
+        x = ps.cellLeft * CELL;
+        y = ps.row * ROW_GAP;
+        w = CELL * 2;
+        h = CELL * 2;
+        layout = 'L-R';
+      } else {
+        // Left wall: head goes LEFT, tail goes DOWN from left cell
+        x = ps.cellLeft * CELL;
+        y = ps.row * ROW_GAP;
+        w = CELL * 2;
+        h = CELL * 2;
+        layout = 'L-L';
+      }
+    } else if (isDbl && isCorner) {
+      // Perpendicular: 1 cell wide, 2 cells tall, centered
+      x = ps.cellLeft * CELL - CELL/2;  // centered on the LEFT cell... 
+      // Actually perpendicular should be centered on the slot
+      // For right wall: center at cR (the right cell)
+      // For left wall: center at cL (the left cell)
+      if (ps.cornerWall === 'R') {
+        x = ps.cellRight * CELL - CELL/2; // center on right cell
+      } else {
+        x = ps.cellLeft * CELL - CELL/2;  // center on left cell
+      }
+      y = ps.row * ROW_GAP - CELL/2; // centered between rows
+      w = CELL;
+      h = CELL * 2;
+      layout = 'perp';
+    } else {
+      // Normal horizontal
+      x = ps.cellLeft * CELL;
+      y = ps.row * ROW_GAP - CELL/2;
+      w = CELL * 2;
+      h = CELL;
+      layout = 'H';
+    }
+
+    // Build classes and styles
+    el.className = 'tile';
+    if (isFirst) el.classList.add('first');
+    if (isDbl) el.classList.add('double'); else el.classList.add('normal');
+    el.style.cssText += `left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+
+    // Build content
+    const hVal = t.head;
+    const tVal = t.tail;
+
+    if (layout === 'H') {
+      // Horizontal: [head | tail]
+      el.innerHTML = `
+        <div class="half">${renderPips(hVal)}</div>
+        <div class="sep-v"></div>
+        <div class="half">${renderPips(tVal)}</div>
+      `;
+    } else if (layout === 'L-R') {
+      // Right-wall L: head (hVal) at top row, tail (tVal) goes down on right
+      if (isDbl) {
+        // Fallback for corner double: show as 2x2
+        el.innerHTML = `
+          <div class="half" style="position:absolute;top:0;left:0;width:100%;height:50%;">${renderPips(hVal)}</div>
+          <div class="sep-h" style="position:absolute;top:50%;left:0;width:100%;height:2px;background:rgba(0,0,0,0.2);"></div>
+          <div class="half" style="position:absolute;bottom:0;left:0;width:100%;height:50%;">${renderPips(tVal)}</div>
+        `;
+      } else {
+        // L-shape: head horizontal at top, tail vertical at right
+        el.innerHTML = `
+          <div class="half" style="position:absolute;top:0;left:0;width:100%;height:50%;border-bottom:2px solid rgba(0,0,0,0.15);">
+            ${renderPips(hVal)}
+          </div>
+          <div class="half" style="position:absolute;top:50%;left:50%;width:50%;height:50%;border-left:2px solid rgba(0,0,0,0.15);">
+            ${renderPips(tVal)}
+          </div>
+          <div class="half" style="position:absolute;top:0;right:0;width:50%;height:50%;"></div>
+        `;
+      }
+    } else if (layout === 'L-L') {
+      // Left-wall L: head (hVal) at top row (going left), tail (tVal) goes down on left
+      el.innerHTML = `
+        <div class="half" style="position:absolute;top:0;right:0;width:50%;height:50%;border-bottom:2px solid rgba(0,0,0,0.15);">
+          ${renderPips(hVal)}
+        </div>
+        <div class="half" style="position:absolute;top:0;left:0;width:50%;height:50%;"></div>
+        <div class="half" style="position:absolute;top:50%;left:0;width:50%;height:50%;border-right:2px solid rgba(0,0,0,0.15);">
+          ${renderPips(tVal)}
+        </div>
+      `;
+    } else if (layout === 'perp') {
+      // Perpendicular: [head] on top, [tail] on bottom
+      el.innerHTML = `
+        <div class="half">${renderPips(hVal)}</div>
+        <div class="sep-h"></div>
+        <div class="half">${renderPips(tVal)}</div>
+      `;
+    }
+
+    // Tooltip
+    el.title = `slot ${t.slotIdx} (path#${ps.slot}) · f${ps.row} cel[${ps.cellLeft}-${ps.cellRight}] · [${hVal}|${tVal}]${isCorner ? ' ESQUINA' : ''}${isDbl ? ' DOBLE' : ''}`;
+    board.appendChild(el);
+  }
+
+  board.style.width = (COLS * CELL) + 'px';
+  board.style.height = (rows * ROW_GAP + CELL) + 'px';
+
+  updateStat();
+}
+
+function renderPips(v) {
+  if (v === 0) return '0';
+  if (v <= 3) {
+    let s = '';
+    for (let i = 0; i < v; i++) s += '●';
+    return s;
+  }
+  return String(v);
+}
+
+function updateStat() {
+  const el = document.getElementById('statInfo');
+  if (tiles.length === 0) { el.textContent = 'Sin fichas'; return; }
+  let s = '';
+  tiles.forEach(t => {
+    const ps = slotToPath(t.slotIdx);
+    if (!ps) return;
+    s += `[${t.head}|${t.tail}]${t.isDbl ? '=' : ''} slot${t.slotIdx} f${ps.row} cel[${ps.cellLeft}-${ps.cellRight}] ${ps.isCorner ? '◤' : ''}${t.isFirst ? ' ★' : ''} `;
+  });
+  el.textContent = s;
+}
+
+// ─── Actions ───────────────────────────────────────────────────────────────────
+
+function add() {
+  const side = document.getElementById('side').value;
+  const h = parseInt(document.getElementById('valH').value);
+  const t = parseInt(document.getElementById('valT').value);
+  const isD = document.getElementById('isD').checked;
+  if (isNaN(h)||isNaN(t)||h<0||h>9||t<0||t>9) return;
+
+  let idx;
+  if (tiles.length === 0) {
+    idx = 0; // opening
+  } else {
+    const sideTiles = tiles.filter(x => x.side === side && x.slotIdx !== 0);
+    idx = side === 'right' ? sideTiles.length + 1 : -(sideTiles.length + 1);
+  }
+
+  if (tiles.some(x => x.slotIdx === idx)) { alert('Slot ocupado'); return; }
+
+  tiles.push({ side, slotIdx: idx, head: h, tail: t, isDbl: isD, isFirst: tiles.length === 0, id: Date.now() });
+  tiles.sort((a,b) => a.slotIdx - b.slotIdx);
+  render();
+}
+
+function pop() {
+  if (tiles.length === 0) return;
+  tiles.pop();
+  if (tiles.length > 0) tiles[0].isFirst = true;
+  render();
+}
+
+function clr() { tiles = []; render(); }
+
+// ─── Wire ──────────────────────────────────────────────────────────────────────
+document.getElementById('addBtn').addEventListener('click', add);
+document.getElementById('popBtn').addEventListener('click', pop);
+document.getElementById('clrBtn').addEventListener('click', clr);
+document.addEventListener('keydown', e => { if (e.key==='Enter') add(); if (e.key==='z'&&e.ctrlKey) {e.preventDefault();pop();} });
+
+// Auto double when H === T
+['valH','valT'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    const h = parseInt(document.getElementById('valH').value);
+    const t = parseInt(document.getElementById('valT').value);
+    document.getElementById('isD').checked = h === t;
+  });
+});
+
+render();
+</script>
+</body>
+</html>
