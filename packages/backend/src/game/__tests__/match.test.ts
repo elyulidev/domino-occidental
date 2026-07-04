@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createDeck, deal, shuffle } from "../deck";
+import { createDeck, deal, shuffle } from "@domino/shared/src/game";
 import {
   checkTimeout,
   handleHandEnd,
@@ -7,7 +7,7 @@ import {
   passTurn,
   playTile,
   startHand,
-} from "../match";
+} from "@domino/shared/src/game";
 import type {
   BoardState,
   PlayerState,

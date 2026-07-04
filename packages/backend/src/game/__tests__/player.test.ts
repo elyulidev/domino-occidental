@@ -9,7 +9,7 @@ import {
   setConnected,
   sumHand,
   updateLastAction,
-} from "../player";
+} from "@domino/shared/src/game";
 import type { Tile } from "../types";
 
 // ---------------------------------------------------------------------------

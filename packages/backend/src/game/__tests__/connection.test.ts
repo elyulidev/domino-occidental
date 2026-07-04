@@ -7,8 +7,7 @@ import {
   forfeitMatch,
   reconnectPlayer,
 } from "../connection";
-import { initializeMatch } from "../match";
-import { setCurrentTurn } from "../turn";
+import { initializeMatch, setCurrentTurn } from "@domino/shared/src/game";
 import type { BoardState, MatchState, Tile } from "../types";
 import {
   ABANDONMENT_THRESHOLD_MS,

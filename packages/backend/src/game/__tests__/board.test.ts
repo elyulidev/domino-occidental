@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { canPlay, createBoard, isBlocked, place } from "../board";
+import { canPlay, createBoard, isBlocked, place } from "@domino/shared/src/game";
 import type { BoardState, PlayerState, Tile } from "../types";
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-import type { DealResult, Tile } from "@domino/shared";
+import type { DealResult, Tile } from "../types";
 
 /**
  * Creates a complete double-9 domino deck (55 unique tiles).

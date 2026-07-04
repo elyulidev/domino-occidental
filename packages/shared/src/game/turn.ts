@@ -1,4 +1,4 @@
-import type { Tile, TimeoutResult, TurnState } from "@domino/shared";
+import type { Tile, TimeoutResult, TurnState } from "../types";
 
 /**
  * Timeout window for a single turn in milliseconds.

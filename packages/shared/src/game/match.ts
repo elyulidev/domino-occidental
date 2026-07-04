@@ -4,8 +4,9 @@ import type {
   MatchState,
   Side,
   Tile,
-} from "@domino/shared";
+} from "../types";
 import { canPlay, createBoard, isBlocked, place } from "./board";
+import { createDeck, deal, shuffle } from "./deck";
 import {
   allPlayersPassed,
   createPlayer,
@@ -119,6 +120,43 @@ export function startHand(match: MatchState): ActionResult {
     match: updatedMatch,
     events: [{ type: "round_started", firstPlayer }],
   };
+}
+
+/**
+ * Redeals a fresh hand after the previous hand ended and the match continues.
+ *
+ * Creates a brand new shuffled deck, deals 10 tiles to each player,
+ * resets the board and pool, increments the round counter, and starts
+ * the new hand (determines first player, sets turn deadline).
+ *
+ * @param match - Current match state (after hand end scoring)
+ * @returns ActionResult with redealt state and round_started event
+ */
+export function redealHand(match: MatchState): ActionResult {
+  const deck = shuffle(createDeck());
+  const { hands, pool } = deal(deck);
+
+  // Give each player new tiles, reset passes
+  const players = match.players.map((p, i) => ({
+    ...p,
+    hand: hands[i],
+    consecutivePasses: 0,
+    lastActionAt: new Date(),
+  })) as MatchState["players"];
+
+  const redealt: MatchState = {
+    ...match,
+    players,
+    pool,
+    poolCount: pool.length,
+    board: createBoard(),
+    turn: {
+      ...match.turn,
+      roundNumber: match.turn.roundNumber + 1,
+    },
+  };
+
+  return startHand(redealt);
 }
 
 /**
@@ -489,7 +527,12 @@ export function handleHandEnd(
         return { match: { ...newMatch, status: "finished" }, events };
       }
 
-      return { match: newMatch, events };
+      // Match continues — deal a fresh hand
+      const redealResult = redealHand(newMatch);
+      return {
+        match: redealResult.match,
+        events: [...events, ...redealResult.events],
+      };
     }
 
     // Annulled but not 4th cascade — increment null rounds
@@ -577,5 +620,10 @@ export function handleHandEnd(
     return { match: { ...newMatch, status: "finished" }, events };
   }
 
-  return { match: newMatch, events };
+  // Match continues — deal a fresh hand
+  const redealResult = redealHand(newMatch);
+  return {
+    match: redealResult.match,
+    events: [...events, ...redealResult.events],
+  };
 }

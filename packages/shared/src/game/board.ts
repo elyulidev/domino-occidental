@@ -4,7 +4,8 @@ import type {
   PlayerState,
   Side,
   Tile,
-} from "@domino/shared";
+} from "../types";
+import { resolveSlotIndex, resolveFlipped } from "./board-path";
 
 /**
  * Creates an empty domino board.
@@ -55,7 +56,10 @@ export function place(
 ): BoardState {
   // Empty board: set both ends
   if (board.leftEnd === null && board.rightEnd === null) {
-    const placedTile: PlacedTile = { tile, side, playerId };
+    // On empty board, both ends are set; flipped=true because tile.top becomes an end
+    const flipped = true;
+    const slotIndex = 0;
+    const placedTile: PlacedTile = { tile, side, playerId, slotIndex, flipped };
     if (side === "left") {
       return {
         leftEnd: tile.bottom,
@@ -104,11 +108,19 @@ export function place(
     canonicalTile = tile;
   }
 
+  // Count tiles on this side excluding the center tile (slotIndex=0)
+  const sideCount = board.tiles.filter(
+    (t) => t.side === side && t.slotIndex !== 0,
+  ).length;
+  const slotIndex = resolveSlotIndex(side, sideCount);
   // Double: end doesn't change (newEnd === targetEnd)
+  const flipped = resolveFlipped(side, slotIndex);
   const placedTile: PlacedTile = {
     tile: canonicalTile,
     side,
     playerId,
+    slotIndex,
+    flipped,
   };
 
   const newTiles = [...board.tiles, placedTile];

@@ -1,9 +1,14 @@
 import type { ActionResult, GameEvent, MatchState } from "@domino/shared";
 import { ABANDONMENT_THRESHOLD_MS, RECONNECT_WINDOW_MS } from "@domino/shared";
-import { isBlocked } from "./board";
-import { handleHandEnd } from "./match";
-import { incrementPasses, setConnected, updateLastAction } from "./player";
-import { advanceTurn, calculateDeadline } from "./turn";
+import {
+  isBlocked,
+  handleHandEnd,
+  incrementPasses,
+  setConnected,
+  updateLastAction,
+  advanceTurn,
+  calculateDeadline,
+} from "@domino/shared/src/game";
 
 /**
  * Creates a game_error event.

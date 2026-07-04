@@ -6,7 +6,7 @@ import {
   type WsClientMessage,
 } from "@domino/shared";
 import { forfeitMatch } from "./connection";
-import { passTurn, playTile } from "./match";
+import { passTurn, playTile } from "@domino/shared/src/game";
 
 // ---------------------------------------------------------------------------
 // Handler
