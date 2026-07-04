@@ -10,7 +10,7 @@ export default function NotificationsPage() {
       {/* ── Header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-domino-50 sm:text-3xl">
             Notificaciones
           </h1>
           <p className="mt-1 text-sm text-domino-400">
@@ -19,7 +19,7 @@ export default function NotificationsPage() {
         </div>
         <button
           type="button"
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
             <path d="M5 13l4 4L19 7" />
@@ -52,7 +52,7 @@ export default function NotificationsPage() {
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-white">
+                <p className="text-sm font-medium text-domino-50">
                   {notification.title}
                 </p>
                 <span className="shrink-0 text-xs text-domino-500">

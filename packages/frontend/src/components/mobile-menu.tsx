@@ -69,14 +69,14 @@ export default function MobileMenu() {
         <div className="flex items-center justify-between border-b border-domino-800 px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-lg">
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-domino-950" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-black" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" fill="currentColor" />
-                <line x1="3" y1="12" x2="21" y2="12" stroke="var(--color-domino-950)" strokeWidth="1.5" />
-                <circle cx="8.5" cy="8"   r="1.5" fill="var(--color-domino-950)" />
-                <circle cx="15.5" cy="16" r="1.5" fill="var(--color-domino-950)" />
+                <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="1.5" />
+                <circle cx="8.5" cy="8"   r="1.5" fill="currentColor" />
+                <circle cx="15.5" cy="16" r="1.5" fill="currentColor" />
               </svg>
             </div>
-            <span className="text-base font-bold tracking-tight text-white">
+            <span className="text-base font-bold tracking-tight text-domino-50">
               Dominó Occidental
             </span>
           </div>
@@ -85,7 +85,7 @@ export default function MobileMenu() {
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Cerrar menú"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-domino-400 transition-colors hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-domino-400 transition-colors hover:text-domino-50"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
               <path d="M6 18L18 6M6 6l12 12" />
@@ -102,7 +102,7 @@ export default function MobileMenu() {
               onClick={() => setOpen(false)}
               className="group flex items-center gap-3 rounded-lg px-3 py-2.5
                 text-sm font-medium text-domino-300
-                transition-all hover:bg-domino-800/60 hover:text-white"
+                transition-all hover:bg-domino-800/60 hover:text-domino-50"
             >
               <Icon className="h-5 w-5 shrink-0 text-domino-400 transition-colors group-hover:text-gold-400" />
               <span className="flex-1">{label}</span>
@@ -122,7 +122,7 @@ export default function MobileMenu() {
               JD
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">JugadorDemo</p>
+              <p className="truncate text-sm font-medium text-domino-50">JugadorDemo</p>
               <p className="text-xs text-domino-400">ELO 1,200</p>
             </div>
             <div className="flex items-center gap-1 rounded-full bg-gold-500/10 px-2.5 py-1">
@@ -142,7 +142,7 @@ export default function MobileMenu() {
         aria-label="Abrir menú"
         aria-expanded={open}
         className="flex h-8 w-8 items-center justify-center rounded-lg border border-domino-700 text-domino-300
-          transition-colors hover:bg-domino-700 hover:text-white"
+          transition-colors hover:bg-domino-700 hover:text-domino-50"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
           <path d="M4 6h16M4 12h16M4 18h16" />

@@ -11,25 +11,30 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+const LS_KEY = "domino-theme";
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("domino-theme") as Theme | null;
-    const initial = stored === "light" || stored === "dark" ? stored : "dark";
-    setTheme(initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
-    document.documentElement.classList.toggle("light", initial === "light");
+    let stored: Theme = "dark";
+    try {
+      const v = localStorage.getItem(LS_KEY) as Theme | null;
+      if (v === "light" || v === "dark") stored = v;
+    } catch { /* noop */ }
+    setTheme(stored);
+    document.documentElement.classList.toggle("dark", stored === "dark");
     setMounted(true);
   }, []);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("domino-theme", next);
+      try {
+        localStorage.setItem(LS_KEY, next);
+      } catch { /* noop */ }
       document.documentElement.classList.toggle("dark", next === "dark");
-      document.documentElement.classList.toggle("light", next === "light");
       return next;
     });
   }, []);
@@ -47,7 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
-  // During SSR/static generation, return defaults instead of throwing
+  // Durante SSR/SSG devolvemos defaults sin lanzar error
   if (!ctx) {
     return { theme: "dark", toggleTheme: () => {} };
   }

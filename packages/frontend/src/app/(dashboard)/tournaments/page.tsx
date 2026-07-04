@@ -15,7 +15,7 @@ export default function TournamentsPage() {
       {/* ── Header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-domino-50 sm:text-3xl">
             Torneos
           </h1>
           <p className="mt-1 text-sm text-domino-400">
@@ -24,7 +24,7 @@ export default function TournamentsPage() {
         </div>
         <Link
           href="/tournaments/create"
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-black shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
             <path d="M12 5v14m7-7H5" />
@@ -35,7 +35,7 @@ export default function TournamentsPage() {
 
       {/* ── Tabs ── */}
       <div className="flex gap-6 border-b border-domino-700">
-        <span className="border-b-2 border-gold-500 pb-3 text-sm font-medium text-white">
+        <span className="border-b-2 border-gold-500 pb-3 text-sm font-medium text-domino-50">
           Activos
         </span>
         <span className="pb-3 text-sm font-medium text-domino-400 transition-colors hover:text-domino-200">
@@ -63,7 +63,7 @@ export default function TournamentsPage() {
                 {tournament.bracketType}
               </span>
             </div>
-            <h3 className="text-sm font-semibold text-white group-hover:text-gold-400 transition-colors">
+            <h3 className="text-sm font-semibold text-domino-50 group-hover:text-gold-400 transition-colors">
               {tournament.name}
             </h3>
             <div className="mt-2 flex items-center justify-between text-xs text-domino-400">
@@ -91,7 +91,7 @@ export default function TournamentsPage() {
                 {tournament.bracketType}
               </span>
             </div>
-            <h3 className="text-sm font-semibold text-white group-hover:text-gold-400 transition-colors">
+            <h3 className="text-sm font-semibold text-domino-50 group-hover:text-gold-400 transition-colors">
               {tournament.name}
             </h3>
             <div className="mt-2 flex items-center justify-between text-xs text-domino-400">
@@ -119,7 +119,7 @@ export default function TournamentsPage() {
                 {tournament.bracketType}
               </span>
             </div>
-            <h3 className="text-sm font-semibold text-white group-hover:text-gold-400 transition-colors">
+            <h3 className="text-sm font-semibold text-domino-50 group-hover:text-gold-400 transition-colors">
               {tournament.name}
             </h3>
             <div className="mt-2 flex items-center justify-between text-xs text-domino-400">

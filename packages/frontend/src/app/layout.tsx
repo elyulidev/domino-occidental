@@ -13,6 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const themeScript = `
+(function() {
+  try {
+    if (localStorage.getItem("domino-theme") === "light") {
+      document.documentElement.classList.remove("dark");
+    }
+  } catch(e) {}
+})();
+`;
+
 export const metadata: Metadata = {
   title: "Dominó Occidental",
   description:
@@ -30,6 +40,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>{children}</ThemeProvider>
       </body>

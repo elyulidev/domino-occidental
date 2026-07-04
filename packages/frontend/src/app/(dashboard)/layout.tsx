@@ -27,14 +27,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Logo */}
         <div className="flex items-center gap-3 border-b border-domino-800 px-6 py-5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-gold-400 to-gold-600 shadow-lg shadow-gold-500/10">
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-domino-950" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-black" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" fill="currentColor" />
               <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="1.5" />
               <circle cx="8.5" cy="8" r="1.5" fill="currentColor" />
               <circle cx="15.5" cy="16" r="1.5" fill="currentColor" />
             </svg>
           </div>
-          <span className="text-lg font-bold tracking-tight text-white">
+          <span className="text-lg font-bold tracking-tight text-domino-50">
             Dominó Occidental
           </span>
         </div>
@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Link
               key={href}
               href={href}
-              className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-domino-300 transition-all hover:bg-domino-800/60 hover:text-white"
+              className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-domino-300 transition-all hover:bg-domino-800/60 hover:text-domino-50"
             >
               <Icon className="h-5 w-5 text-domino-400 group-hover:text-gold-400 transition-colors" />
               <span>{label}</span>
@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               JD
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium text-white">JugadorDemo</p>
+              <p className="truncate text-sm font-medium text-domino-50">JugadorDemo</p>
               <p className="text-xs text-domino-400">ELO 1,200</p>
             </div>
             <div className="flex items-center gap-1 rounded-full bg-gold-500/10 px-2.5 py-1">
@@ -79,14 +79,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-domino-800 bg-domino-900/80 px-4 py-3 backdrop-blur-md lg:hidden">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-gold-400 to-gold-600">
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-domino-950" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-black" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" fill="currentColor" />
               <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="1.5" />
               <circle cx="8.5" cy="8" r="1.5" fill="currentColor" />
               <circle cx="15.5" cy="16" r="1.5" fill="currentColor" />
             </svg>
           </div>
-          <span className="text-sm font-bold text-white">Dominó Occidental</span>
+          <span className="text-sm font-bold text-domino-50">Dominó Occidental</span>
         </div>
         <MobileMenu />
       </div>

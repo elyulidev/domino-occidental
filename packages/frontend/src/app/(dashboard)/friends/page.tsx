@@ -13,14 +13,14 @@ export default function FriendsPage() {
       {/* ── Header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">Amigos</h1>
+          <h1 className="text-2xl font-bold text-domino-50 sm:text-3xl">Amigos</h1>
           <p className="mt-1 text-sm text-domino-400">
             Gestioná tus conexiones y solicitá amistades.
           </p>
         </div>
         <Link
           href="/users/search"
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-black shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
             <circle cx="11" cy="11" r="8" />
@@ -32,7 +32,7 @@ export default function FriendsPage() {
 
       {/* ── Tabs ── */}
       <div className="flex gap-6 border-b border-domino-700">
-        <span className="border-b-2 border-gold-500 pb-3 text-sm font-medium text-white">
+        <span className="border-b-2 border-gold-500 pb-3 text-sm font-medium text-domino-50">
           Amigos
         </span>
         <span className="relative pb-3 text-sm font-medium text-domino-400 transition-colors hover:text-domino-200">
@@ -62,7 +62,7 @@ export default function FriendsPage() {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium text-white">
+              <p className="truncate text-sm font-medium text-domino-50">
                 {friend.name}
               </p>
               <p className="text-xs text-domino-400">
@@ -72,13 +72,13 @@ export default function FriendsPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/lobby"
-                className="rounded-lg border border-domino-700 px-3 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+                className="rounded-lg border border-domino-700 px-3 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
               >
                 Retar
               </Link>
               <Link
                 href={`/profile/${friend.username}`}
-                className="rounded-lg border border-domino-700 px-3 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+                className="rounded-lg border border-domino-700 px-3 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
               >
                 Ver perfil
               </Link>
@@ -118,7 +118,7 @@ export default function FriendsPage() {
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium text-white">
+              <p className="truncate text-sm font-medium text-domino-50">
                 {request.name}
               </p>
               <p className="text-xs text-domino-400">ELO {request.elo}</p>
@@ -132,7 +132,7 @@ export default function FriendsPage() {
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-domino-700 px-4 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+                className="rounded-lg border border-domino-700 px-4 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
               >
                 Rechazar
               </button>

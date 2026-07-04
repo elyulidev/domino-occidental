@@ -13,13 +13,13 @@ export default function SettingsPage() {
       <div className="mb-8 flex items-center gap-3">
         <Link
           href="/lobby"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-domino-400 transition-colors hover:bg-domino-800/60 hover:text-white"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-domino-400 transition-colors hover:bg-domino-800/60 hover:text-domino-50"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
             <path d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <h1 className="text-2xl font-bold text-white">Configuración</h1>
+        <h1 className="text-2xl font-bold text-domino-50">Configuración</h1>
       </div>
 
       {/* Apariencia */}
@@ -40,7 +40,7 @@ export default function SettingsPage() {
               </svg>
             )}
             <div>
-              <p className="text-sm font-medium text-white">Tema</p>
+              <p className="text-sm font-medium text-domino-50">Tema</p>
               <p className="text-xs text-domino-400">
                 {theme === "dark" ? "Modo oscuro" : "Modo claro"}
               </p>
@@ -70,14 +70,14 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-white">Mostrar ELO</p>
+              <p className="text-sm font-medium text-domino-50">Mostrar ELO</p>
               <p className="text-xs text-domino-400">Visible en tu perfil público</p>
             </div>
             <Toggle defaultChecked />
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-white">Notificaciones</p>
+              <p className="text-sm font-medium text-domino-50">Notificaciones</p>
               <p className="text-xs text-domino-400">Recibir alertas de invites y torneos</p>
             </div>
             <Toggle defaultChecked />
@@ -98,7 +98,7 @@ export default function SettingsPage() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-domino-400 group-hover:text-gold-400">
               <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <span className="text-sm font-medium text-white">Editar perfil</span>
+            <span className="text-sm font-medium text-domino-50">Editar perfil</span>
           </div>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-domino-400 group-hover:text-gold-400">
             <path d="M9 5l7 7-7 7" />
