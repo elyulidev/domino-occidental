@@ -13,6 +13,7 @@ import {
   hasTile,
   incrementPasses,
   removeTile,
+  resetBlockedTiles,
   resetPasses,
   sumHand,
   updateLastAction,
@@ -93,9 +94,9 @@ export function initializeMatch(
  * @returns ActionResult with updated state and round_started event
  */
 export function startHand(match: MatchState): ActionResult {
-  // Reset all players' passes
+  // Reset all players' passes and blocked tiles
   const players = match.players.map((p) =>
-    resetPasses(p),
+    resetBlockedTiles(resetPasses(p)),
   ) as MatchState["players"];
 
   // Determine first player
@@ -136,13 +137,15 @@ export function redealHand(match: MatchState): ActionResult {
   const deck = shuffle(createDeck());
   const { hands, pool } = deal(deck);
 
-  // Give each player new tiles, reset passes
-  const players = match.players.map((p, i) => ({
-    ...p,
-    hand: hands[i],
-    consecutivePasses: 0,
-    lastActionAt: new Date(),
-  })) as MatchState["players"];
+  // Give each player new tiles, reset passes and blocked tiles
+  const players = match.players.map((p, i) =>
+    resetBlockedTiles({
+      ...p,
+      hand: hands[i],
+      consecutivePasses: 0,
+      lastActionAt: new Date(),
+    }),
+  ) as MatchState["players"];
 
   const redealt: MatchState = {
     ...match,
@@ -263,6 +266,14 @@ export function playTile(
     return {
       match,
       events: [gameError("TILE_NOT_FOUND", "Tile not found in hand")],
+    };
+  }
+
+  // Check if the tile was blocked by a previous timeout
+  if (player.blockedTileIds.includes(tileId)) {
+    return {
+      match,
+      events: [gameError("TILE_BLOCKED", "Tile is blocked by timeout and cannot be played this hand")],
     };
   }
 
@@ -398,6 +409,11 @@ export function passTurn(match: MatchState, playerId: string): ActionResult {
  * @returns ActionResult with updated state and events
  */
 export function checkTimeout(match: MatchState, now: number): ActionResult {
+  // Don't time out finished, abandoned, or waiting matches
+  if (match.status !== "in_progress") {
+    return { match, events: [] };
+  }
+
   const timeoutResult = checkTurnTimeout(match.turn, now);
 
   if (!timeoutResult.timedOut) {
@@ -407,8 +423,20 @@ export function checkTimeout(match: MatchState, now: number): ActionResult {
   const playerIndex = timeoutResult.playerIndex;
   const player = match.players[playerIndex];
 
+  // Identify tiles the player could have played — they get blocked
+  const playableIds = player.hand
+    .filter(
+      (t) =>
+        !player.blockedTileIds.includes(t.id) &&
+        (canPlay(t, "left", match.board) || canPlay(t, "right", match.board)),
+    )
+    .map((t) => t.id);
+
+  const blockedTileIds = [...player.blockedTileIds, ...playableIds];
+
   // Update player (force pass)
   let updatedPlayer = incrementPasses(player);
+  updatedPlayer = { ...updatedPlayer, blockedTileIds };
   updatedPlayer = updateLastAction(updatedPlayer);
 
   // Build new players array
@@ -430,6 +458,15 @@ export function checkTimeout(match: MatchState, now: number): ActionResult {
   const events: GameEvent[] = [
     { type: "turn_timeout", playerId: player.id, forcedPass: true },
   ];
+
+  // Emit player_tiles_blocked if any playable tiles were found
+  if (playableIds.length > 0) {
+    events.push({
+      type: "player_tiles_blocked",
+      playerId: player.id,
+      tileIds: playableIds,
+    });
+  }
 
   // Check if board is now blocked or all players passed consecutively
   if (isBlocked(match.board, newPlayers) || allPlayersPassed(newPlayers)) {

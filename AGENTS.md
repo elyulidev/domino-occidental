@@ -75,6 +75,7 @@ interface PlayerState {
   consecutivePasses: number
   isConnected: boolean
   lastActionAt: Date
+  blockedTileIds: string[]   // fichas bloqueadas por timeout (se resetean en cada mano)
 }
 
 interface BoardState {
@@ -206,16 +207,85 @@ type TEXT CHECK (type IN (
   entre los 4 jugadores.
 - **Target de partida:** 200 puntos por defecto. Si las dos parejas lo superan simultáneamente,
   gana la de mayor puntuación; si hay empate → manos de desempate.
+- **Bloqueo por timeout:** si el timeout fuerza un pase teniendo el jugador fichas jugables, esas
+  fichas se marcan como `blockedTileIds` y no pueden jugarse por el resto de la mano. Se resetean
+  al repartir una nueva mano. Las fichas bloqueadas siguen contando para la suma al cierre.
 
-### Timeout de turno (45 s)
+### Posicionamiento de fichas
 
 ```typescript
-// Al asignar turno:
-state.turnDeadline = new Date(Date.now() + 45_000)
+// Reglas canónicas implementadas en board.ts
 
-// Worker interno (setInterval cada 2s):
-// Si Date.now() > state.turnDeadline → ejecutar paso forzado,
-// emitir evento turn_timeout, avanzar turno.
+// 1. Tablero vacío — cualquier ficha vale, en cualquier lado.
+//    La ficha se coloca girada (flipped=true) y define ambos extremos.
+//    side="left"  → leftEnd=tile.bottom, rightEnd=tile.top
+//    side="right" → leftEnd=tile.top, rightEnd=tile.bottom
+canPlay(tile, side, board) // true si board está vacío
+
+// 2. Tablero con fichas — la ficha debe matchear el extremo del lado elegido.
+//    targetEnd = side === "left" ? board.leftEnd : board.rightEnd
+//    tile.top === targetEnd || tile.bottom === targetEnd → puede jugar
+canPlay(tile, side, board) // true si matchea el extremo
+
+// 3. Auto-flip al colocar (siempre):
+//    Si tile.top === targetEnd → se invierte: la ficha se almacena girada
+//    (top pasa a ser bottom y viceversa). El valor que conecta queda
+//    bottom y el nuevo extremo es top.
+//    Si tile.bottom === targetEnd → se usa tal cual.
+//
+//    En ambos casos, el "nuevo extremo" (top) se asigna a leftEnd o rightEnd.
+
+// 4. Mulas (dobles): si tile.top === tile.bottom === targetEnd,
+//    no cambia el extremo (newEnd === targetEnd). El slot y flipped
+//    se resuelven igual que cualquier otra ficha.
+
+// 5. Índices de slot: armado serpentina (board-path.ts)
+//    side="right" → slotIndex = currentCount + 1  (1, 2, 3…)
+//    side="left"  → slotIndex = -(currentCount + 1) (-1, -2, -3…)
+//    Centro (slotIndex=0): única ficha inicial, nunca se invierte visualmente.
+
+// 6. Flipped visual (resolveFlipped):
+//    Las fichas del lado derecho (slotIndex > 0) se marcan flipped=true
+//    porque el valor que conecta al centro debe quedar a la izquierda en
+//    pantalla. Centro (slot 0) nunca se invierte. Lado izquierdo nunca
+//    se invierte.
+```
+
+Reglas en lenguaje natural:
+
+| Situación | Regla |
+|-----------|-------|
+| Tablero vacío | Cualquier ficha vale. Se coloca en `left` o `right` y define ambos extremos. |
+| Ficha matchea un extremo | Se coloca del lado que corresponda. El valor que conecta se orienta automáticamente. |
+| Ficha no matchea ningún extremo | No se puede jugar. Solo queda pasar o timeout. |
+| Mula (doble) matchea | Se coloca normalmente. El extremo no cambia. |
+| Varias fichas matchean el mismo extremo | El jugador elige cuál jugar y de qué lado. |
+| Ficha matchea ambos extremos | El jugador elige de qué lado jugarla. |
+
+### Timeout de turno (45 s + bloqueo de fichas)
+
+```typescript
+// Al asignar turno (turn.ts):
+state.turnDeadline = calculateDeadline(player.isConnected
+  ? TURN_TIMEOUT_CONNECTED_MS   // 45_000
+  : TURN_TIMEOUT_DISCONNECTED_MS // 15_000
+)
+
+// Worker interno (setInterval cada 2s) en timer-manager.ts:
+// 1. Si Date.now() > state.turnDeadline → paso forzado
+// 2. Se identifican las fichas jugables del jugador en ese momento
+// 3. Se agregan a player.blockedTileIds
+// 4. Se emite turn_timeout + player_tiles_blocked
+// 5. Se avanza el turno (sin cambiar el deadline del nuevo turno)
+
+// En validateAction (playTile):
+// Si tileId está en player.blockedTileIds → error TILE_BLOCKED
+// La ficha no puede jugarse por el resto de la mano.
+
+// Al repartir nueva mano (startHand/redealHand):
+// player.blockedTileIds = [] (se resetea)
+
+// Las fichas bloqueadas SÍ cuentan para la suma al cierre de mano.
 ```
 
 ### Política de desconexión

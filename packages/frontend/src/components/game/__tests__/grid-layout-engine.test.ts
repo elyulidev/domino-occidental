@@ -74,9 +74,8 @@ describe("grid-layout-engine", () => {
       expect(positions[0].orientation).toBe("horizontal");
     });
 
-    // Right arm tiles: first right tile is to the right of center (col 7 > col 6)
-    // Subsequent right tiles may share the same x (snake wrapping at col 7)
-    it("right arm first tile is to the right of center", () => {
+    // Right arm: tiles extend rightward in same row (16-column grid)
+    it("right arm tiles extend rightward in same row", () => {
       const display = [
         placedTile(6, 6, "left", "t0", 0),
         placedTile(6, 1, "right", "t1", 1),
@@ -84,12 +83,12 @@ describe("grid-layout-engine", () => {
       ];
       const { positions } = calculateGridLayout(display, 0, 800);
       expect(positions).toHaveLength(3);
-      // First right tile (slotIndex=1 → col=7) is to the right of center (col=6)
+      // All tiles on same row (16×N grid doesn't wrap at container edge)
+      expect(positions[0].y).toBe(positions[1].y);
+      expect(positions[1].y).toBe(positions[2].y);
+      // Tiles extend rightward: center < tile1 < tile2
       expect(positions[1].x).toBeGreaterThan(positions[0].x);
-      // Second right tile (slotIndex=2 → col=7, next row) has same x due to snake wrap
-      expect(positions[2].x).toBe(positions[1].x);
-      // But second right tile is on the next row (higher y)
-      expect(positions[2].y).toBeGreaterThan(positions[1].y);
+      expect(positions[2].x).toBeGreaterThan(positions[1].x);
     });
 
     // Left arm tiles extend to the left of center (col 6→5→4→3)
@@ -355,18 +354,26 @@ describe("grid-layout-engine", () => {
       }
     });
 
-    // Y-ordering: right arm wraps to next row (y increases)
+    // Y-ordering: right arm wraps to next row after filling grid width
+    // 16-column grid wraps at col 15 → L-corner turns create new row
     it("right arm wraps to next row after reaching grid edge", () => {
+      // 8 right-side tiles fill from C7→C15 and wrap (4 tiles × 2 cells = 8 cols)
       const tiles = [
         placedTile(6, 6, "left", "t0", 0),
-        placedTile(6, 1, "right", "t1", 1), // col=7, row=6 (corner)
-        placedTile(1, 2, "right", "t2", 2), // col=7, row=7
-        placedTile(2, 3, "right", "t3", 3), // col=6, row=7
+        placedTile(6, 1, "right", "t1", 1),  // C8,C9
+        placedTile(1, 2, "right", "t2", 2),  // C10,C11
+        placedTile(2, 3, "right", "t3", 3),  // C12,C13
+        placedTile(3, 4, "right", "t4", 4),  // C14,C15 — reaches grid edge
+        placedTile(4, 5, "right", "t5", 5),  // L-corner at C15, new row
+        placedTile(5, 6, "right", "t6", 6),  // new row, same column
+        placedTile(6, 7, "right", "t7", 7),  // new row, continues
       ];
       const { positions } = calculateGridLayout(tiles, 0, 800);
-      // Tile 1 (corner) should be at higher y than tile 0 (same row)
-      // Tile 2 should be at higher y than tile 1 (next row)
-      expect(positions[2].y).toBeGreaterThan(positions[0].y);
+      expect(positions).toHaveLength(8);
+      // Tile 3 (last in first row, slotIndex=4) reaches C15 → same row as center
+      expect(positions[4].y).toBe(positions[0].y);
+      // Tile 4 (slotIndex=5) wraps to next row → different y
+      expect(positions[5].y).not.toBe(positions[0].y);
     });
   });
 });

@@ -15,12 +15,19 @@ import {
   RECONNECT_WINDOW_MS,
   TURN_TIMEOUT_MS,
 } from "../types";
+import { setConnected } from "@domino/shared/src/game";
 
 // Helper to create a basic match for testing
 function createTestMatch(): MatchState {
   const hands: [never[], never[], never[], never[]] = [[], [], [], []];
   const { match } = initializeMatch("test-match", hands, []);
   return match;
+}
+
+/** Connects all players in a match for tests that need connected players. */
+function connectAllPlayers(match: MatchState): MatchState {
+  const newPlayers = match.players.map((p) => setConnected(p, true)) as MatchState["players"];
+  return { ...match, players: newPlayers };
 }
 
 // Helper to create a match with specific hands and turn state
@@ -78,7 +85,7 @@ describe("disconnectPlayer", () => {
   });
 
   it("emits player_disconnected with correct reconnectWindowMs", () => {
-    const match = createTestMatch();
+    const match = connectAllPlayers(createTestMatch());
     const now = new Date();
     const result = disconnectPlayer(match, "p0", now);
 
@@ -119,7 +126,7 @@ describe("reconnectPlayer", () => {
   });
 
   it("reconnecting already-connected player is no-op", () => {
-    const match = createTestMatch();
+    const match = connectAllPlayers(createTestMatch());
     const now = new Date();
     const result = reconnectPlayer(match, "p0", now);
 

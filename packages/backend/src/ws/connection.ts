@@ -10,7 +10,7 @@ import type {
 import { sanitizeState } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
 import { handleMessage as defaultHandleMessage } from "../game/handler";
-import { broadcastEvents as defaultBroadcastEvents } from "./broadcaster";
+import { broadcastEvents as defaultBroadcastEvents, sendState as defaultSendState } from "./broadcaster";
 import type { TimerManager } from "./timer-manager";
 
 // ---------------------------------------------------------------------------
@@ -78,6 +78,8 @@ export interface WsPluginDeps {
   rateLimiter?: RateLimiterApi;
   /** Optional timer manager for heartbeat and abandonment timers. */
   timerManager?: TimerManager;
+  /** Optional external connection manager. When provided, uses it instead of creating a new one. */
+  connectionManager?: ConnectionManager;
 }
 
 /** Return type for createWsPlugin — exposes manager for testing. */
@@ -154,9 +156,10 @@ export function sendToPlayer(
 // ---------------------------------------------------------------------------
 
 export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
-  const manager = createConnectionManager();
+  const manager = deps.connectionManager ?? createConnectionManager();
   const handleMessage = deps.handleMessage ?? defaultHandleMessage;
   const broadcastEvents = deps.broadcastEvents ?? defaultBroadcastEvents;
+  const sendState = defaultSendState;
   const disconnectPlayerFn = deps.disconnectPlayer;
   const reconnectPlayerFn = deps.reconnectPlayer;
   const startedMatches = new Set<string>();
@@ -194,32 +197,53 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
 
             manager.register(matchId, playerId, ws);
 
-            // Send initial state on every join (first join or reconnect)
+            // Update isConnected in the store on every join
             const match = deps.store.getGame(matchId);
             if (match) {
-              const player = match.players.find((p) => p.id === playerId);
+              const newPlayers = match.players.map((p) =>
+                p.id === playerId
+                  ? { ...p, isConnected: true, lastActionAt: new Date() }
+                  : p,
+              ) as MatchState["players"];
+              if (newPlayers !== match.players) {
+                deps.store.updateGame(matchId, { ...match, players: newPlayers });
+              }
+
+              const updatedMatch = deps.store.getGame(matchId)!;
+              const player = updatedMatch.players.find((p) => p.id === playerId);
               sendFn(playerId, {
                 type: "game_events",
                 events: [],
-                state: sanitizeState(match),
+                state: sanitizeState(updatedMatch),
                 yourHand: player?.hand,
               });
-            }
 
-            // Attempt reconnect if player was previously disconnected
-            if (reconnectPlayerFn) {
-              const match = deps.store.getGame(matchId);
-              if (match) {
-                const playerIds = match.players.map((p) => p.id);
-                const result = reconnectPlayerFn(match, playerId, new Date());
+              // Attempt reconnect notification if player was previously disconnected
+              if (reconnectPlayerFn) {
+                const playerIds = updatedMatch.players.map((p) => p.id);
+                const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
                 if (result.events.length > 0) {
+                  if (result.match !== updatedMatch) {
+                    deps.store.updateGame(matchId, result.match);
+                  }
                   broadcastEvents(
                     result.events,
                     matchId,
                     playerId,
                     sendFn,
                     playerIds,
+                    sanitizeState(result.match),
                   );
+                }
+              }
+
+              // Broadcast updated state to ALL OTHER connected players
+              const broadcastState = sanitizeState(
+                deps.store.getGame(matchId) ?? updatedMatch,
+              );
+              for (const p of updatedMatch.players) {
+                if (p.id !== playerId && manager.getConnection(p.id)) {
+                  sendState(p.id, broadcastState, sendFn);
                 }
               }
             }
@@ -241,31 +265,56 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             (ws.data as Record<string, unknown>).playerId = playerId;
             manager.register(matchId, playerId, ws);
 
-            // Send initial state on every join (first join or reconnect)
+            // Set player as connected and notify others on every join
             const match = deps.store.getGame(matchId);
             if (match) {
-              const player = match.players.find((p) => p.id === playerId);
+              const newPlayers = match.players.map((p) =>
+                p.id === playerId
+                  ? { ...p, isConnected: true, lastActionAt: new Date() }
+                  : p,
+              ) as MatchState["players"];
+
+              if (newPlayers !== match.players) {
+                deps.store.updateGame(matchId, { ...match, players: newPlayers });
+              }
+
+              // Re-use the updated match for state sending
+              const updatedMatch = deps.store.getGame(matchId)!;
+              const player = updatedMatch.players.find((p) => p.id === playerId);
               sendFn(playerId, {
                 type: "game_events",
                 events: [],
-                state: sanitizeState(match),
+                state: sanitizeState(updatedMatch),
                 yourHand: player?.hand,
               });
-            }
 
-            if (reconnectPlayerFn) {
-              const match = deps.store.getGame(matchId);
-              if (match) {
-                const playerIds = match.players.map((p) => p.id);
-                const result = reconnectPlayerFn(match, playerId, new Date());
+              // Notify all players and run reconnect/connect logic
+              if (reconnectPlayerFn) {
+                const playerIds = updatedMatch.players.map((p) => p.id);
+                const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
                 if (result.events.length > 0) {
+                  if (result.match !== updatedMatch) {
+                    deps.store.updateGame(matchId, result.match);
+                  }
                   broadcastEvents(
                     result.events,
                     matchId,
                     playerId,
                     sendFn,
                     playerIds,
+                    sanitizeState(result.match),
                   );
+                }
+              }
+
+              // Broadcast updated state to ALL OTHER connected players so they see
+              // the new isConnected status in real time
+              const broadcastState = sanitizeState(
+                deps.store.getGame(matchId) ?? updatedMatch,
+              );
+              for (const p of updatedMatch.players) {
+                if (p.id !== playerId && manager.getConnection(p.id)) {
+                  sendState(p.id, broadcastState, sendFn);
                 }
               }
             }
@@ -377,12 +426,16 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
               const playerIds = match.players.map((p) => p.id);
               const result = disconnectPlayerFn(match, playerId, new Date());
               if (result.events.length > 0) {
+                if (result.match !== match) {
+                  deps.store.updateGame(matchId, result.match);
+                }
                 broadcastEvents(
                   result.events,
                   matchId,
                   playerId,
                   sendFn,
                   playerIds,
+                  sanitizeState(result.match),
                 );
               }
             }

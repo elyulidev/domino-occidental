@@ -97,6 +97,28 @@ function makePool(): Tile[] {
   ];
 }
 
+/**
+ * Connects the player at the given index in the match.
+ * Since createPlayer now defaults to isConnected: false,
+ * tests that need to play tiles must explicitly connect the relevant player.
+ */
+function connectPlayer(match: import("../types").MatchState, playerIndex: number): import("../types").MatchState {
+  return {
+    ...match,
+    players: match.players.map((p, i) =>
+      i === playerIndex ? { ...p, isConnected: true } : p,
+    ) as any,
+  };
+}
+
+/** Connect all players (convenience for tests that don't test connection). */
+function connectAllPlayers(match: import("../types").MatchState): import("../types").MatchState {
+  return {
+    ...match,
+    players: match.players.map((p) => ({ ...p, isConnected: true })) as any,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // initializeMatch
 // ---------------------------------------------------------------------------
@@ -176,12 +198,12 @@ describe("initializeMatch", () => {
     expect(result.events).toEqual([]);
   });
 
-  it("all players are connected by default", () => {
+  it("all players start disconnected (must connect via WS open)", () => {
     const hands = makeHands();
     const pool = makePool();
     const result = initializeMatch("match-1", hands, pool);
     for (const player of result.match.players) {
-      expect(player.isConnected).toBe(true);
+      expect(player.isConnected).toBe(false);
     }
   });
 });
@@ -293,7 +315,8 @@ describe("playTile", () => {
     const playerId = started.players[currentTurn].id;
     const tileToPlay = started.players[currentTurn].hand[0];
 
-    const result = playTile(started, playerId, tileToPlay.id, "left");
+    const connected = connectPlayer(started, currentTurn);
+    const result = playTile(connected, playerId, tileToPlay.id, "left");
 
     // Tile should be removed from hand
     expect(result.match.players[currentTurn].hand).toHaveLength(9);
@@ -310,7 +333,8 @@ describe("playTile", () => {
     const playerId = started.players[currentTurn].id;
     const tileToPlay = started.players[currentTurn].hand[0];
 
-    const result = playTile(started, playerId, tileToPlay.id, "left");
+    const connected = connectPlayer(started, currentTurn);
+    const result = playTile(connected, playerId, tileToPlay.id, "left");
 
     const tileEvent = result.events.find((e) => e.type === "tile_played");
     expect(tileEvent).toBeDefined();
@@ -329,7 +353,8 @@ describe("playTile", () => {
     const playerId = started.players[currentTurn].id;
     const tileToPlay = started.players[currentTurn].hand[0];
 
-    const result = playTile(started, playerId, tileToPlay.id, "left");
+    const connected = connectPlayer(started, currentTurn);
+    const result = playTile(connected, playerId, tileToPlay.id, "left");
 
     expect(result.match.turn.currentTurn).not.toBe(currentTurn);
   });
@@ -391,12 +416,13 @@ describe("playTile", () => {
     const pool = makePool();
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
-    const currentTurn = started.turn.currentTurn;
+    const connected = connectAllPlayers(started);
+    const currentTurn = connected.turn.currentTurn;
     // Pick a player who is NOT the current turn
     const wrongPlayer = (currentTurn + 1) % 4;
-    const playerId = started.players[wrongPlayer].id;
+    const playerId = connected.players[wrongPlayer].id;
 
-    const result = playTile(started, playerId, "any-tile", "left");
+    const result = playTile(connected, playerId, "any-tile", "left");
 
     expect(result.events[0].type).toBe("game_error");
     if (result.events[0].type === "game_error") {
@@ -409,10 +435,11 @@ describe("playTile", () => {
     const pool = makePool();
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
-    const currentTurn = started.turn.currentTurn;
-    const playerId = started.players[currentTurn].id;
+    const connected = connectAllPlayers(started);
+    const currentTurn = connected.turn.currentTurn;
+    const playerId = connected.players[currentTurn].id;
 
-    const result = playTile(started, playerId, "nonexistent-tile-id", "left");
+    const result = playTile(connected, playerId, "nonexistent-tile-id", "left");
 
     expect(result.events[0].type).toBe("game_error");
     if (result.events[0].type === "game_error") {
@@ -433,10 +460,11 @@ describe("playTile", () => {
         i === currentTurn ? { ...p, consecutivePasses: 3 } : p,
       ) as any,
     };
-    const playerId = modifiedMatch.players[currentTurn].id;
-    const tileToPlay = modifiedMatch.players[currentTurn].hand[0];
+    const connected = connectAllPlayers(modifiedMatch);
+    const playerId = connected.players[currentTurn].id;
+    const tileToPlay = connected.players[currentTurn].hand[0];
 
-    const result = playTile(modifiedMatch, playerId, tileToPlay.id, "left");
+    const result = playTile(connected, playerId, tileToPlay.id, "left");
 
     expect(result.match.players[currentTurn].consecutivePasses).toBe(0);
   });
@@ -452,10 +480,11 @@ describe("passTurn", () => {
     const pool = makePool();
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
-    const currentTurn = started.turn.currentTurn;
-    const playerId = started.players[currentTurn].id;
+    const connected = connectAllPlayers(started);
+    const currentTurn = connected.turn.currentTurn;
+    const playerId = connected.players[currentTurn].id;
 
-    const result = passTurn(started, playerId);
+    const result = passTurn(connected, playerId);
 
     expect(result.match.players[currentTurn].consecutivePasses).toBe(1);
   });
@@ -465,10 +494,11 @@ describe("passTurn", () => {
     const pool = makePool();
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
-    const currentTurn = started.turn.currentTurn;
-    const playerId = started.players[currentTurn].id;
+    const connected = connectAllPlayers(started);
+    const currentTurn = connected.turn.currentTurn;
+    const playerId = connected.players[currentTurn].id;
 
-    const result = passTurn(started, playerId);
+    const result = passTurn(connected, playerId);
 
     expect(result.match.turn.currentTurn).not.toBe(currentTurn);
   });
@@ -478,10 +508,11 @@ describe("passTurn", () => {
     const pool = makePool();
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
-    const currentTurn = started.turn.currentTurn;
-    const playerId = started.players[currentTurn].id;
+    const connected = connectAllPlayers(started);
+    const currentTurn = connected.turn.currentTurn;
+    const playerId = connected.players[currentTurn].id;
 
-    const result = passTurn(started, playerId);
+    const result = passTurn(connected, playerId);
 
     const passEvent = result.events.find((e) => e.type === "player_passed");
     expect(passEvent).toBeDefined();
@@ -546,11 +577,12 @@ describe("passTurn", () => {
     const pool = makePool();
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
-    const currentTurn = started.turn.currentTurn;
+    const connected = connectAllPlayers(started);
+    const currentTurn = connected.turn.currentTurn;
     const wrongPlayer = (currentTurn + 1) % 4;
-    const playerId = started.players[wrongPlayer].id;
+    const playerId = connected.players[wrongPlayer].id;
 
-    const result = passTurn(started, playerId);
+    const result = passTurn(connected, playerId);
 
     expect(result.events[0].type).toBe("game_error");
     if (result.events[0].type === "game_error") {
@@ -573,8 +605,9 @@ describe("passTurn", () => {
         i === currentTurn ? { ...p, hand: [] } : p,
       ) as any,
     };
+    const connected = connectAllPlayers(emptyHandMatch);
 
-    const result = passTurn(emptyHandMatch, playerId);
+    const result = passTurn(connected, playerId);
 
     expect(result.events[0].type).toBe("game_error");
     if (result.events[0].type === "game_error") {
@@ -937,7 +970,7 @@ describe("Integration: full game cycles", () => {
     // Start first hand
     const startResult = startHand(initResult.match);
     expect(startResult.events[0].type).toBe("round_started");
-    let currentMatch = startResult.match;
+    let currentMatch = connectAllPlayers(startResult.match);
 
     // Play a simple round: each player plays their first tile
     // We need to find a tile that can actually be played
@@ -956,7 +989,7 @@ describe("Integration: full game cycles", () => {
       expect(playResult.events.some((e) => e.type === "tile_played")).toBe(
         true,
       );
-      currentMatch = playResult.match;
+      currentMatch = connectAllPlayers(playResult.match);
       expect(currentMatch.board.tiles).toHaveLength(1);
     }
   });
@@ -968,7 +1001,7 @@ describe("Integration: full game cycles", () => {
 
     const initResult = initializeMatch("integration-2", hands, pool);
     const startResult = startHand(initResult.match);
-    let currentMatch = startResult.match;
+    let currentMatch = connectAllPlayers(startResult.match);
 
     // Play a few turns
     for (let turn = 0; turn < 4; turn++) {

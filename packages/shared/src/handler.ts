@@ -34,6 +34,7 @@ export interface SanitizedMatchState {
     id: string;
     handSize: number;
     isConnected: boolean;
+    blockedTileIds: string[];
   }>;
   board: {
     leftEnd: number | null;
@@ -73,6 +74,7 @@ export function sanitizeState(match: MatchState): SanitizedMatchState {
       id: p.id,
       handSize: p.hand.length,
       isConnected: p.isConnected,
+      blockedTileIds: p.blockedTileIds,
     })),
     board: match.board,
     currentTurn: match.turn.currentTurn,

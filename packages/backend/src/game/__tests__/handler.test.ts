@@ -15,6 +15,7 @@ function makeMatch(overrides?: Partial<MatchState>): MatchState {
     consecutivePasses: 0,
     isConnected: true,
     lastActionAt: now,
+    blockedTileIds: [],
   };
   return {
     matchId: "test-match",
@@ -256,10 +257,10 @@ describe("handleMessage", () => {
       // Give p0 2 tiles + give other players matching tiles so the board
       // doesn't block (which would trigger handleHandEnd/redealHand).
       players: [
-        { id: "p0", hand: [{ id: "t1", top: 3, bottom: 4 }, { id: "t2", top: 5, bottom: 6 }], consecutivePasses: 0, isConnected: true, lastActionAt: now },
-        { id: "p1", hand: [{ id: "t3", top: 4, bottom: 7 }], consecutivePasses: 0, isConnected: true, lastActionAt: now },
-        { id: "p2", hand: [{ id: "t4", top: 7, bottom: 3 }], consecutivePasses: 0, isConnected: true, lastActionAt: now },
-        { id: "p3", hand: [{ id: "t5", top: 3, bottom: 9 }], consecutivePasses: 0, isConnected: true, lastActionAt: now },
+        { id: "p0", hand: [{ id: "t1", top: 3, bottom: 4 }, { id: "t2", top: 5, bottom: 6 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
+        { id: "p1", hand: [{ id: "t3", top: 4, bottom: 7 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
+        { id: "p2", hand: [{ id: "t4", top: 7, bottom: 3 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
+        { id: "p3", hand: [{ id: "t5", top: 3, bottom: 9 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
       ] as MatchState["players"],
     });
     const store = makeStore(match);

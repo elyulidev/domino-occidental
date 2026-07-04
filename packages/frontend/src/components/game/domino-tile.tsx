@@ -75,6 +75,8 @@ export interface DominoTileProps {
   selected?: boolean;
   playable?: boolean;
   disabled?: boolean;
+  /** When true, the tile is blocked by timeout — visually dimmed with a lock indicator */
+  blocked?: boolean;
   onClick?: () => void;
   size?: "sm" | "md";
   /** When true, renders as a face-down tile back */
@@ -99,6 +101,7 @@ export function DominoTile({
   selected = false,
   playable = true,
   disabled = false,
+  blocked = false,
   onClick,
   size = "md",
   faceDown = false,
@@ -123,7 +126,7 @@ export function DominoTile({
   }
 
   const TileContent = orientation === "vertical" ? (
-    <div className={`flex h-full w-full ${s.halfDir} overflow-hidden bg-gradient-to-b from-stone-100 to-amber-50 shadow-inner`}>
+    <div className={`relative flex h-full w-full ${s.halfDir} overflow-hidden bg-gradient-to-b from-stone-100 to-amber-50 shadow-inner`}>
       {/* Top half */}
       <div className={`flex items-center justify-center ${s.half}`}>
         <PipFace value={tile.top} className={s.pipArea} />
@@ -145,9 +148,16 @@ export function DominoTile({
           <span className="absolute right-[3px] top-1/2 h-[3px] w-[3px] -translate-y-1/2 rounded-full bg-stone-500/60" />
         </>
       )}
+
+      {/* Blocked overlay icon */}
+      {blocked && (
+        <span className="absolute inset-0 flex items-center justify-center bg-red-900/20 text-lg font-bold text-red-500 select-none">
+          ✕
+        </span>
+      )}
     </div>
   ) : (
-    <div className={`flex h-full w-full ${s.halfDir} overflow-hidden bg-gradient-to-b from-stone-100 to-amber-50 shadow-inner`}>
+    <div className={`relative flex h-full w-full ${s.halfDir} overflow-hidden bg-gradient-to-b from-stone-100 to-amber-50 shadow-inner`}>
       {/* Left half (top value) */}
       <div className={`flex items-center justify-center ${s.half}`}>
         <PipFace value={tile.top} className={s.pipArea} />
@@ -169,6 +179,13 @@ export function DominoTile({
           <span className="absolute bottom-[3px] left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full bg-stone-500/60" />
         </>
       )}
+
+      {/* Blocked overlay icon */}
+      {blocked && (
+        <span className="absolute inset-0 flex items-center justify-center bg-red-900/20 text-lg font-bold text-red-500 select-none">
+          ✕
+        </span>
+      )}
     </div>
   );
 
@@ -177,10 +194,12 @@ export function DominoTile({
     "relative shrink-0 border-2 shadow-md transition-all",
     selected
       ? "border-gold-500 ring-2 ring-gold-500 ring-offset-2 ring-offset-domino-950"
-      : playable && !disabled
-        ? "border-stone-700 hover:border-gold-500 cursor-pointer"
-        : "border-stone-600 opacity-45 cursor-default",
-    disabled ? "cursor-not-allowed" : "",
+      : blocked
+        ? "border-red-700/60 opacity-55 cursor-not-allowed"
+        : playable && !disabled
+          ? "border-stone-700 hover:border-gold-500 cursor-pointer"
+          : "border-stone-600 opacity-45 cursor-default",
+    disabled || blocked ? "cursor-not-allowed" : "",
   ].join(" ");
 
   if (onClick) {

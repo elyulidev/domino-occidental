@@ -12,7 +12,12 @@ function setupStore() {
   let handResult = startHand(matchResult.match);
   // Force turn to player 0 (human)
   const forcedTurn = setCurrentTurn(handResult.match.turn, 0);
-  const match = { ...handResult.match, turn: forcedTurn };
+  // Connect ALL players (bots need isConnected=true or processBotTurns will infinite-loop)
+  const connectedPlayers = handResult.match.players.map((p) => ({
+    ...p,
+    isConnected: true,
+  })) as MatchState["players"];
+  const match = { ...handResult.match, players: connectedPlayers, turn: forcedTurn };
   return { match, hand: hands[0] };
 }
 

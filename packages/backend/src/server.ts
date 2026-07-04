@@ -1,19 +1,72 @@
 import { Elysia } from "elysia";
 
 import { createGame, getGame, updateGame } from "./game/store";
-import { createWsPlugin } from "./ws/connection";
 import {
+	type WsPlugin,
+	createConnectionManager,
+	createWsPlugin,
+	sendToPlayer,
+} from "./ws/connection";
+import { createTimerManager } from "./ws/timer-manager";
+import { broadcastEvents } from "./ws/broadcaster";
+import {
+	checkTimeout,
 	createDeck,
 	deal,
 	initializeMatch,
 	shuffle,
 	startHand,
 } from "@domino/shared/game";
+import type { SendFn } from "@domino/shared";
+import { disconnectPlayer, checkAbandonment } from "./game/connection";
 
 const PORT = Number(Bun.env.PORT) || 3001;
 
 const store = { getGame, updateGame };
 
+// ---------------------------------------------------------------------------
+// Connection manager + SendFn (shared by WS plugin and TimerManager)
+// ---------------------------------------------------------------------------
+const connectionManager = createConnectionManager();
+
+const sendFn: SendFn = (playerId, event) =>
+	sendToPlayer(connectionManager, playerId, event);
+
+// ---------------------------------------------------------------------------
+// Timer manager — handles turn timeout (45s), heartbeat, and abandonment
+// ---------------------------------------------------------------------------
+const timerManager = createTimerManager({
+	store,
+	broadcastEvents,
+	sendFn,
+	checkTimeout,
+	disconnectPlayer,
+	checkAbandonment,
+	getConnectionReadyState: (playerId: string) => {
+		const ws = connectionManager.getConnection(playerId);
+		if (!ws) return -1;
+		try {
+			return (ws as unknown as { ws?: { readyState?: number } }).ws
+				?.readyState ?? -1;
+		} catch {
+			return -1;
+		}
+	},
+});
+
+// ---------------------------------------------------------------------------
+// WS plugin
+// ---------------------------------------------------------------------------
+const plugin: WsPlugin = createWsPlugin({
+	store,
+	connectionManager,
+	timerManager,
+	disconnectPlayer,
+});
+
+// ---------------------------------------------------------------------------
+// App
+// ---------------------------------------------------------------------------
 const app = new Elysia()
 	.get("/health", () => ({
 		status: "ok",
@@ -38,7 +91,7 @@ const app = new Elysia()
 		return { matchId };
 	})
 	// Single WS route: playerId comes from path param (dev) or JWT (auth)
-	.ws("/ws/game/:matchId/:playerId", createWsPlugin({ store }).ws as any)
+	.ws("/ws/game/:matchId/:playerId", plugin.ws as any)
 	.listen(PORT);
 
 console.log(

@@ -22,6 +22,8 @@ interface GameState {
   scores: [number, number];
   players: Array<{ id: string; name?: string; handSize: number; isConnected: boolean }>;
   ownHand: Tile[];
+  /** Tile IDs blocked by timeout for the current player (from server). */
+  blockedTileIds: string[];
   /** Index (0-3) of the player THIS client controls. Used for turn checking. */
   playerIndex: number;
   turn: {
@@ -66,6 +68,7 @@ const defaultGameState: GameState = {
   scores: [0, 0],
   players: [],
   ownHand: [],
+  blockedTileIds: [],
   playerIndex: 0,
   turn: {
     currentTurn: 0,
@@ -87,6 +90,7 @@ const defaultUIState: UIState = {
 // ---------------------------------------------------------------------------
 
 function syncGameState(state: StoreState, match: MatchState): Partial<StoreState> {
+  const playerIdx = state.engine?.playerIndex ?? 0;
   return {
     game: {
       board: match.board,
@@ -97,7 +101,8 @@ function syncGameState(state: StoreState, match: MatchState): Partial<StoreState
         isConnected: p.isConnected,
       })),
       ownHand: state.engine?.hand ?? match.players[0].hand,
-      playerIndex: state.engine?.playerIndex ?? 0,
+      blockedTileIds: match.players[playerIdx]?.blockedTileIds ?? [],
+      playerIndex: playerIdx,
       turn: {
         currentTurn: match.turn.currentTurn,
         turnDeadline: match.turn.turnDeadline,
@@ -146,6 +151,7 @@ export const useGameStore = create<StoreState>((set, get) => ({
   applyWsUpdate: (sanitized: SanitizedMatchState, yourHand?: Tile[]) => {
     const store = get();
     const existingPlayers = store.game.players;
+    const playerIdx = store.engine?.playerIndex ?? 0;
 
     set({
       game: {
@@ -158,7 +164,8 @@ export const useGameStore = create<StoreState>((set, get) => ({
           isConnected: p.isConnected,
         })),
         ownHand: yourHand ?? store.game.ownHand,
-        playerIndex: store.engine?.playerIndex ?? 0,
+        blockedTileIds: sanitized.players[playerIdx]?.blockedTileIds ?? [],
+        playerIndex: playerIdx,
         turn: {
           currentTurn: sanitized.currentTurn as 0 | 1 | 2 | 3,
           turnDeadline: sanitized.turnDeadline,

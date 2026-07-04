@@ -40,6 +40,7 @@ export function PlayerHand() {
   const selectedTileId = useGameStore((s) => s.ui.selectedTileId);
   const currentTurn = useGameStore((s) => s.game.turn.currentTurn);
   const playerIndex = useGameStore((s) => s.game.playerIndex);
+  const blockedTileIds = useGameStore((s) => s.game.blockedTileIds);
   const selectTile = useGameStore((s) => s.selectTile);
   const clearSelection = useGameStore((s) => s.clearSelection);
   const playTile = useGameStore((s) => s.playTile);
@@ -96,14 +97,18 @@ export function PlayerHand() {
         {ownHand.map((tile) => {
           const playable = isTilePlayable(tile, board);
           const selected = tile.id === selectedTileId;
+          // Tile is blocked by timeout: playable but can't be used this hand
+          const blocked = blockedTileIds.includes(tile.id);
+          const canInteract = playable && !blocked && isMyTurn;
 
           return (
             <DominoTile
               key={tile.id}
               tile={tile}
               selected={selected}
-              playable={playable}
-              disabled={!playable || !isMyTurn}
+              playable={playable && !blocked}
+              disabled={!canInteract}
+              blocked={blocked}
               onClick={() => handleTileClick(tile.id)}
             />
           );

@@ -141,8 +141,7 @@ export default function MobileMenu() {
         onClick={() => setOpen(true)}
         aria-label="Abrir menú"
         aria-expanded={open}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-domino-700 text-domino-300
-          transition-colors hover:bg-domino-700 hover:text-domino-50"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-domino-700 text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
           <path d="M4 6h16M4 12h16M4 18h16" />

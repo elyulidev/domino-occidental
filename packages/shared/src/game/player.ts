@@ -11,8 +11,9 @@ export function createPlayer(id: string): PlayerState {
     id,
     hand: [],
     consecutivePasses: 0,
-    isConnected: true,
+    isConnected: false,
     lastActionAt: new Date(),
+    blockedTileIds: [],
   };
 }
 
@@ -109,6 +110,16 @@ export function incrementPasses(player: PlayerState): PlayerState {
  */
 export function resetPasses(player: PlayerState): PlayerState {
   return { ...player, consecutivePasses: 0 };
+}
+
+/**
+ * Resets the player's blocked tile IDs (e.g. at the start of a new hand).
+ *
+ * @param player - Current player state
+ * @returns New player state with blockedTileIds: []
+ */
+export function resetBlockedTiles(player: PlayerState): PlayerState {
+  return { ...player, blockedTileIds: [] };
 }
 
 /**
