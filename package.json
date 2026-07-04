@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "concurrently -n backend,frontend -c yellow,cyan \"bun run dev:backend\" \"bun run dev:frontend\"",
     "dev:backend": "bun --cwd packages/backend dev",
     "dev:frontend": "bun --cwd packages/frontend dev",
     "build": "bun --cwd packages/frontend build",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
     "@types/bun": "^1.3.14",
+    "concurrently": "^10.0.3",
     "typescript": "^5"
   },
   "dependencies": {
