@@ -4,6 +4,7 @@ import {
   isHumanTurn,
   turnProgressPercent,
   timerColorClass,
+  resolveTimerClasses,
 } from "../turn-timer";
 
 // ---------------------------------------------------------------------------
@@ -87,6 +88,41 @@ describe("turn-timer helpers", () => {
     it("returns green when more than 20 seconds", () => {
       expect(timerColorClass(21)).toBe("bg-green-500");
       expect(timerColorClass(45)).toBe("bg-green-500");
+    });
+  });
+
+  // ── resolveTimerClasses ──
+
+  describe("resolveTimerClasses", () => {
+    it("returns full classes when compact is false (default)", () => {
+      const cls = resolveTimerClasses();
+      expect(cls).toContain("rounded-2xl");
+      expect(cls).toContain("border");
+      expect(cls).toContain("p-4");
+    });
+
+    it("returns full classes when compact is explicitly false", () => {
+      const cls = resolveTimerClasses(false);
+      expect(cls).toContain("rounded-2xl");
+      expect(cls).toContain("border");
+      expect(cls).toContain("p-4");
+    });
+
+    it("returns slim classes when compact is true", () => {
+      const cls = resolveTimerClasses(true);
+      expect(cls).toContain("p-2");
+      expect(cls).not.toContain("rounded-2xl");
+      expect(cls).not.toContain("border");
+    });
+
+    it("compact uses rounded-lg instead of rounded-2xl", () => {
+      const cls = resolveTimerClasses(true);
+      expect(cls).toContain("rounded-lg");
+    });
+
+    it("non-compact does not contain rounded-lg", () => {
+      const cls = resolveTimerClasses(false);
+      expect(cls).not.toContain("rounded-lg");
     });
   });
 });

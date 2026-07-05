@@ -33,11 +33,19 @@ export function timerColorClass(remaining: number): string {
   return "bg-green-500";
 }
 
+/** Resolve outer container classes based on compact prop. */
+export function resolveTimerClasses(compact = false): string {
+  if (compact) {
+    return "rounded-lg bg-domino-900/60 p-2";
+  }
+  return "rounded-2xl border border-domino-700/50 bg-domino-900/60 p-4";
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function TurnTimer() {
+export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
   const currentTurn = useGameStore((s) => s.game.turn.currentTurn);
   const turnDeadline = useGameStore((s) => s.game.turn.turnDeadline);
   const playerIndex = useGameStore((s) => s.game.playerIndex);
@@ -60,9 +68,48 @@ export function TurnTimer() {
   const humanTurn = isHumanTurn(currentTurn, playerIndex);
   const progress = turnProgressPercent(remaining);
   const colorClass = timerColorClass(remaining);
+  const containerClass = resolveTimerClasses(compact);
+
+  if (compact) {
+    return (
+      <div className={containerClass}>
+        {/* Compact: slim bar + label only */}
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-[10px] text-domino-400">
+            {humanTurn ? "Your turn" : `P${currentTurn + 1}'s turn`}
+          </span>
+          {humanTurn && (
+            <span className="font-mono text-[10px] font-bold text-domino-50">
+              {remaining}s
+            </span>
+          )}
+        </div>
+        {humanTurn && turnDeadline !== null && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-domino-700">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ease-linear ${colorClass}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
+        {!humanTurn && (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-domino-400">
+              {isRemote ? `Waiting…` : "Bots thinking"}
+            </span>
+            <span className="flex gap-0.5">
+              <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-domino-400 [animation-delay:0ms]" />
+              <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-domino-400 [animation-delay:150ms]" />
+              <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-domino-400 [animation-delay:300ms]" />
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-4">
+    <div className={containerClass}>
       {/* Turn label */}
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs text-domino-400">

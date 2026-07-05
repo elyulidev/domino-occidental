@@ -3,6 +3,8 @@ import {
   computeOpponents,
   opponentPositionClass,
   connectionDotClass,
+  resolveOpponentContainerClass,
+  resolveOpponentCardClass,
 } from "../opponent-indicator";
 
 // ---------------------------------------------------------------------------
@@ -103,6 +105,72 @@ describe("opponent-indicator helpers", () => {
 
     it("returns red when disconnected", () => {
       expect(connectionDotClass(false)).toBe("bg-red-500");
+    });
+  });
+
+  // ── resolveOpponentContainerClass ──
+
+  describe("resolveOpponentContainerClass", () => {
+    it("returns horizontal layout by default", () => {
+      const cls = resolveOpponentContainerClass();
+      expect(cls).toContain("flex-row");
+      expect(cls).toContain("gap-4");
+    });
+
+    it("returns horizontal layout when explicitly set", () => {
+      const cls = resolveOpponentContainerClass("horizontal");
+      expect(cls).toContain("flex-row");
+      expect(cls).toContain("gap-4");
+    });
+
+    it("returns vertical layout when direction is vertical", () => {
+      const cls = resolveOpponentContainerClass("vertical");
+      expect(cls).toContain("flex-col");
+      expect(cls).toContain("gap-2");
+    });
+  });
+
+  // ── resolveOpponentCardClass ──
+
+  describe("resolveOpponentCardClass", () => {
+    it("returns default card classes when not active and horizontal", () => {
+      const cls = resolveOpponentCardClass(false, "horizontal");
+      expect(cls).toContain("border-domino-700/50");
+      expect(cls).toContain("bg-domino-900/60");
+      expect(cls).toContain("p-4");
+      expect(cls).toContain("flex-col");
+    });
+
+    it("returns active card classes when it is the current turn", () => {
+      const cls = resolveOpponentCardClass(true, "horizontal");
+      expect(cls).toContain("border-gold-500/60");
+      expect(cls).toContain("bg-domino-800/80");
+      expect(cls).toContain("ring-1");
+    });
+
+    it("returns compact card classes when direction is vertical", () => {
+      const cls = resolveOpponentCardClass(false, "vertical");
+      expect(cls).toContain("p-2");
+      expect(cls).toContain("flex-row");
+      expect(cls).not.toContain("border-domino-700/50");
+    });
+
+    it("returns compact active card classes when vertical and active", () => {
+      const cls = resolveOpponentCardClass(true, "vertical");
+      expect(cls).toContain("p-2");
+      expect(cls).toContain("flex-row");
+      expect(cls).toContain("border-gold-500/60");
+    });
+
+    it("vertical container uses items-stretch for equal card widths", () => {
+      const cls = resolveOpponentContainerClass("vertical");
+      expect(cls).toContain("items-stretch");
+    });
+
+    it("vertical active card includes ring indicator", () => {
+      const cls = resolveOpponentCardClass(true, "vertical");
+      expect(cls).toContain("ring-1");
+      expect(cls).toContain("ring-gold-500/30");
     });
   });
 });
