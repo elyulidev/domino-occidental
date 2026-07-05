@@ -46,7 +46,7 @@ const timerManager = createTimerManager({
 		const ws = connectionManager.getConnection(playerId);
 		if (!ws) return -1;
 		try {
-			return (ws as unknown as { ws?: { readyState?: number } }).ws
+			return (ws as unknown as { raw?: { readyState?: number } }).raw
 				?.readyState ?? -1;
 		} catch {
 			return -1;

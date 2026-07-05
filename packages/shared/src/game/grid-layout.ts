@@ -348,7 +348,7 @@ export function computeGridLayout(tiles: PlacedTile[]): GridLayout {
   // ── Place remaining tiles ──
   for (let i = 1; i < tiles.length; i++) {
     const placed = tiles[i];
-    const head = placed.side === "left" ? leftHead! : rightHead!;
+    const head: HeadPos = placed.side === "left" ? leftHead! : rightHead!;
     const isDouble = placed.tile.top === placed.tile.bottom;
 
     const result = isDouble

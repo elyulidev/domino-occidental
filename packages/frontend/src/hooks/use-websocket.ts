@@ -41,10 +41,10 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
       {
         matchId,
         players: [
-          { id: playerId, handSize: 0, isConnected: true },
-          { id: "", handSize: 0, isConnected: false },
-          { id: "", handSize: 0, isConnected: false },
-          { id: "", handSize: 0, isConnected: false },
+          { id: playerId, handSize: 0, isConnected: true, blockedTileIds: [] },
+          { id: "", handSize: 0, isConnected: false, blockedTileIds: [] },
+          { id: "", handSize: 0, isConnected: false, blockedTileIds: [] },
+          { id: "", handSize: 0, isConnected: false, blockedTileIds: [] },
         ],
         board: { leftEnd: null, rightEnd: null, tiles: [] },
         currentTurn: 0,
