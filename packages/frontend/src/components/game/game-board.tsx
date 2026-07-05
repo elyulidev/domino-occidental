@@ -4,7 +4,6 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
 import type { PlacedTile, Tile } from "@domino/shared";
 import { DominoTile, isDoubleTile } from "./domino-tile";
-import { calculateGridLayout } from "./grid-layout-engine";
 import {
   calculatePanDelta,
   clampPan,
@@ -59,6 +58,85 @@ export function buildDisplayOrder(tiles: PlacedTile[]): {
 }
 
 // ---------------------------------------------------------------------------
+// Snake-layout helpers
+// ---------------------------------------------------------------------------
+
+/** Approximate horizontal tile width (64px tile + 8px gap) used for per-row estimation. */
+const TILE_W = 72;
+/** Approximate vertical tile height (88px tile + 8px gap + 8px badge). */
+const TILE_H = 104;
+
+/** Group items into rows. */
+export function snakeRows<T>(items: T[], perRow: number): T[][] {
+  if (perRow < 1) return [items];
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += perRow) {
+    rows.push(items.slice(i, i + perRow));
+  }
+  return rows;
+}
+
+/** Max horizontal tiles per row. */
+export function tilesPerRow(containerWidth: number): number {
+  return Math.max(1, Math.floor(containerWidth / TILE_W));
+}
+
+export interface CenterRowsResult {
+  rows: PlacedTile[][];
+  mainRowIndex: number;
+}
+
+/**
+ * Group the display array into rows keeping the center tile fixed in position.
+ *
+ * Left tiles that overflow go ABOVE the main row (left arm snakes up),
+ * right tiles that overflow go BELOW (right arm snakes down).
+ */
+export function buildCenterRows(
+  display: PlacedTile[],
+  centerIdx: number,
+  perRow: number,
+): CenterRowsResult {
+  if (display.length === 0) return { rows: [], mainRowIndex: -1 };
+
+  // Fallback for narrow containers: simple snake
+  if (perRow < 3) {
+    return { rows: snakeRows(display, perRow), mainRowIndex: 0 };
+  }
+
+  const capacityEachSide = Math.floor((perRow - 1) / 2);
+
+  const leftTiles = display.slice(0, centerIdx);
+  const rightTiles = display.slice(centerIdx + 1);
+
+  const leftFit = Math.min(leftTiles.length, capacityEachSide);
+  const rightFit = Math.min(rightTiles.length, capacityEachSide);
+
+  const leftOverflow = leftTiles.slice(0, leftTiles.length - leftFit);
+  const rightOverflow = rightTiles.slice(rightFit);
+
+  const rows: PlacedTile[][] = [];
+
+  if (leftOverflow.length > 0) {
+    const leftRows = snakeRows(leftOverflow, perRow);
+    rows.push(...leftRows);
+  }
+
+  const mainRowIndex = rows.length; // main row starts here
+
+  const mainLeft = leftTiles.slice(leftTiles.length - leftFit);
+  const mainRight = rightTiles.slice(0, rightFit);
+  rows.push([...mainLeft, display[centerIdx], ...mainRight]);
+
+  if (rightOverflow.length > 0) {
+    const rightRows = snakeRows(rightOverflow, perRow);
+    rows.push(...rightRows);
+  }
+
+  return { rows, mainRowIndex };
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -108,16 +186,17 @@ export function GameBoard() {
         setIsDragging(true);
       }
 
-        if (isDragging) {
-          const newPan = clampPan(
-            panX + deltaX,
-            panY + deltaY,
-            containerRef.current?.clientWidth ?? 600,
-            containerRef.current?.clientHeight ?? 400,
-            zoom,
-          );
-          setPan({ x: newPan.panX, y: newPan.panY });
-        }
+      if (isDragging && containerRef.current) {
+        const { clientWidth, clientHeight } = containerRef.current;
+        const newPan = clampPan(
+          panX + deltaX,
+          panY + deltaY,
+          clientWidth,
+          clientHeight,
+          zoom,
+        );
+        setPan({ x: newPan.panX, y: newPan.panY });
+      }
     },
     [isDragging, zoom],
   );
@@ -158,11 +237,19 @@ export function GameBoard() {
   // Zoom button handlers
   const handleZoomIn = useCallback(() => {
     setZoom((z) => Math.min(MAX_ZOOM, z + ZOOM_STEP));
-  }, []);
+    setPan((p) => {
+      const newZoom = Math.min(MAX_ZOOM, zoom + ZOOM_STEP);
+      const scale = newZoom / zoom;
+      return { x: p.x * scale, y: p.y * scale };
+    });
+  }, [zoom]);
 
   const handleZoomOut = useCallback(() => {
-    setZoom((z) => Math.max(MIN_ZOOM, z - ZOOM_STEP));
-  }, []);
+    const newZoom = Math.max(MIN_ZOOM, zoom - ZOOM_STEP);
+    const scale = newZoom / zoom;
+    setZoom(newZoom);
+    setPan((p) => ({ x: p.x * scale, y: p.y * scale }));
+  }, [zoom]);
 
   // Touch state for pinch zoom
   const touchRef = useRef<{
@@ -218,12 +305,13 @@ export function GameBoard() {
           setIsDragging(true);
         }
 
-        if (isDragging) {
+        if (isDragging && containerRef.current) {
+          const { clientWidth, clientHeight } = containerRef.current;
           const newPan = clampPan(
             panX + deltaX,
             panY + deltaY,
-            containerRef.current?.clientWidth ?? 600,
-            containerRef.current?.clientHeight ?? 400,
+            clientWidth,
+            clientHeight,
             zoom,
           );
           setPan({ x: newPan.panX, y: newPan.panY });
@@ -271,7 +359,10 @@ export function GameBoard() {
   }
 
   const { display, centerIdx } = buildDisplayOrder(boardTiles);
-  const { positions } = calculateGridLayout(display, centerIdx, containerWidth);
+  const perRow = tilesPerRow(containerWidth);
+  const { rows, mainRowIndex } = buildCenterRows(display, centerIdx, perRow);
+  const hasLeftOverflow = mainRowIndex > 0;
+  const hasRightOverflow = mainRowIndex < rows.length - 1;
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-domino-700/50 bg-domino-900/60 p-4">
@@ -286,7 +377,7 @@ export function GameBoard() {
         </span>
       </div>
 
-      {/* Serpentine board — absolute positioned tiles (fills remaining space) */}
+      {/* Serpentine board — snake layout with flexbox (fills remaining space) */}
       <div
         ref={containerRef}
         className="relative min-h-0 flex-1 overflow-hidden"
@@ -301,27 +392,50 @@ export function GameBoard() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Pan/zoom transform wrapper */}
         <div
+          className="flex h-full w-full items-center justify-center"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: "0 0",
-            width: 0,
-            height: 0,
+            transformOrigin: "center center",
           }}
         >
-          {display.map((placed, i) => {
-            const pos = positions[i];
-            if (!pos) return null;
-            const isFirst = placed.tile.id === boardTiles[0]?.tile.id;
-            return (
-              <BoardTile
-                key={placed.tile.id}
-                placed={placed}
-                position={pos}
-                isFirst={isFirst}
-              />
-            );
-          })}
+          {/* Snake layout — centered and flowing as flex rows */}
+          <div className="flex flex-col items-center gap-0">
+            {rows.map((row, ri) => {
+              const isMainRow = ri === mainRowIndex;
+              // Left overflow rows (above): left-to-right so the connection tile
+              // sits on the right side facing the center.
+              // Right overflow rows (below): left-to-right so the connection tile
+              // sits on the left side facing the center.
+              const align =
+                ri < mainRowIndex
+                  ? "justify-start"
+                  : ri === mainRowIndex
+                    ? "justify-center"
+                    : "justify-start";
+
+              return (
+                <div key={ri} className={`flex items-center ${align} gap-0`}>
+                  {row.map((placed, ti) => {
+                    const isFirst = placed.tile.id === boardTiles[0]?.tile.id;
+                    const isBend =
+                      isMainRow &&
+                      ((hasLeftOverflow && ti === 0) ||
+                        (hasRightOverflow && ti === row.length - 1));
+                    return (
+                      <BoardTile
+                        key={placed.tile.id}
+                        placed={placed}
+                        isFirst={isFirst}
+                        isBend={isBend}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Zoom controls overlay */}
@@ -355,36 +469,37 @@ export function GameBoard() {
 
 function BoardTile({
   placed,
-  position,
   isFirst,
+  isBend = false,
 }: {
   placed: PlacedTile;
-  position: import("./grid-layout-engine").TilePosition;
   isFirst: boolean;
+  isBend?: boolean;
 }) {
-  const { tile, playerId } = placed;
+  const { tile, playerId, side } = placed;
   const pIdx = playerIdToIndex(playerId);
+  const isDouble = tile.top === tile.bottom;
 
-  // Use the layout engine's flipped value so the canonical connecting value
-  // (tile.bottom) appears on the inward side of the serpentine arm.
-  const displayTile: Tile = position.flipped
-    ? { top: tile.bottom, bottom: tile.top, id: tile.id }
-    : tile;
+  // Right-side tiles: the engine stores the connecting value in `bottom`
+  // and the new end in `top`. Since horizontal display shows left=top,
+  // right=bottom, we must swap so the connecting value faces the center.
+  const displayTile: Tile =
+    !isFirst && side === "right"
+      ? { top: tile.bottom, bottom: tile.top, id: tile.id }
+      : tile;
+
+  // Orientation: doubles and first tile are always vertical.
+  // Bend tiles (at snake corners) are also vertical to show the direction change.
+  const orientation = isFirst || isDouble || isBend ? "vertical" : "horizontal";
 
   return (
-    <div
-      className="absolute transition-all duration-300 ease-out"
-      style={{
-        left: `calc(50% + ${position.x}px)`,
-        top: `calc(50% + ${position.y}px)`,
-        transform: "translate(-50%, -50%)",
-      }}
-      title={`Player ${pIdx + 1}`}
-    >
-      <DominoTile
-        tile={displayTile}
-        size="md"
-        orientation={position.orientation}
+    <div className="relative flex shrink-0 flex-col items-center">
+      <DominoTile tile={displayTile} size="md" orientation={orientation} />
+
+      {/* Player color badge */}
+      <span
+        className={`mt-1.5 inline-block h-1.5 w-6 rounded-full ${playerColorClass(pIdx)}`}
+        title={`Played by Player ${pIdx + 1}`}
       />
     </div>
   );

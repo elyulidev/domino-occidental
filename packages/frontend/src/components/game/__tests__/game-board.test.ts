@@ -6,7 +6,11 @@ import {
   playerIdToIndex,
   buildDisplayOrder,
   calculateSerpentineLayout,
+  snakeRows,
+  tilesPerRow,
+  buildCenterRows,
   type LayoutResult,
+  type CenterRowsResult,
 } from "../game-board";
 import type { PlacedTile, Tile } from "@domino/shared";
 
@@ -356,6 +360,111 @@ describe("game-board helpers", () => {
       const { display, centerIdx } = buildDisplayOrder(tiles);
       expect(centerIdx).toBe(2);
       expect(display.map((t) => t.tile.id)).toEqual(["t2", "t1", "t0", "t3", "t4"]);
+    });
+  });
+
+  // ── snakeRows ──
+
+  describe("snakeRows", () => {
+    it("returns single row when items fit in perRow", () => {
+      expect(snakeRows([1, 2, 3], 5)).toEqual([[1, 2, 3]]);
+    });
+
+    it("splits into multiple rows when items exceed perRow", () => {
+      expect(snakeRows([1, 2, 3, 4, 5, 6, 7], 3)).toEqual([[1, 2, 3], [4, 5, 6], [7]]);
+    });
+
+    it("returns all items in one row for perRow < 1", () => {
+      expect(snakeRows([1, 2, 3], 0)).toEqual([[1, 2, 3]]);
+    });
+
+    it("handles empty array", () => {
+      expect(snakeRows([], 3)).toEqual([]);
+    });
+
+    it("handles exact fit", () => {
+      expect(snakeRows([1, 2, 3, 4], 4)).toEqual([[1, 2, 3, 4]]);
+    });
+  });
+
+  // ── tilesPerRow ──
+
+  describe("tilesPerRow", () => {
+    it("returns 8 for 600px container (600/72 ≈ 8.3)", () => {
+      expect(tilesPerRow(600)).toBe(8);
+    });
+
+    it("returns 1 for very narrow container", () => {
+      expect(tilesPerRow(50)).toBe(1);
+    });
+
+    it("returns 16 for 1200px container", () => {
+      expect(tilesPerRow(1200)).toBe(16);
+    });
+  });
+
+  // ── buildCenterRows ──
+
+  describe("buildCenterRows", () => {
+    const center = placedTile(3, 3, "left", "C");
+
+    it("returns empty rows for empty display", () => {
+      const { rows, mainRowIndex } = buildCenterRows([], 0, 4);
+      expect(rows).toEqual([]);
+      expect(mainRowIndex).toBe(-1);
+    });
+
+    it("single tile → one row, mainRowIndex=0", () => {
+      const { rows, mainRowIndex } = buildCenterRows([center], 0, 4);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toHaveLength(1);
+      expect(rows[0][0].tile.id).toBe("C");
+      expect(mainRowIndex).toBe(0);
+    });
+
+    it("center + 2 right tiles fit in main row with perRow=5", () => {
+      const r1 = placedTile(3, 1, "right", "R1");
+      const r2 = placedTile(1, 2, "right", "R2");
+      const display = [center, r1, r2];
+      const { rows, mainRowIndex } = buildCenterRows(display, 0, 5);
+      expect(rows).toHaveLength(1);
+      expect(mainRowIndex).toBe(0);
+      expect(rows[0].map((p) => p.tile.id)).toEqual(["C", "R1", "R2"]);
+    });
+
+    it("overflow right tiles go to a second row below main", () => {
+      // perRow=3, center + 4 right tiles → capacity 1 on each side → 3 overflow
+      const tiles = Array.from({ length: 5 }, (_, i) =>
+        placedTile(i, i + 1, "right", `R${i}`)
+      );
+      const display = [center, ...tiles];
+      const { rows, mainRowIndex } = buildCenterRows(display, 0, 3);
+      // Main row: center + 1 right = [C, R0], overflow: 4 tiles in rows below
+      expect(mainRowIndex).toBe(0);
+      expect(rows.length).toBeGreaterThanOrEqual(2);
+      expect(rows[0].map((p) => p.tile.id)).toEqual(["C", "R0"]);
+    });
+
+    it("overflow left tiles go to a row above main", () => {
+      // perRow=3, 3 left tiles + center → capacity 1 → 2 overflow
+      const l1 = placedTile(1, 3, "left", "L2");
+      const l2 = placedTile(3, 4, "left", "L1");
+      const display = [l1, l2, center];
+      const { rows, mainRowIndex } = buildCenterRows(display, 2, 3);
+      expect(mainRowIndex).toBeGreaterThan(0);
+      expect(rows[mainRowIndex].map((p) => p.tile.id)).toEqual(["L1", "C"]);
+    });
+
+    it("falls back to simple snake when perRow < 3", () => {
+      const tiles = Array.from({ length: 5 }, (_, i) =>
+        placedTile(i, i + 1, "right", `t${i}`)
+      );
+      const display = [center, ...tiles];
+      const { rows, mainRowIndex } = buildCenterRows(display, 0, 2);
+      // With perRow=2, fallback: simple snake with 2 per row, no center fix
+      expect(mainRowIndex).toBe(0);
+      // 6 items / 2 per row = 3 rows
+      expect(rows).toHaveLength(3);
     });
   });
 
