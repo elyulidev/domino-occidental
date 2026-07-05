@@ -36,17 +36,22 @@ Tile orientation SHALL be determined by POSITION in the serpentine, not by wheth
 
 ### Requirement: R4 — First Tile Centering
 
-First played tile MUST stay centered in viewport regardless of board length. All coordinates offset so anchor sits at container center.
+First played tile MUST start centered in viewport. User MAY pan away from center via drag. Double-click SHALL reset board to (0,0) pan, returning tile to center.
+ (Previously: "Tile MUST stay centered — no panning allowed.")
 
-- Scenario: Centered in long board — GIVEN 10 tiles; WHEN board renders; THEN first tile SHALL be at container horizontal center.
+- Scenario: Centered on start — GIVEN board with 10 tiles; WHEN board first renders; THEN first tile SHALL be at container horizontal center.
 - Scenario: Single tile — GIVEN only first tile; WHEN board renders; THEN tile SHALL appear at container center.
+- Scenario: Pan moves away from center — GIVEN first tile centered; WHEN user drags 200px right; THEN first tile SHALL shift 200px left of center.
+- Scenario: Double-click resets to center — GIVEN board panned 300px off-center; WHEN user double-clicks; THEN pan SHALL reset to (0,0); AND first tile SHALL return to center.
 
-### Requirement: R5 — Responsive Sizing
+### Requirement: R5 — Responsive Sizing (Zoom Aware)
 
-Board SHALL render correctly from 320px (mobile) to 1200px+ (desktop). Tile dimensions SHALL derive from DominoTile md size (64×88 vertical). Container SHALL use fixed max-width.
+Board SHALL render correctly from 320px to 1200px+ at default zoom (1x). Tile dimensions SHALL derive from DominoTile md size (64×88 vertical). Zoom level SHALL affect scale of rendered board via CSS transform; container layout calculations SHALL remain unaffected.
+(Previously: "No zoom state — tile sizing was fixed per viewport.")
 
-- Scenario: Mobile — GIVEN viewport 320px; WHEN board renders 6 tiles; THEN tiles SHALL fit without overflow; AND bends SHALL insert at correct edge.
-- Scenario: Desktop — GIVEN viewport 1200px; WHEN board renders same 6 tiles; THEN more tiles SHALL fit before first bend versus mobile.
+- Scenario: Mobile at 1x — GIVEN viewport 320px and zoom 1x; WHEN board renders 6 tiles; THEN tiles SHALL fit without overflow.
+- Scenario: Desktop zoomed in — GIVEN viewport 1200px and zoom 2x; WHEN board renders 6 tiles; THEN fewer tiles SHALL fit before first bend versus 1x.
+- Scenario: Desktop zoomed out — GIVEN viewport 1200px and zoom 0.5x; WHEN board renders same 6 tiles; THEN more tiles SHALL fit before bend versus 1x.
 
 ### Requirement: R6 — Tile Animation
 
@@ -54,11 +59,13 @@ New tiles SHOULD animate in via CSS transitions (all 0.3s ease) on transform and
 
 - Scenario: Animates in — GIVEN a tile added to board state; WHEN board re-renders; THEN tile SHALL transition from invisible/offset to final position over 300ms.
 
-### Requirement: R7 — Container Resizing
+### Requirement: R7 — Container Resizing (Zoom Aware)
 
-Board MUST recalculate coordinates on container resize via ResizeObserver, debounced to 100ms minimum.
+Board MUST recalculate coordinates on container resize via ResizeObserver, debounced to 100ms minimum. Recalculation SHALL preserve current zoom and pan state — only container dimensions update.
+(Previously: "Recalculation with no zoom/pan state to preserve.")
 
-- Scenario: Wider container — GIVEN 8 tiles where 6th is a bend; WHEN container widens by 200px; THEN positions SHALL recalculate; AND bend MAY shift later if tiles now fit without bending.
+- Scenario: Wider container — GIVEN 8 tiles at 1x zoom with a bend at tile 6; WHEN container widens by 200px; THEN positions SHALL recalculate; AND bend MAY shift later.
+- Scenario: Resize preserves zoom — GIVEN board at 2x zoom, panned 100px left; WHEN container grows by 100px; THEN zoom SHALL remain 2x; AND pan SHALL remain (-100, currentY).
 
 ### Requirement: R8 — Edge Cases
 
