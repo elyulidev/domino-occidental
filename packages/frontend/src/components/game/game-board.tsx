@@ -21,8 +21,6 @@ export { isDoubleTile };
 
 // Re-export types from grid-layout-engine (same interface as layout-engine)
 export type { TilePosition, LayoutResult } from "./grid-layout-engine";
-// Re-export old engine's function for backward compat with old tests
-export { calculateLayout as calculateSerpentineLayout } from "./layout-engine";
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
