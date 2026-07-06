@@ -260,6 +260,21 @@ export function GameBoard() {
     };
   }, []);
 
+  // Auto-center the board when tiles first appear (transition from empty → non-empty).
+  // This ensures the first tile is visible instead of hidden at the origin corner.
+  const prevTileCount = useRef(0);
+
+  useEffect(() => {
+    if (boardTiles.length > 0 && prevTileCount.current === 0) {
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        setPan({ x: rect.width / 2, y: rect.height / 2 });
+      }
+    }
+    prevTileCount.current = boardTiles.length;
+  }, [boardTiles.length]);
+
   if (boardTiles.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
@@ -375,8 +390,8 @@ function BoardTile({
     <div
       className="absolute transition-all duration-300 ease-out"
       style={{
-        left: `calc(50% + ${position.x}px)`,
-        top: `calc(50% + ${position.y}px)`,
+        left: `${position.x}px`,
+        top: `${position.y}px`,
         transform: "translate(-50%, -50%)",
       }}
       title={`Player ${pIdx + 1}`}
