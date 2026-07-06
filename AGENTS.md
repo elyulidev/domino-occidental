@@ -66,7 +66,8 @@ El `GameState` de las partidas activas reside en un `Map` en memoria del servido
 (no en base de datos) para minimizar latencia. Al finalizar la partida, el estado se persiste.
 
 ```typescript
-// src/game/types.ts — tipos canónicos
+// packages/shared/src/types.ts — tipos canónicos (fuente única de verdad)
+
 interface Tile { top: number; bottom: number; id: string }
 
 interface PlayerState {
@@ -84,17 +85,31 @@ interface BoardState {
   tiles: Array<{ tile: Tile; side: 'left' | 'right'; playerId: string }>
 }
 
-interface GameState {
+interface TurnState {
+  currentTurn: 0 | 1 | 2 | 3
+  turnDeadline: number | null   // Unix ms, null si no está asignado
+  consecutiveNullRounds: number // manos anuladas seguidas
+  roundNumber: number
+  lastHandWinner: 0 | 1 | 2 | 3 | null
+}
+
+interface ScoreState {
+  scores: [number, number]   // [pareja1, pareja2]
+  isTiebreaker: boolean
+}
+
+type MatchStatus = 'waiting' | 'in_progress' | 'finished' | 'abandoned'
+
+interface MatchState {
   matchId: string
   players: [PlayerState, PlayerState, PlayerState, PlayerState]
   board: BoardState
-  currentTurn: 0 | 1 | 2 | 3
-  scores: [number, number]         // [pareja1, pareja2]
-  roundNumber: number
-  turnDeadline: Date               // para timeout de turno
-  consecutiveNullRounds: number    // manos anuladas seguidas
-  poolCount: number                // fichas restantes en pozo (solo conteo, nunca contenido)
-  status: 'waiting' | 'in_progress' | 'finished' | 'abandoned'
+  turn: TurnState
+  scores: ScoreState
+  pool: Tile[]               // 15 fichas no repartidas (solo servidor)
+  poolCount: number          // conteo público para el cliente
+  status: MatchStatus
+  targetScore: number        // 200 por defecto
 }
 ```
 
@@ -247,7 +262,7 @@ type TEXT CHECK (type IN (
      Fila vieja   9   9   2
      ```
 
-6. El servidor valida toda jugada. El cliente solo envía intenciones. Si la ficha ya se jugó o no conecta con ningún extremo, se rechaza.
+6. El servidor valida toda jugada. El cliente solo envía intenciones. Si la ficha ya se jugó o no conecta con ningún extremo, se rechaza. La validación de jugadas está en `packages/shared/src/game/board.ts` (canPlay, place). El layout visual en grilla 16×N está en `packages/shared/src/game/grid-layout.ts` (computeGridLayout).
 
 #### El Algoritmo — 3 Casos + Dobles
 
@@ -259,16 +274,18 @@ Dado un extremo abierto (valor, fila, columna, dirección) y una ficha `[A|B]` d
 
 | Espacio | Caso | Qué hace |
 |---------|------|----------|
-| ≥ 2 | **Misma fila (horizontal)** | Coloca las 2 mitades en las 2 celdas siguientes en la misma fila. El nuevo extremo es el valor libre en la última celda. |
-| = 1 | **Giro Mixto Vertical** | La conexión va en la última celda libre de la fila actual (celda borde C0 o C15). El valor libre cae verticalmente a la nueva fila o fila existente pero esa celda está vacía en la misma columna. El nuevo extremo espera que la nueva ficha se conecte desde arriba, no de forma adyacente. |
-| = 0 | **L-Corner Puro** | El valor conexión YA está en la celda borde. Se crean dos filas nuevas (si existiera ya alguna creada, con esa celda vacía se crearía una sola entonces) en la misma columna con los valores de conexión y el otro queda libre para ser la conexión de una nueva fila. El nuevo extremo espera que la nueva ficha se conecte desde arriba, no de forma adyacente. |
+| ≥ 2 | **Misma fila (horizontal)** | Coloca las 2 mitades en las 2 celdas siguientes en la misma fila. El nuevo extremo es el valor libre en la última celda. **Edge case — arranque desde el borde:** si el head apunta hacia adentro (C0→derecha o C15→izquierda), la celda de conexión se coloca en la columna del head (no stepCol) porque el valor de conexión viene de la fila anterior vía vertical. |
+| = 1 | **Giro Mixto Vertical** | La conexión va en la última celda libre de la fila actual (celda borde C0 o C15). El valor libre cae verticalmente a la nueva fila o fila existente pero esa celda está vacía en la misma columna. El head avanza UNA FILA MÁS allá de la fila drop para que la siguiente ficha arranque una fila horizontal fresca. El nuevo extremo espera que la nueva ficha se conecte desde arriba, no de forma adyacente. |
+| = 0 | **L-Corner Puro** | El valor conexión YA está en la celda borde. Se crean dos filas nuevas en la misma columna con los valores de conexión y el otro queda libre. El head avanza UNA FILA MÁS allá de la segunda fila nueva para arrancar la siguiente horizontal. El nuevo extremo espera que la nueva ficha se conecte desde arriba, no de forma adyacente. |
 
 #### Dobles (A == B)
 
-- Ocupan 1 celda en la fila media + 2 filas float (superior e inferior) con el mismo valor.
-- Si **espacio ≥ 1**: se colocan en la celda siguiente normal, con los floats arriba/abajo.
-- Si **espacio == 0**: L-corner de doble — ocupa dos celdas verticales como una ficha normal, no se generan floats.
-- **Primera ficha en una nueva fila:** se coloca de manera horizontal de la misma forma que una ficha normal, sin floats.
+| Espacio | Contexto | Comportamiento |
+|---------|----------|----------------|
+| = 0 | — | **L-corner de doble:** 2 celdas verticales en 2 filas nuevas, sin floats. |
+| = 1 | — | **Mixed turn de doble:** 2 celdas verticales en borde + fila drop, sin floats. El head avanza una fila extra para que la siguiente ficha empiece fila horizontal. |
+| ≥ 2 | Es nueva fila (1 celda ocupada) o arranque desde el borde (head apuntando hacia adentro) | **Horizontal (spinner-ready):** 2 celdas contiguas en la misma fila, sin floats. El doble funciona como spinner — se puede jugar desde ambos lados. |
+| ≥ 2 | Fila existente (más de 1 celda ocupada) | **Estándar:** 1 celda en la fila media + 2 floats (superior e inferior) en la misma columna. Ocupa 1×3. |
 
 #### Reglas de Juego para Contexto
 
@@ -286,13 +303,10 @@ Dado un extremo abierto (valor, fila, columna, dirección) y una ficha `[A|B]` d
 ### Timeout de turno (45 s + bloqueo de fichas)
 
 ```typescript
-// Al asignar turno (turn.ts):
-state.turnDeadline = calculateDeadline(player.isConnected
-  ? TURN_TIMEOUT_CONNECTED_MS   // 45_000
-  : TURN_TIMEOUT_DISCONNECTED_MS // 15_000
-)
+// Al asignar turno (packages/shared/src/game/turn.ts):
+state.turnDeadline = calculateDeadline(state)  // TURN_TIMEOUT_MS = 45_000
 
-// Worker interno (setInterval cada 2s) en timer-manager.ts:
+// Worker interno (setInterval cada 2s) en packages/backend/src/ws/timer-manager.ts:
 // 1. Si Date.now() > state.turnDeadline → paso forzado
 // 2. Se identifican las fichas jugables del jugador en ese momento
 // 3. Se agregan a player.blockedTileIds
