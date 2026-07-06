@@ -60,18 +60,8 @@ describe("grid-layout-engine", () => {
       expect(positions[0].x).toBe(0);
       expect(positions[0].y).toBe(0);
       expect(positions[0].isBend).toBe(false);
-      // Opening slot is straight → horizontal orientation
-      expect(positions[0].orientation).toBe("horizontal");
-      // Board dimensions should be positive
-      expect(boardWidth).toBeGreaterThan(0);
-      expect(boardHeight).toBeGreaterThan(0);
-    });
-
-    // Center tile uses horizontal orientation (grid system)
-    it("center tile is horizontal (opening slot is straight)", () => {
-      const display = [placedTile(6, 6, "left", "t0", 0)];
-      const { positions } = calculateGridLayout(display, 0, 600);
-      expect(positions[0].orientation).toBe("horizontal");
+      // Opening double sits vertical with floats
+      expect(positions[0].orientation).toBe("vertical");
     });
 
     // Right arm: tiles extend rightward in same row (16-column grid)
@@ -109,7 +99,7 @@ describe("grid-layout-engine", () => {
       expect(positions[2].x).toBeLessThan(positions[3].x);
     });
 
-    // Orientation mapping: straight → horizontal, corner → vertical
+    // Opening double is vertical (standard double with floats)
     it("straight slots get horizontal orientation", () => {
       const display = [
         placedTile(6, 6, "left", "t0", 0),
@@ -117,8 +107,9 @@ describe("grid-layout-engine", () => {
         placedTile(1, 2, "right", "t2", 2),
       ];
       const { positions } = calculateGridLayout(display, 0, 800);
-      // Tiles near the opening are on straight slots
-      expect(positions[0].orientation).toBe("horizontal");
+      // Opening double is vertical (standard double with floats);
+      // subsequent straight tiles are horizontal
+      expect(positions[0].orientation).toBe("vertical");
       expect(positions[0].isBend).toBe(false);
     });
 

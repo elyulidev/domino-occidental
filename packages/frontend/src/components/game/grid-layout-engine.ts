@@ -152,7 +152,7 @@ export function calculateGridLayout(
     positions.push({
       x,
       y,
-      orientation: gt.orientation === "vertical" && !isDouble ? "vertical" : "horizontal",
+      orientation: gt.orientation,
       isBend,
       flipped,
     });

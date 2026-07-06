@@ -211,56 +211,77 @@ type TEXT CHECK (type IN (
   fichas se marcan como `blockedTileIds` y no pueden jugarse por el resto de la mano. Se resetean
   al repartir una nueva mano. Las fichas bloqueadas siguen contando para la suma al cierre.
 
-### Posicionamiento de fichas
+### Posicionamiento de fichas — Tablero 16×N
 
-```typescript
-// Reglas canónicas implementadas en board.ts
+#### Geometría del Tablero
 
-// 1. Tablero vacío — cualquier ficha vale, en cualquier lado.
-//    La ficha se coloca girada (flipped=true) y define ambos extremos.
-//    side="left"  → leftEnd=tile.bottom, rightEnd=tile.top
-//    side="right" → leftEnd=tile.top, rightEnd=tile.bottom
-canPlay(tile, side, board) // true si board está vacío
+1. **Grilla fija de 16 columnas** (C0 a C15). Las filas crecen dinámicamente arriba (F1, F2…) y abajo (F-1, F-2…). No se pre-reservan filas.
+2. **Cada celda = media ficha** (head o tail), 48×48px. Una ficha normal = 2 celdas contiguas. Un doble = 1 celda de ancho por tres o dos de alto dependiendo el caso (se explica en detalle abajo).
+3. **Dirección de las filas (serpenteo):**
+   - Filas pares (F0, F2, F-2, F4, F-4…) → van hacia la **DERECHA** (→)
+   - Filas impares (F1, F-1, F3, F-3…) → van hacia la **IZQUIERDA** (←)
 
-// 2. Tablero con fichas — la ficha debe matchear el extremo del lado elegido.
-//    targetEnd = side === "left" ? board.leftEnd : board.rightEnd
-//    tile.top === targetEnd || tile.bottom === targetEnd → puede jugar
-canPlay(tile, side, board) // true si matchea el extremo
+#### Colocación de Fichas
 
-// 3. Auto-flip al colocar (siempre):
-//    Si tile.top === targetEnd → se invierte: la ficha se almacena girada
-//    (top pasa a ser bottom y viceversa). El valor que conecta queda
-//    bottom y el nuevo extremo es top.
-//    Si tile.bottom === targetEnd → se usa tal cual.
-//
-//    En ambos casos, el "nuevo extremo" (top) se asigna a leftEnd o rightEnd.
+4. Una ficha **NUNCA** comparte celda con otra. Dos fichas se conectan cuando ocupan celdas adyacentes con el mismo valor.
+5. **No hay T-junctions ni ramificaciones desde dobles.** Los dobles son verticales de 1 celda de ancho × 3 de alto y conectan por adyacencia lateral.
 
-// 4. Mulas (dobles): si tile.top === tile.bottom === targetEnd,
-//    no cambia el extremo (newEnd === targetEnd). El slot y flipped
-//    se resuelven igual que cualquier otra ficha.
+   Normal: `[9|9]` ocupa tres celdas.
+   ```
+              9
+   …   5   9   9   9   8   …
+              9
+   ```
 
-// 5. Índices de slot: armado serpentina (board-path.ts)
-//    side="right" → slotIndex = currentCount + 1  (1, 2, 3…)
-//    side="left"  → slotIndex = -(currentCount + 1) (-1, -2, -3…)
-//    Centro (slotIndex=0): única ficha inicial, nunca se invierte visualmente.
+   **Excepciones:**
+   - **Comienza una nueva fila:** `[9|9]` se coloca de forma horizontal.
+     ```
+     Nueva fila   9   9   …
+     Nueva fila   9
+     Fila vieja   2   1   2
+     ```
+   - **Sirve de conexión de una fila con otra:** `[9|9]` se coloca de forma vertical y ocupa sólo dos celdas.
+     ```
+     Nueva fila   9   3   …
+     Nueva fila   9
+     Fila vieja   9   9   2
+     ```
 
-// 6. Flipped visual (resolveFlipped):
-//    Las fichas del lado derecho (slotIndex > 0) se marcan flipped=true
-//    porque el valor que conecta al centro debe quedar a la izquierda en
-//    pantalla. Centro (slot 0) nunca se invierte. Lado izquierdo nunca
-//    se invierte.
-```
+6. El servidor valida toda jugada. El cliente solo envía intenciones. Si la ficha ya se jugó o no conecta con ningún extremo, se rechaza.
 
-Reglas en lenguaje natural:
+#### El Algoritmo — 3 Casos + Dobles
 
-| Situación | Regla |
-|-----------|-------|
-| Tablero vacío | Cualquier ficha vale. Se coloca en `left` o `right` y define ambos extremos. |
-| Ficha matchea un extremo | Se coloca del lado que corresponda. El valor que conecta se orienta automáticamente. |
-| Ficha no matchea ningún extremo | No se puede jugar. Solo queda pasar o timeout. |
-| Mula (doble) matchea | Se coloca normalmente. El extremo no cambia. |
-| Varias fichas matchean el mismo extremo | El jugador elige cuál jugar y de qué lado. |
-| Ficha matchea ambos extremos | El jugador elige de qué lado jugarla. |
+Dado un extremo abierto (valor, fila, columna, dirección) y una ficha `[A|B]` donde A o B == extremo.valor:
+
+**Paso 1** — Calcular espacio: celdas libres desde la posición actual hasta el borde de la mesa, en la dirección del extremo.
+
+**Paso 2** — Elegir caso:
+
+| Espacio | Caso | Qué hace |
+|---------|------|----------|
+| ≥ 2 | **Misma fila (horizontal)** | Coloca las 2 mitades en las 2 celdas siguientes en la misma fila. El nuevo extremo es el valor libre en la última celda. |
+| = 1 | **Giro Mixto Vertical** | La conexión va en la última celda libre de la fila actual (celda borde C0 o C15). El valor libre cae verticalmente a la nueva fila o fila existente pero esa celda está vacía en la misma columna. El nuevo extremo espera que la nueva ficha se conecte desde arriba, no de forma adyacente. |
+| = 0 | **L-Corner Puro** | El valor conexión YA está en la celda borde. Se crean dos filas nuevas (si existiera ya alguna creada, con esa celda vacía se crearía una sola entonces) en la misma columna con los valores de conexión y el otro queda libre para ser la conexión de una nueva fila. El nuevo extremo espera que la nueva ficha se conecte desde arriba, no de forma adyacente. |
+
+#### Dobles (A == B)
+
+- Ocupan 1 celda en la fila media + 2 filas float (superior e inferior) con el mismo valor.
+- Si **espacio ≥ 1**: se colocan en la celda siguiente normal, con los floats arriba/abajo.
+- Si **espacio == 0**: L-corner de doble — ocupa dos celdas verticales como una ficha normal, no se generan floats.
+- **Primera ficha en una nueva fila:** se coloca de manera horizontal de la misma forma que una ficha normal, sin floats.
+
+#### Reglas de Juego para Contexto
+
+7. **Primera mano:** la apertura es siempre en F0:C7. Puede abrirse juego con cualquier ficha. En caso de ser doble se colocan sus floats en F-1 y F1.
+8. **Órdenes de dirección en la práctica:**
+   - Extremo derecho → ficha se coloca derecha-a-izquierda
+   - Extremo izquierdo → ficha se coloca izquierda-a-derecha
+   - (En nueva fila, la dirección sigue el serpenteo de esa fila)
+9. **Dobles como spinner:** se puede seguir jugando desde ambos lados del doble (← y →) después de colocado, siempre que haya celdas libres adyacentes.
+10. **Las decisiones de qué camino seguir para ARRIBA o para ABAJO** depende de:
+    1. Primeramente, del usuario. El usuario decide en qué extremo se coloca la ficha (DERECHA o IZQUIERDA).
+    2. Si ninguno de los extremos de F0 ha tomado esa decisión, puede SUBIR o BAJAR aleatoriamente.
+    3. Si alguno de los extremos de F0 ya decidió su camino, entonces es siempre al contrario para evitar colisiones.
 
 ### Timeout de turno (45 s + bloqueo de fichas)
 
