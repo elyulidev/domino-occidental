@@ -12,15 +12,23 @@
  *
  * PLACEMENT CASES (based on free cells from head to grid edge):
  *   Normal tiles:
- *     ≥ 2           → same row, horizontal
- *     = 1           → mixed vertical turn (edge cell + drop to next row)
- *     = 0 + giro    → L-corner from giro (1 new row, conn already at edge)
- *     = 0           → L-corner pure (2 new rows at edge column)
+ *     ≥ 2           → horizontal (same row). If head is at grid edge
+ *                     pointing inward, this is a NEW ROW start — the
+ *                     connection cell IS at the head column (vertical
+ *                     connection to the freeValue in the row below/above).
+ *     = 1           → mixed vertical turn (edge cell + drop to next row).
+ *                     Head advances ONE MORE row beyond dropRow — the
+ *                     next tile starts a fresh row from there.
+ *     = 0           → L-corner pure (2 new rows at edge column).
+ *                     Head advances ONE MORE row beyond beyondRow.
  *   Doubles:
- *     = 0 + giro    → vertical, 1 cell at adjacent row, no floats
- *     = 0           → L-corner (2 rows vertical, no floats)
- *     = 1           → mixed turn (2 cells vertical, no floats)
- *     ≥ 2 + newRow  → horizontal, no floats (spinner-ready)
+ *     = 0           → L-corner (2 rows vertical, no floats).
+ *                     Head advances ONE MORE row beyond beyondRow.
+ *     = 1           → mixed turn (2 cells vertical, no floats).
+ *                     Head advances ONE MORE row beyond dropRow.
+ *     ≥ 2 + edgeRow → horizontal, no floats (spinner-ready).
+ *                     Uses edge new-row placement when at grid edge.
+ *     ≥ 2 + newRow  → horizontal, no floats (spinner-ready).
  *     else          → 1 cell wide × 3 tall with floats
  *
  * VERTICAL DIRECTION (Rule 10): F0 collision avoidance via f0Dir tracking.
@@ -78,9 +86,11 @@ export interface HeadPos {
   row: number;
   col: number;
   dir: GridDir;
-  /** True when this head was created by a mixed vertical turn (space=1).
-   *  The connecting value is already at the edge cell. */
-  giroExtreme?: boolean;
+}
+
+/** Next row moving in vertDir from current */
+function nextRow(row: number, vertDir: "up" | "down"): number {
+  return vertDir === "up" ? row + 1 : row - 1;
 }
 
 /** Complete 16×N grid layout for a board */
@@ -223,16 +233,25 @@ function placeNormal(
   const space = freeCells(head.col, head.dir);
   const edgeCol = head.dir === "east" ? GRID_COLS - 1 : 0;
 
+  // ── Is this the first tile in a new row after a vertical turn? ──
+  // When head is at the grid edge pointing INWARD, it must have been
+  // created by a vertical turn. The connection is VERTICAL — the tile's
+  // conn cell shares the same column as the freeValue from the previous
+  // placement. Use the head column as the first cell (not stepCol).
+  const isNewRowFromEdge =
+    (head.col === 0 && head.dir === "east") ||
+    (head.col === GRID_COLS - 1 && head.dir === "west");
+
   if (space >= 2) {
     // ── Same row (horizontal) ──
     const c1 = stepCol(head.col, head.dir);
     const c2 = stepCol(c1, head.dir);
     return {
       cells: [
-        { row: head.row, col: c1, value: connValue },
-        { row: head.row, col: c2, value: freeValue },
+        { row: head.row, col: isNewRowFromEdge ? head.col : c1, value: connValue },
+        { row: head.row, col: isNewRowFromEdge ? c1 : c2, value: freeValue },
       ],
-      newHead: { row: head.row, col: c2, dir: head.dir },
+      newHead: { row: head.row, col: isNewRowFromEdge ? c1 : c2, dir: head.dir },
       orientation: "horizontal",
       floats: [],
     };
@@ -240,48 +259,39 @@ function placeNormal(
 
   if (space === 1) {
     // ── Mixed vertical turn (giro mixto) ──
-    // Connection at edge cell, free value drops to adjacent row.
-    // New head points TOWARDS the edge (dead end) to force next tile vertical.
-    const dropRow = vertDir === "up" ? head.row + 1 : head.row - 1;
-    const deadDir: GridDir = edgeCol <= 0 ? "west" : "east";
+    // Connection at edge cell, free value drops to dropRow.
+    // Head advances ONE MORE row beyond dropRow so the next tile
+    // starts a fresh horizontal row, connecting VERTICALLY (same column)
+    // to the freeValue.
+    const dropRow = nextRow(head.row, vertDir!);
+    const beyondRow = nextRow(dropRow, vertDir!);
+    const nd = edgeDir(beyondRow, edgeCol);
     return {
       cells: [
         { row: head.row, col: edgeCol, value: connValue },
         { row: dropRow, col: edgeCol, value: freeValue },
       ],
-      newHead: { row: dropRow, col: edgeCol, dir: deadDir, giroExtreme: true },
+      newHead: { row: beyondRow, col: edgeCol, dir: nd },
       orientation: "vertical",
       floats: [],
     };
   }
 
-  // ── space === 0 ──
-  if (head.giroExtreme) {
-    // L-corner FROM giro: 1 new row (connValue already at edge cell from the giro).
-    // Only freeValue goes to the adjacent row.
-    const dropRow = vertDir === "up" ? head.row + 1 : head.row - 1;
-    const nd = edgeDir(dropRow, edgeCol);
-    return {
-      cells: [
-        { row: head.row, col: edgeCol, value: connValue },
-        { row: dropRow, col: edgeCol, value: freeValue },
-      ],
-      newHead: { row: dropRow, col: edgeCol, dir: nd },
-      orientation: "vertical",
-      floats: [],
-    };
-  }
-
-  // ── Pure L-corner: 2 new rows (connValue at nextRow, freeValue at beyondRow) ──
-  const nextRow = vertDir === "up" ? head.row + 1 : head.row - 1;
-  const beyondRow = vertDir === "up" ? head.row + 2 : head.row - 2;
-  const nd = edgeDir(beyondRow, edgeCol);
+  // ── space === 0: Pure L-corner (2 new rows) ──
+  // connValue goes to nextRow, freeValue goes to beyondRow.
+  // Head advances ONE MORE row beyond beyondRow so the next tile
+  // starts a fresh horizontal row there.
+  const nxtRow = nextRow(head.row, vertDir!);
+  const bndRow = nextRow(nxtRow, vertDir!);
+  const nd = edgeDir(bndRow, edgeCol);
+  const newNxtRow = nextRow(bndRow, vertDir!);
+  const nd2 = edgeDir(newNxtRow, edgeCol);
   return {
     cells: [
-      { row: nextRow, col: edgeCol, value: connValue },
-      { row: beyondRow, col: edgeCol, value: freeValue },
+      { row: nxtRow, col: edgeCol, value: connValue },
+      { row: bndRow, col: edgeCol, value: freeValue },
     ],
-    newHead: { row: beyondRow, col: edgeCol, dir: nd },
+    newHead: { row: newNxtRow, col: edgeCol, dir: nd2 },
     orientation: "vertical",
     floats: [],
   };
@@ -309,71 +319,67 @@ function placeDouble(
   const space = freeCells(head.col, head.dir);
   const edgeCol = head.dir === "east" ? GRID_COLS - 1 : 0;
 
-  // ── 1) Double from giro: space=0 + head.giroExtreme ──
-  // connValue already at edge cell from giro — place only 1 cell at adjacent row.
-  if (space === 0 && head.giroExtreme) {
-    const dropRow = vertDir === "up" ? head.row + 1 : head.row - 1;
-    const nd = edgeDir(dropRow, head.col);
-    return {
-      cells: [
-        { row: head.row, col: head.col, value },
-        { row: dropRow, col: head.col, value },
-      ],
-      newHead: { row: dropRow, col: head.col, dir: nd },
-      orientation: "vertical",
-      floats: [],
-    };
-  }
-
-  // ── 2) Double L-corner: space=0 (no giro) ──
+  // ── 1) Double L-corner: space=0 — 2 rows vertical ──
   if (space === 0) {
-    const nextRow = vertDir === "up" ? head.row + 1 : head.row - 1;
-    const beyondRow = vertDir === "up" ? head.row + 2 : head.row - 2;
-    const nd = edgeDir(beyondRow, head.col);
+    const nxtRow = nextRow(head.row, vertDir!);
+    const bndRow = nextRow(nxtRow, vertDir!);
+    const nd = edgeDir(bndRow, head.col);
+    const newNxtRow = nextRow(bndRow, vertDir!);
+    const nd2 = edgeDir(newNxtRow, head.col);
     return {
       cells: [
-        { row: nextRow, col: head.col, value },
-        { row: beyondRow, col: head.col, value },
+        { row: nxtRow, col: head.col, value },
+        { row: bndRow, col: head.col, value },
       ],
-      newHead: { row: beyondRow, col: head.col, dir: nd },
+      newHead: { row: newNxtRow, col: head.col, dir: nd2 },
       orientation: "vertical",
       floats: [],
     };
   }
 
-  // ── 3) Double mixed turn: space=1 (acts like normal tile in _newRow) ──
+  // ── 2) Double mixed turn: space=1 — completes the corner in one step ──
+  // Doubles fill 2 vertical cells at once. Head advances ONE MORE row
+  // beyond dropRow so the next tile starts a fresh horizontal row.
   if (space === 1) {
-    const dropRow = vertDir === "up" ? head.row + 1 : head.row - 1;
-    const deadDir: GridDir = edgeCol <= 0 ? "west" : "east";
+    const dropRow = nextRow(head.row, vertDir!);
+    const beyondRow = nextRow(dropRow, vertDir!);
+    const nd = edgeDir(beyondRow, edgeCol);
     return {
       cells: [
         { row: head.row, col: edgeCol, value },
         { row: dropRow, col: edgeCol, value },
       ],
-      newHead: { row: dropRow, col: edgeCol, dir: deadDir, giroExtreme: true },
+      newHead: { row: beyondRow, col: edgeCol, dir: nd },
       orientation: "vertical",
       floats: [],
     };
   }
 
-  // ── 4) Double as first tile in a new row: space≥2 + isNewRow ──
-  if (space >= 2 && isNewRow(head.row, occupied)) {
+  // ── Is this a new row start from edge (after vertical turn)? ──
+  const isEdgeNewRow =
+    (head.col === 0 && head.dir === "east") ||
+    (head.col === GRID_COLS - 1 && head.dir === "west");
+
+  // ── 3) Double as first tile in a new row: space≥2 + (isNewRow or edge) ──
+  if (space >= 2 && (isNewRow(head.row, occupied) || isEdgeNewRow)) {
     const c1 = stepCol(head.col, head.dir);
     const c2 = stepCol(c1, head.dir);
+    const startCol = isEdgeNewRow ? head.col : c1;
+    const endCol = isEdgeNewRow ? c1 : c2;
     // Spinner: add opposite-direction end at c1 so the double can be played
     // from both sides
     return {
       cells: [
-        { row: head.row, col: c1, value },
-        { row: head.row, col: c2, value },
+        { row: head.row, col: startCol, value },
+        { row: head.row, col: endCol, value },
       ],
-      newHead: { row: head.row, col: c2, dir: head.dir },
+      newHead: { row: head.row, col: endCol, dir: head.dir },
       orientation: "horizontal",
       floats: [],
     };
   }
 
-  // ── 5) Standard double: 1 cell × 3 vertical with floats ──
+  // ── 4) Standard double: 1 cell × 3 vertical with floats ──
   const c = stepCol(head.col, head.dir);
   const floatUp = { row: head.row + 1, col: c, value };
   const floatDown = { row: head.row - 1, col: c, value };

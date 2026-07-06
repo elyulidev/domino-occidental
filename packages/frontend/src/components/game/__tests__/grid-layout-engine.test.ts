@@ -5,6 +5,7 @@ import {
   type LayoutResult,
 } from "../grid-layout-engine";
 import type { PlacedTile, Tile } from "@domino/shared";
+import { computeGridLayout } from "@domino/shared/src/game/grid-layout";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -392,6 +393,167 @@ describe("grid-layout-engine", () => {
       expect(positions[4].y).toBe(positions[0].y);
       // Tile 4 (slotIndex=5) wraps to next row → different y
       expect(positions[5].y).not.toBe(positions[0].y);
+    });
+
+    // ── Problem 2: Double at space=1 (left edge), next tile horizontal ──
+    it("places next tile HORIZONTAL after double mixed turn (space=1)", () => {
+      // Opening [7|2] left → left tiles reach C0 at space=1 → double [8|8]
+      // → next tile [8|5] should be HORIZONTAL in the new row above.
+      // Play order (what computeGridLayout receives):
+      //   center, L1, L2, L3, double, L5
+      const grid = computeGridLayout([
+        placedTile(7, 2, "left", "center", 0, false), // F0:C7-C8
+        placedTile(2, 1, "left", "L1", -1, false),    // F0:C6-C5
+        placedTile(1, 9, "left", "L2", -2, false),    // F0:C4-C3
+        placedTile(9, 8, "left", "L3", -3, false),    // F0:C2-C1 → space=1 at C1
+        placedTile(8, 8, "left", "double", -4, false), // DOUBLE at C0 (space=1)
+        placedTile(8, 5, "left", "L5", -5, false),    // After double → should be horizontal!
+      ]);
+      expect(grid.tiles).toHaveLength(6);
+
+      // Tiles 0-3: horizontal in F0
+      for (let i = 0; i < 4; i++) {
+        expect(grid.tiles[i].orientation).toBe("horizontal");
+      }
+
+      // Tile 4 (double): vertical at C0 (mixed turn)
+      expect(grid.tiles[4].orientation).toBe("vertical");
+      expect(grid.tiles[4].cells[0].col).toBe(0);
+      expect(grid.tiles[4].cells[0].row).toBe(0);
+      expect(grid.tiles[4].cells[1].col).toBe(0);
+      // dropRow: going UP (default for left side) → row 0 + 1 = row 1
+
+      // Tile 5 (after double): MUST be horizontal in the new row
+      // If bug is present, this would be vertical (giroExtreme) overlapping the double
+      expect(grid.tiles[5].orientation).toBe("horizontal");
+
+      // No overlapping cells between double and next tile
+      const doubleCells = new Set(grid.tiles[4].cells.map(c => `${c.row}:${c.col}`));
+      const nextCells = new Set(grid.tiles[5].cells.map(c => `${c.row}:${c.col}`));
+      for (const cell of nextCells) {
+        expect(doubleCells.has(cell)).toBe(false);
+      }
+    });
+
+    // ── Problem 2 mirrored: Double at space=1 (right edge), going down ──
+    // Center [7|2] non-double takes C7-C8. Right tiles go east from C9.
+    // 3 right tiles: C9-C10, C11-C12, C13-C14 → head at C14, space=1 → double
+    it("places next tile HORIZONTAL after double mixed turn (space=1) on right edge", () => {
+      const grid = computeGridLayout([
+        placedTile(7, 2, "left", "center", 0, false),  // F0:C7-C8 non-double
+        placedTile(2, 1, "right", "R1", 1, false),     // F0:C9-C10
+        placedTile(1, 9, "right", "R2", 2, false),     // F0:C11-C12
+        placedTile(9, 8, "right", "R3", 3, false),     // F0:C13-C14 → head at C14, space=1!
+        placedTile(8, 8, "right", "double", 4, true),  // DOUBLE at C15 (space=1 mixed turn)
+        placedTile(8, 5, "right", "R5", 5, false),     // After double → should be horizontal!
+      ]);
+      expect(grid.tiles).toHaveLength(6);
+
+      // Center: horizontal
+      expect(grid.tiles[0].orientation).toBe("horizontal");
+      // Tiles 1-3: horizontal in F0
+      for (let i = 1; i < 4; i++) {
+        expect(grid.tiles[i].orientation).toBe("horizontal");
+      }
+
+      // Tile 4 (double at space=1): vertical at C15
+      expect(grid.tiles[4].orientation).toBe("vertical");
+      expect(grid.tiles[4].isDouble).toBe(true);
+      // Right edge default vertDir = "down" → dropRow = -1
+      expect(grid.tiles[4].cells[1].row).toBe(-1); // dropRow
+
+      // Tile 5 (after double): MUST be horizontal in the new row
+      expect(grid.tiles[5].orientation).toBe("horizontal");
+
+      // No overlap with the double
+      const doubleCells = new Set(grid.tiles[4].cells.map(c => `${c.row}:${c.col}`));
+      const nextCells = new Set(grid.tiles[5].cells.map(c => `${c.row}:${c.col}`));
+      for (const cell of nextCells) {
+        expect(doubleCells.has(cell)).toBe(false);
+      }
+    });
+
+    // ── Pure L-corner (space=0) going DOWN —─
+    it("pure L-corner going down produces correct head and no overlap", () => {
+      // Opening double → right tiles reach C15 at space=0 → L-corner
+      // After L-corner: conn at F-1, free at F-2. Head at F-3 (one more row).
+      const grid = computeGridLayout([
+        placedTile(6, 6, "left", "center", 0, true),   // F0:C7 double (vertical)
+        placedTile(6, 1, "right", "R1", 1, false),     // F0:C8-C9
+        placedTile(1, 2, "right", "R2", 2, false),     // F0:C10-C11
+        placedTile(2, 3, "right", "R3", 3, false),     // F0:C12-C13
+        placedTile(3, 4, "right", "R4", 4, false),     // F0:C14-C15 → head at C15, space=0
+        placedTile(4, 5, "right", "R5", 5, false),     // Pure L-corner: 2 rows down ↓
+      ]);
+      expect(grid.tiles).toHaveLength(6);
+
+      // T0: center double is vertical with floats
+      expect(grid.tiles[0].orientation).toBe("vertical");
+      expect(grid.tiles[0].isDouble).toBe(true);
+      // T1-T4: right-arm horizontals before the edge
+      for (let i = 1; i < 5; i++) {
+        expect(grid.tiles[i].orientation).toBe("horizontal");
+      }
+
+      // Tile 5 (L-corner): vertical
+      expect(grid.tiles[5].orientation).toBe("vertical");
+      expect(grid.tiles[5].isDouble).toBe(false);
+      // cells[0] = conn at F-1 C15; cells[1] = free at F-2 C15
+      expect(grid.tiles[5].cells[0].row).toBe(-1);
+      expect(grid.tiles[5].cells[0].col).toBe(15);
+      expect(grid.tiles[5].cells[1].row).toBe(-2);
+      expect(grid.tiles[5].cells[1].col).toBe(15);
+
+      // RightHead one MORE row beyond freeValue: row -3, same col, west
+      expect(grid.rightHead).not.toBeNull();
+      expect(grid.rightHead!.row).toBe(-3);
+      expect(grid.rightHead!.col).toBe(15);
+      expect(grid.rightHead!.dir).toBe("west");
+    });
+
+    // ── Mixed turn (space=1) → next tile HORIZONTAL in new row ──
+    it("mixed turn (space=1) is followed by horizontal tile in new row", () => {
+      // Center [7|2] non-double at C7-C8. Right arm from C9.
+      // 3 right tiles reach C13-C14 → head at C14, space=1 → mixed turn
+      const grid = computeGridLayout([
+        placedTile(7, 2, "left", "center", 0, false),     // F0:C7-C8 non-double
+        placedTile(2, 1, "right", "R1", 1, false),        // F0:C9-C10
+        placedTile(1, 9, "right", "R2", 2, false),        // F0:C11-C12
+        placedTile(9, 8, "right", "R3", 3, false),        // F0:C13-C14 → head at C14, space=1!
+        placedTile(8, 5, "right", "R4", 4, false),        // Mixed turn: conn at F0 C15, free at F-1 C15
+        placedTile(5, 3, "right", "R5", 5, false),        // New row horizontal at F-2 C15-C14 (connecting VERTICALLY)
+      ]);
+      expect(grid.tiles).toHaveLength(6);
+
+      // Center: horizontal
+      expect(grid.tiles[0].orientation).toBe("horizontal");
+      // T1-T3: right-arm horizontal
+      for (let i = 1; i < 4; i++) {
+        expect(grid.tiles[i].orientation).toBe("horizontal");
+      }
+
+      // Tile 4 (mixed turn): vertical
+      expect(grid.tiles[4].orientation).toBe("vertical");
+      expect(grid.tiles[4].cells[0].row).toBe(0);  // conn at F0
+      expect(grid.tiles[4].cells[0].col).toBe(15); // edge cell
+      expect(grid.tiles[4].cells[1].row).toBe(-1); // free at F-1
+      expect(grid.tiles[4].cells[1].col).toBe(15);
+
+      // Tile 5 (after mixed turn): HORIZONTAL in new row (F-2), connecting
+      // VERTICALLY at C15 (same column as freeValue in F-1), extending west
+      expect(grid.tiles[5].orientation).toBe("horizontal");
+      // First cell at head column (C15) — vertical connection, second cell at C14
+      expect(grid.tiles[5].cells[0].row).toBe(-2);
+      expect(grid.tiles[5].cells[0].col).toBe(15);
+      expect(grid.tiles[5].cells[1].row).toBe(-2);
+      expect(grid.tiles[5].cells[1].col).toBe(14);
+
+      // No overlap between tiles 4 and 5
+      const t4cells = new Set(grid.tiles[4].cells.map(c => `${c.row}:${c.col}`));
+      const t5cells = new Set(grid.tiles[5].cells.map(c => `${c.row}:${c.col}`));
+      for (const cell of t5cells) {
+        expect(t4cells.has(cell)).toBe(false);
+      }
     });
   });
 });
