@@ -141,8 +141,17 @@ export function calculateGridLayout(
 
     cellRects.push({ x, y, w, h });
 
-    // Flipped: use the server-stored flipped value from PlacedTile
-    const flipped = placed.flipped;
+    // Visual orientation: for horizontal tiles, swap values when the cell
+    // containing tile.bottom (the connection value) is at a smaller column
+    // (visually LEFT) than the cell with tile.top (the free value).
+    // DominoTile horizontal renders LEFT=tile.top, so we need
+    // tile.top=tile.bottom when the connection is on the LEFT half.
+    // NOTE: cells[0] may be conn OR free depending on the center tile's side.
+    const connValue = placed.tile.bottom;
+    const connCell = gt.cells[0].value === connValue ? gt.cells[0] : gt.cells[1];
+    const freeCell = gt.cells[0].value === connValue ? gt.cells[1] : gt.cells[0];
+    const needsVisualSwap = gt.orientation === "horizontal" && connCell.col < freeCell.col;
+    const flipped = needsVisualSwap;
 
     // isBend: true for tiles that sit at a grid corner (direction change).
     // Vertical tiles that are NOT doubles are always at corners.

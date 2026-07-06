@@ -138,17 +138,44 @@ describe("grid-layout-engine", () => {
       }
     });
 
-    // Flipped passthrough: uses stored flipped value
-    it("passes through stored flipped value", () => {
+    // Flipped: computed from geometry, not from stored placed.flipped
+    it("computes flipped from geometry", () => {
       const display = [
-        placedTile(6, 6, "left", "t0", 0, true),
-        placedTile(6, 1, "right", "t1", 1, true),
-        placedTile(5, 1, "left", "t2", -1, false),
+        placedTile(6, 6, "left", "t0", 0, true),  // center double — vertical, same col
+        placedTile(6, 1, "right", "t1", 1, true),  // right — cells[0].col < cells[1].col
+        placedTile(5, 1, "left", "t2", -1, false), // left  — cells[0].col > cells[1].col
       ];
       const { positions } = calculateGridLayout(display, 0, 600);
-      expect(positions[0].flipped).toBe(true); // center: stored flipped
-      expect(positions[1].flipped).toBe(true); // right: stored flipped
-      expect(positions[2].flipped).toBe(false); // left: stored flipped
+      // Double at center: vertical, both cells at same col → no swap
+      expect(positions[0].flipped).toBe(false);
+      // Right side: conn at LEFT cell, DominoTile LEFT=top needs conn → swap
+      expect(positions[1].flipped).toBe(true);
+      // Left side: conn at RIGHT cell, DominoTile LEFT=top=free ✓ → no swap
+      expect(positions[2].flipped).toBe(false);
+    });
+
+    // Center non-double horizontal — side="right":
+    //   leftEnd=tile.top, rightEnd=tile.bottom
+    //   cells = [{col:7, val:tile.top=4}, {col:8, val:tile.bottom=9}]
+    //   tile.bottom (conn) is in RIGHT cell → connCell.col > freeCell.col → no swap
+    it("does NOT flip center non-double tile when side=right", () => {
+      const display = [
+        placedTile(4, 9, "right", "center", 0, false), // center [9|4] side=right
+      ];
+      const { positions } = calculateGridLayout(display, 0, 600);
+      expect(positions[0].flipped).toBe(false);
+    });
+
+    // Center non-double horizontal — side="left":
+    //   leftEnd=tile.bottom, rightEnd=tile.top
+    //   cells = [{col:7, val:tile.bottom=2}, {col:8, val:tile.top=7}]
+    //   tile.bottom (conn) is in LEFT cell → connCell.col < freeCell.col → swap
+    it("flips center non-double tile when side=left", () => {
+      const display = [
+        placedTile(7, 2, "left", "center", 0, false), // center [7|2] side=left
+      ];
+      const { positions } = calculateGridLayout(display, 0, 600);
+      expect(positions[0].flipped).toBe(true);
     });
 
     // No side effects: input not mutated

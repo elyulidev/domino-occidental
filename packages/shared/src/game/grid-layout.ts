@@ -445,13 +445,17 @@ export function computeGridLayout(tiles: PlacedTile[]): GridLayout {
     rightHead = { row: START_ROW, col: CENTER_COL, dir: "east" };
   } else {
     // Opening normal tile at F0:C7-C8
-    // The canonical tile has: bottom = connecting, top = new end
-    // For the first tile both are the values
-    const leftCell: HalfCell = { row: START_ROW, col: CENTER_COL, value: first.tile.bottom };
-    const rightCell: HalfCell = { row: START_ROW, col: CENTER_COL + 1, value: first.tile.top };
+    // The canonical tile has: bottom = connecting, top = new end.
+    // BUT the orientation depends on the side: when side="right", the board
+    // inverts the ends (board.ts: leftEnd=tile.top, rightEnd=tile.bottom),
+    // so the left cell gets tile.top and the right cell gets tile.bottom.
+    const leftValue = first.side === "right" ? first.tile.top : first.tile.bottom;
+    const rightValue = first.side === "right" ? first.tile.bottom : first.tile.top;
+    const leftCell: HalfCell = { row: START_ROW, col: CENTER_COL, value: leftValue };
+    const rightCell: HalfCell = { row: START_ROW, col: CENTER_COL + 1, value: rightValue };
 
-    occupied.set(cellKey(START_ROW, CENTER_COL), first.tile.bottom);
-    occupied.set(cellKey(START_ROW, CENTER_COL + 1), first.tile.top);
+    occupied.set(cellKey(START_ROW, CENTER_COL), leftValue);
+    occupied.set(cellKey(START_ROW, CENTER_COL + 1), rightValue);
 
     gridTiles.push({
       tileId: first.tile.id,
