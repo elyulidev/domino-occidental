@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test";
+import type { GameStore } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
-import type { GameStore } from "../../game/handler";
 import type { WsPlugin } from "../connection";
 import { createWsPlugin } from "../connection";
 import type { RateLimiter } from "../rate-limiter";
@@ -40,6 +40,7 @@ describe("RateLimiter", () => {
     expect(limiter.tryConsume("conn-1")).toBe(false);
 
     // Manually advance lastRefill to simulate 1 second passing
+    // biome-ignore lint/style/noNonNullAssertion: bucket was just created by tryConsume
     const bucket = limiter._debug().get("conn-1")!;
     bucket.lastRefill = Date.now() - 1100; // 1.1 seconds ago
 
@@ -70,6 +71,7 @@ describe("RateLimiter", () => {
     const buckets = limiter._debug();
     const oldTime = Date.now() - 6 * 60 * 1000;
     // Override lastAccess on conn-1
+    // biome-ignore lint/style/noNonNullAssertion: bucket was just verified present
     const b1 = buckets.get("conn-1")!;
     b1.lastAccess = oldTime;
 
@@ -151,14 +153,15 @@ function makeStore(
 function createMockWs(playerId = "p1", matchId = "match-1") {
   return {
     send: () => {},
-    data: { playerId, matchId },
+    data: { params: { matchId, playerId }, playerId, matchId },
   } as unknown as ElysiaWS;
 }
 
 function getHandler(plugin: WsPlugin) {
-  return (plugin as unknown as Record<string, unknown>).ws[
-    "/ws/game/:matchId"
-  ] as Record<string, (...args: unknown[]) => void>;
+  return plugin.ws as unknown as Record<
+    string,
+    (...args: unknown[]) => void
+  >;
 }
 
 // ---------------------------------------------------------------------------

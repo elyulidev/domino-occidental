@@ -166,10 +166,12 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-domino-600">
           Al iniciar sesión aceptás los{" "}
+          {/* biome-ignore lint/a11y/useValidAnchor: placeholder, se reemplaza cuando existan las páginas */}
           <a href="#" className="underline hover:text-domino-400 transition-colors">
             Términos y condiciones
           </a>{" "}
           y la{" "}
+          {/* biome-ignore lint/a11y/useValidAnchor: placeholder, se reemplaza cuando existan las páginas */}
           <a href="#" className="underline hover:text-domino-400 transition-colors">
             Política de privacidad
           </a>

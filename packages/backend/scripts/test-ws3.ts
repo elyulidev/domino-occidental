@@ -3,8 +3,8 @@ console.log('Connecting to:', url);
 const ws = new WebSocket(url);
 ws.onmessage = (e) => {
   const d = JSON.parse(e.data);
-  console.log('MSG type=' + d.type + ' events=' + (d.events?.length ?? 0) + ' state=' + (!!d.state ? 'yes' : 'no'));
-  if (d.state) console.log('  players:', d.state.players.map(p => p.handSize + ' tiles'));
+  console.log(`MSG type=${d.type} events=${d.events?.length ?? 0} state=${d.state ? 'yes' : 'no'}`);
+  if (d.state) console.log('  players:', d.state.players.map(p => `${p.handSize} tiles`));
 };
 ws.onerror = (e) => console.log('ERR:', e.message);
 ws.onclose = (e) => console.log('CLOSE:', e.code, e.reason);

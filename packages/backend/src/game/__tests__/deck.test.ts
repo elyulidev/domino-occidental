@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createDeck, deal, shuffle } from "../deck";
+import { createDeck, deal, shuffle } from "@domino/shared/src/game";
 import type { Tile } from "../types";
 
 describe("createDeck", () => {

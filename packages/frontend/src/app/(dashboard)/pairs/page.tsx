@@ -14,7 +14,7 @@ export default function PairsPage() {
       {/* ── Header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-domino-50 sm:text-3xl">
             Mis Parejas
           </h1>
           <p className="mt-1 text-sm text-domino-400">
@@ -23,9 +23,9 @@ export default function PairsPage() {
         </div>
         <Link
           href="/users/search"
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-black shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
             <path d="M12 5v14m-7-7h14" />
           </svg>
           Crear pareja
@@ -34,7 +34,7 @@ export default function PairsPage() {
 
       {/* ── Active pairs ── */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-white">Parejas activas</h2>
+        <h2 className="mb-4 text-lg font-semibold text-domino-50">Parejas activas</h2>
 
         {hasActivePairs ? (
           <div className="space-y-4">
@@ -48,7 +48,7 @@ export default function PairsPage() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700 text-sm font-semibold text-gold-400">
                     {pair.player1.initials}
                   </div>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-domino-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-domino-500" aria-hidden="true">
                     <path d="M12 5v14m-7-7h14" />
                   </svg>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700 text-sm font-semibold text-gold-400">
@@ -59,7 +59,7 @@ export default function PairsPage() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-white">
+                    <p className="text-sm font-medium text-domino-50">
                       {pair.player1.name}
                       <span className="text-domino-500"> + </span>
                       {pair.player2.name}
@@ -71,13 +71,13 @@ export default function PairsPage() {
                   <div className="mt-1 flex items-center gap-4 text-xs text-domino-400">
                     <span>
                       ELO combinado:{" "}
-                      <span className="font-semibold text-white">
+                      <span className="font-semibold text-domino-50">
                         {pair.combinedElo}
                       </span>
                     </span>
                     <span>
                       Win rate:{" "}
-                      <span className="font-semibold text-white">
+                      <span className="font-semibold text-domino-50">
                         {pair.winRate}
                       </span>
                     </span>
@@ -88,7 +88,7 @@ export default function PairsPage() {
                 <div className="flex items-center gap-2">
                   <Link
                     href="/lobby"
-                    className="rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+                    className="rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
                   >
                     Jugar
                   </Link>
@@ -110,6 +110,7 @@ export default function PairsPage() {
               stroke="currentColor"
               strokeWidth="1.5"
               className="mx-auto mb-3 h-10 w-10 text-domino-600"
+              aria-hidden="true"
             >
               <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
@@ -126,7 +127,7 @@ export default function PairsPage() {
 
       {/* ── Pending invitations ── */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-white">
+        <h2 className="mb-4 text-lg font-semibold text-domino-50">
           Invitaciones pendientes
         </h2>
 
@@ -141,7 +142,7 @@ export default function PairsPage() {
                   {invitation.sender.initials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-domino-50">
                     {invitation.sender.name}
                   </p>
                   <p className="text-xs text-domino-400">
@@ -158,7 +159,7 @@ export default function PairsPage() {
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg border border-domino-700 px-4 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+                    className="rounded-lg border border-domino-700 px-4 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
                   >
                     Rechazar
                   </button>

@@ -10,7 +10,7 @@ export default function NotificationsPage() {
       {/* ── Header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-domino-50 sm:text-3xl">
             Notificaciones
           </h1>
           <p className="mt-1 text-sm text-domino-400">
@@ -19,9 +19,9 @@ export default function NotificationsPage() {
         </div>
         <button
           type="button"
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
             <path d="M5 13l4 4L19 7" />
           </svg>
           Marcar todas como leídas
@@ -52,7 +52,7 @@ export default function NotificationsPage() {
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-white">
+                <p className="text-sm font-medium text-domino-50">
                   {notification.title}
                 </p>
                 <span className="shrink-0 text-xs text-domino-500">
@@ -93,7 +93,7 @@ export default function NotificationsPage() {
 
 function GamepadIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
       <path d="M6 12h4m-2-2v4m5 0h.01M17 7a2 2 0 012 2v2a2 2 0 01-2 2h-1l-1.5 4.5A1.5 1.5 0 0115 19H9a1.5 1.5 0 01-1.5-1.5L6 13H5a2 2 0 01-2-2V9a2 2 0 012-2h1l1.5-4.5A1.5 1.5 0 019 1h6a1.5 1.5 0 011.5 1.5L18 7h-1z" />
     </svg>
   );
@@ -101,7 +101,7 @@ function GamepadIcon() {
 
 function TrophyIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
       <path d="M6 9H4.5a2.5 2.5 0 010-5H6m12 5h1.5a2.5 2.5 0 000-5H18M6 9v6a3 3 0 003 3h6a3 3 0 003-3V9M6 9V4h12v5M8 21h8" />
     </svg>
   );
@@ -109,7 +109,7 @@ function TrophyIcon() {
 
 function UserPlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
       <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m8-10a4 4 0 100-8 4 4 0 000 8zm6 8v-6m3 3h-6" />
     </svg>
   );
@@ -117,7 +117,7 @@ function UserPlusIcon() {
 
 function ArrowUpIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
       <path d="M12 19V5m0 0l-5 5m5-5l5 5" />
     </svg>
   );
@@ -125,7 +125,7 @@ function ArrowUpIcon() {
 
 function AwardIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
       <path d="M12 15l-2 5l9-13h-6l2-5-9 13h6z" />
     </svg>
   );
@@ -133,7 +133,7 @@ function AwardIcon() {
 
 function BellIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
       <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
   );

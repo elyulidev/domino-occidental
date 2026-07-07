@@ -77,6 +77,7 @@ export default async function ProfilePage({
                 stroke="currentColor"
                 strokeWidth="2"
                 className="h-4 w-4"
+                aria-hidden="true"
               >
                 <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
@@ -92,6 +93,7 @@ export default async function ProfilePage({
                 stroke="currentColor"
                 strokeWidth="2"
                 className="h-4 w-4"
+                aria-hidden="true"
               >
                 <path d="M12 4v16m8-8H4" />
               </svg>
@@ -153,6 +155,7 @@ export default async function ProfilePage({
             <div className="space-y-3">
               {profile.recentMatches.map((match, i) => (
                 <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: demo data sin IDs estables
                   key={i}
                   className="flex items-center gap-4 rounded-xl bg-domino-800/40 px-4 py-3"
                 >

@@ -3,7 +3,7 @@ console.log('Connecting to:', url);
 const ws = new WebSocket(url);
 ws.onmessage = (e) => {
   const d = JSON.parse(e.data);
-  console.log('CLIENT msg: type=' + d.type + ' events=' + (d.events?.length ?? 0) + ' hasState=' + (!!d.state));
+  console.log(`CLIENT msg: type=${d.type} events=${d.events?.length ?? 0} hasState=${!!d.state}`);
 };
 ws.onerror = (e) => console.log('ERR:', (e.message ?? 'unknown'));
 ws.onclose = (e) => console.log('CLOSE:', e.code, e.reason);

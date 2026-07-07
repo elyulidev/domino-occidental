@@ -7,7 +7,7 @@ import {
   getLosingPlayers,
   getPairIndex,
   scoreHand,
-} from "../scoring";
+} from "@domino/shared/src/game";
 import type { Tile } from "../types";
 
 // ---------------------------------------------------------------------------

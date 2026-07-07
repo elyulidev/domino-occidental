@@ -12,7 +12,7 @@ import {
   resetNullRounds,
   setCurrentTurn,
   TURN_TIMEOUT_MS,
-} from "../turn";
+} from "@domino/shared/src/game";
 import type { Tile } from "../types";
 
 // Helper to create a Tile with a given id

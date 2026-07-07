@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { initializeMatch, setConnected, setCurrentTurn } from "@domino/shared/src/game";
 import {
   checkAbandonment,
   checkReconnectWindow,
@@ -7,8 +8,6 @@ import {
   forfeitMatch,
   reconnectPlayer,
 } from "../connection";
-import { initializeMatch } from "../match";
-import { setCurrentTurn } from "../turn";
 import type { BoardState, MatchState, Tile } from "../types";
 import {
   ABANDONMENT_THRESHOLD_MS,
@@ -22,6 +21,12 @@ function createTestMatch(): MatchState {
   const hands: [never[], never[], never[], never[]] = [[], [], [], []];
   const { match } = initializeMatch("test-match", hands, []);
   return match;
+}
+
+/** Connects all players in a match for tests that need connected players. */
+function connectAllPlayers(match: MatchState): MatchState {
+  const newPlayers = match.players.map((p) => setConnected(p, true)) as MatchState["players"];
+  return { ...match, players: newPlayers };
 }
 
 // Helper to create a match with specific hands and turn state
@@ -79,7 +84,7 @@ describe("disconnectPlayer", () => {
   });
 
   it("emits player_disconnected with correct reconnectWindowMs", () => {
-    const match = createTestMatch();
+    const match = connectAllPlayers(createTestMatch());
     const now = new Date();
     const result = disconnectPlayer(match, "p0", now);
 
@@ -120,7 +125,7 @@ describe("reconnectPlayer", () => {
   });
 
   it("reconnecting already-connected player is no-op", () => {
-    const match = createTestMatch();
+    const match = connectAllPlayers(createTestMatch());
     const now = new Date();
     const result = reconnectPlayer(match, "p0", now);
 
@@ -204,6 +209,7 @@ describe("forcePassForDisconnected", () => {
   it("returns game_error for invalid playerIndex below range", () => {
     const match = createTestMatch();
     const now = new Date();
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid boundary test
     const result = forcePassForDisconnected(match, -1 as any, now);
 
     expect(result.events).toHaveLength(1);
@@ -217,6 +223,7 @@ describe("forcePassForDisconnected", () => {
   it("returns game_error for invalid playerIndex above range", () => {
     const match = createTestMatch();
     const now = new Date();
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid boundary test
     const result = forcePassForDisconnected(match, 5 as any, now);
 
     expect(result.events).toHaveLength(1);

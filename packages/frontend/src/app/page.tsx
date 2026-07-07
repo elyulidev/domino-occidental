@@ -14,7 +14,7 @@ export default function Home() {
           <svg
             viewBox="0 0 24 24"
             fill="none"
-            className="h-10 w-10 text-domino-950"
+            className="h-10 w-10 text-black"
             aria-hidden="true"
           >
             <rect
@@ -40,7 +40,7 @@ export default function Home() {
           </svg>
         </div>
 
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-domino-50 sm:text-5xl">
           Dominó Occidental
         </h1>
         <p className="mt-4 max-w-md text-lg text-domino-300">
@@ -51,13 +51,13 @@ export default function Home() {
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Link
             href="/login"
-            className="w-full sm:w-auto rounded-lg bg-gradient-to-r from-gold-500 to-gold-600 px-8 py-3 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.98] text-center"
+            className="w-full sm:w-auto rounded-lg bg-gradient-to-r from-gold-500 to-gold-600 px-8 py-3 text-sm font-semibold text-black shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.98] text-center"
           >
             Iniciar sesión
           </Link>
           <Link
             href="/register"
-            className="w-full sm:w-auto rounded-lg border border-domino-700 bg-domino-800/50 px-8 py-3 text-sm font-medium text-domino-200 transition-all hover:bg-domino-700/50 hover:text-white active:scale-[0.98] text-center"
+            className="w-full sm:w-auto rounded-lg border border-domino-700 bg-domino-800/50 px-8 py-3 text-sm font-medium text-domino-200 transition-all hover:bg-domino-700/50 hover:text-domino-50 active:scale-[0.98] text-center"
           >
             Crear cuenta
           </Link>

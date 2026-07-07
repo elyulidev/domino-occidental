@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Detalle del Torneo — Dominó Occidental",
@@ -16,7 +15,7 @@ export default async function TournamentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: _tournamentId } = await params;
   const tournament = DEMO_TOURNAMENT;
 
   return (
@@ -67,6 +66,7 @@ export default async function TournamentDetailPage({
             viewBox="0 0 820 520"
             className="w-full min-w-[600px]"
             xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
             {/* Round labels */}
             <text x="60" y="30" textAnchor="middle" className="fill-domino-400 text-[11px] font-medium">

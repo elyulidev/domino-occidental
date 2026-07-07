@@ -49,10 +49,10 @@ export default function CreateTournamentPage() {
             </div>
 
             {/* Bracket type */}
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
+            <fieldset>
+              <legend className="block text-sm font-medium text-white mb-2">
                 Tipo de bracket
-              </label>
+              </legend>
               <div className="space-y-2">
                 <label className="flex items-center gap-3 rounded-lg border border-domino-700 p-3 cursor-pointer transition-colors has-[:checked]:border-gold-500 has-[:checked]:bg-gold-500/5">
                   <input
@@ -104,7 +104,7 @@ export default function CreateTournamentPage() {
                   </div>
                 </label>
               </div>
-            </div>
+            </fieldset>
 
             {/* Entry fee */}
             <div>
@@ -113,7 +113,7 @@ export default function CreateTournamentPage() {
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-400">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 6v12m-3-9h6a2 2 0 012 2v1a2 2 0 01-2 2h-6a2 2 0 01-2-2v-1a2 2 0 012-2z" />
                   </svg>
@@ -159,7 +159,7 @@ export default function CreateTournamentPage() {
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-400">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 6v12m-3-9h6a2 2 0 012 2v1a2 2 0 01-2 2h-6a2 2 0 01-2-2v-1a2 2 0 012-2z" />
                   </svg>

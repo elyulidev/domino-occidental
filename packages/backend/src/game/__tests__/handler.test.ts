@@ -15,6 +15,7 @@ function makeMatch(overrides?: Partial<MatchState>): MatchState {
     consecutivePasses: 0,
     isConnected: true,
     lastActionAt: now,
+    blockedTileIds: [],
   };
   return {
     matchId: "test-match",
@@ -244,6 +245,7 @@ describe("handleMessage", () => {
 
   // ---- Scenario 7: Sanitization in handler response ----
   it("returns sanitizedState after a successful play_tile", () => {
+    const now = new Date();
     const match = makeMatch({
       turn: {
         currentTurn: 0,
@@ -252,6 +254,14 @@ describe("handleMessage", () => {
         roundNumber: 0,
         lastHandWinner: null,
       },
+      // Give p0 2 tiles + give other players matching tiles so the board
+      // doesn't block (which would trigger handleHandEnd/redealHand).
+      players: [
+        { id: "p0", hand: [{ id: "t1", top: 3, bottom: 4 }, { id: "t2", top: 5, bottom: 6 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
+        { id: "p1", hand: [{ id: "t3", top: 4, bottom: 7 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
+        { id: "p2", hand: [{ id: "t4", top: 7, bottom: 3 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
+        { id: "p3", hand: [{ id: "t5", top: 3, bottom: 9 }], consecutivePasses: 0, isConnected: true, lastActionAt: now, blockedTileIds: [] },
+      ] as MatchState["players"],
     });
     const store = makeStore(match);
 
@@ -266,7 +276,7 @@ describe("handleMessage", () => {
     // Pool array should be stripped
     expect(result.sanitizedState).not.toHaveProperty("pool");
     // Hand should be represented as handSize
-    expect(result.sanitizedState?.players[0].handSize).toBe(0); // tile was played
+    expect(result.sanitizedState?.players[0].handSize).toBe(1); // one tile left after playing t1
   });
 
   // ---- Triangulation: pass with not-your-turn ----
