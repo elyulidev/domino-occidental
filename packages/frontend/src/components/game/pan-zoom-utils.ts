@@ -128,10 +128,10 @@ export function clampPan(
 export function calculateZoomAtCursor(
   currentZoom: number,
   deltaY: number,
-  cursorX: number,
-  cursorY: number,
-  containerWidth: number,
-  containerHeight: number,
+  _cursorX: number,
+  _cursorY: number,
+  _containerWidth: number,
+  _containerHeight: number,
 ): number {
   // Zoom factor: 0.1 per 100px of scroll
   const zoomFactor = 0.1 * (deltaY / 100);

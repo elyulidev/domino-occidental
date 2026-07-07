@@ -5,8 +5,8 @@ import {
   sanitizeState,
   type WsClientMessage,
 } from "@domino/shared";
-import { forfeitMatch } from "./connection";
 import { passTurn, playTile } from "@domino/shared/src/game";
+import { forfeitMatch } from "./connection";
 
 // ---------------------------------------------------------------------------
 // Handler

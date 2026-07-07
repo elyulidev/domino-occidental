@@ -1,19 +1,19 @@
 "use client";
 
-import { Suspense, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useGameStore } from "@/stores/game-store";
+import { Suspense, useCallback, useEffect } from "react";
 import { GameBoard } from "@/components/game/game-board";
-import { PlayerHand } from "@/components/game/player-hand";
-import { OpponentIndicator } from "@/components/game/opponent-indicator";
-import { ScorePanel } from "@/components/game/score-panel";
-import { TurnTimer } from "@/components/game/turn-timer";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { HandOverModal } from "@/components/game/hand-over-modal";
+import { OpponentIndicator } from "@/components/game/opponent-indicator";
+import { PlayerHand } from "@/components/game/player-hand";
+import { ScorePanel } from "@/components/game/score-panel";
+import { TurnTimer } from "@/components/game/turn-timer";
 import type { WsStatus } from "@/hooks/use-websocket";
-import { resolvePageView, resolveMatchMode } from "./page-helpers";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { useGameStore } from "@/stores/game-store";
+import { resolveMatchMode, resolvePageView } from "./page-helpers";
 
 // ---------------------------------------------------------------------------
 // Page (Suspense boundary for useSearchParams)
@@ -43,8 +43,8 @@ function MatchContent() {
 	const initEngine = useGameStore((s) => s.initEngine);
 	const reset = useGameStore((s) => s.reset);
 	const status = useGameStore((s) => s.game.status);
-	const scores = useGameStore((s) => s.game.scores);
-	const roundNumber = useGameStore((s) => s.game.turn.roundNumber);
+	const _scores = useGameStore((s) => s.game.scores);
+	const _roundNumber = useGameStore((s) => s.game.turn.roundNumber);
 
 	// Always call hooks (rules of hooks), but disable WS in local mode
 	const wsHook = useWebSocket(params.id ?? "", playerId, mode !== "online");
@@ -238,9 +238,9 @@ function AbandonedScreen({ onBack }: { onBack: () => void }) {
 import type { MatchState } from "@domino/shared";
 import {
 	createDeck,
-	shuffle,
 	deal,
 	initializeMatch,
+	shuffle,
 	startHand,
 } from "@domino/shared/src/game";
 

@@ -58,7 +58,7 @@ function PipFace({ value, className }: { value: number; className: string }) {
   );
 }
 
-function NumeralFace({ value }: { value: number }) {
+function _NumeralFace({ value }: { value: number }) {
   return (
     <div className="flex items-center justify-center text-[26px] font-bold leading-none text-stone-800 font-serif">
       {value}

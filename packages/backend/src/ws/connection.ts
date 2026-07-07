@@ -209,16 +209,17 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                 deps.store.updateGame(matchId, { ...match, players: newPlayers });
               }
 
-              const updatedMatch = deps.store.getGame(matchId)!;
-              const player = updatedMatch.players.find((p) => p.id === playerId);
-              sendFn(playerId, {
-                type: "game_events",
-                events: [],
-                state: sanitizeState(updatedMatch),
-                yourHand: player?.hand,
-              });
+		// biome-ignore lint/style/noNonNullAssertion: game exists because we just updated it
+		const updatedMatch = deps.store.getGame(matchId)!;
+		const player = updatedMatch.players.find((p) => p.id === playerId);
+		sendFn(playerId, {
+			type: "game_events",
+			events: [],
+			state: sanitizeState(updatedMatch),
+			yourHand: player?.hand,
+		});
 
-              // Attempt reconnect notification if player was previously disconnected
+		// Attempt reconnect notification if player was previously disconnected
               if (reconnectPlayerFn) {
                 const playerIds = updatedMatch.players.map((p) => p.id);
                 const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
@@ -278,8 +279,9 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                 deps.store.updateGame(matchId, { ...match, players: newPlayers });
               }
 
-              // Re-use the updated match for state sending
-              const updatedMatch = deps.store.getGame(matchId)!;
+		// Re-use the updated match for state sending
+		// biome-ignore lint/style/noNonNullAssertion: game exists because we just updated it
+		const updatedMatch = deps.store.getGame(matchId)!;
               const player = updatedMatch.players.find((p) => p.id === playerId);
               sendFn(playerId, {
                 type: "game_events",

@@ -22,12 +22,24 @@ console.log(`Match ID: ${matchId}`);
 // ---------------------------------------------------------------------------
 console.log("\n=== 2. Connecting 4 players ===");
 
+interface PlayerState {
+  matchId: string;
+  players: Array<{ id: string; handSize: number }>;
+  board: { leftEnd: null; rightEnd: null; tiles: unknown[] };
+  currentTurn: number;
+  poolCount: number;
+  scores: [number, number];
+  status: string;
+  targetScore: number;
+  [key: string]: unknown;
+}
+
 interface Player {
   id: string;
   ws: WebSocket;
-  state: any; // latest sanitized state
-  buffer: any[]; // buffered messages not yet processed
-  resolveQueue: Array<(msg: any) => void>; // pending waitForMessage resolvers
+  state: PlayerState | null;
+  buffer: unknown[];
+  resolveQueue: Array<(msg: Record<string, unknown>) => void>;
 }
 
 const players: Player[] = [];
@@ -51,12 +63,12 @@ for (let i = 0; i < 4; i++) {
   };
 
   ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
+    const msg: Record<string, unknown> = JSON.parse(e.data);
     // Store latest state
-    if (msg.state) p.state = msg.state;
+    if (msg.state) p.state = msg.state as PlayerState;
     // If someone is waiting, resolve them; otherwise buffer
     if (p.resolveQueue.length > 0) {
-      const resolve = p.resolveQueue.shift()!;
+      const resolve = p.resolveQueue.shift() as (msg: Record<string, unknown>) => void;
       resolve(msg);
     } else {
       p.buffer.push(msg);
@@ -67,19 +79,19 @@ for (let i = 0; i < 4; i++) {
 }
 
 // Helper: wait for the next message from a player
-function waitForMsg(p: Player): Promise<any> {
+function waitForMsg(p: Player): Promise<Record<string, unknown>> {
   if (p.buffer.length > 0) {
-    return Promise.resolve(p.buffer.shift()!);
+    return Promise.resolve(p.buffer.shift() as Record<string, unknown>);
   }
   return new Promise((resolve) => {
-    p.resolveQueue.push(resolve);
+    p.resolveQueue.push(resolve as (msg: Record<string, unknown>) => void);
   });
 }
 
 // Consume initial state messages for all 4
 for (const p of players) {
-  const msg = await waitForMsg(p);
-  console.log(`  ${p.id} connected — handSize=${p.state?.players.find((pl: any) => pl.id === p.id)?.handSize}`);
+  const _msg = await waitForMsg(p);
+  console.log(`  ${p.id} connected — handSize=${p.state?.players.find((pl) => pl.id === p.id)?.handSize}`);
 }
 console.log("  ✅ All 4 connected with initial state");
 
@@ -102,7 +114,7 @@ console.assert(s.targetScore === 200, "targetScore=200");
 
 // Hand sizes should be 10 for all players
 for (let i = 0; i < 4; i++) {
-  const own = s.players.find((pl: any) => pl.id === `p${i}`);
+  const own = s.players.find((pl) => pl.id === `p${i}`);
   console.assert(own.handSize === 10, `p${i} handSize=${own.handSize}`);
 }
 console.log("  ✅ Initial GameState valid");
@@ -131,7 +143,8 @@ while (roundsPlayed < MAX_ROUNDS) {
   const state = p.state;
 
   // Check for hand/match end
-  const isHandEnd = response.events?.some((e: any) => e.type === "hand_ended");
+  const events = response.events as Array<{ type: string }> | undefined;
+  const isHandEnd = events?.some((e) => e.type === "hand_ended");
   const isMatchEnd = state?.status === "finished";
 
   if (state) {

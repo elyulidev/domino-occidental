@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { Tile } from "../../types";
 import { sanitizeState } from "../../handler";
+import type { Tile } from "../../types";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -59,6 +59,7 @@ describe("sanitizeState — turn-related fields", () => {
         lastHandWinner: null,
       },
     });
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
     expect(sanitized.turnDeadline).toBe(1700000000000);
   });
@@ -73,6 +74,7 @@ describe("sanitizeState — turn-related fields", () => {
         lastHandWinner: null,
       },
     });
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
     expect(sanitized.turnDeadline).toBeNull();
   });
@@ -87,6 +89,7 @@ describe("sanitizeState — turn-related fields", () => {
         lastHandWinner: null,
       },
     });
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
     expect(sanitized.consecutiveNullRounds).toBe(3);
   });
@@ -101,6 +104,7 @@ describe("sanitizeState — turn-related fields", () => {
         lastHandWinner: null,
       },
     });
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
     expect(sanitized.consecutiveNullRounds).toBe(0);
   });
@@ -115,6 +119,7 @@ describe("sanitizeState — turn-related fields", () => {
         lastHandWinner: 2,
       },
     });
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
     expect(sanitized.lastHandWinner).toBe(2);
   });
@@ -129,6 +134,7 @@ describe("sanitizeState — turn-related fields", () => {
         lastHandWinner: null,
       },
     });
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
     expect(sanitized.lastHandWinner).toBeNull();
   });
@@ -141,6 +147,7 @@ describe("sanitizeState — turn-related fields", () => {
 describe("sanitizeState — backward compatibility", () => {
   it("still includes all existing fields", () => {
     const match = makeMatch();
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
 
     expect(sanitized.matchId).toBe("test-match");
@@ -156,6 +163,7 @@ describe("sanitizeState — backward compatibility", () => {
 
   it("player handSize still computed correctly", () => {
     const match = makeMatch();
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
     const sanitized = sanitizeState(match as any);
 
     expect(sanitized.players[0].handSize).toBe(2);

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import {
   computeOpponents,
-  opponentPositionClass,
   connectionDotClass,
-  resolveOpponentContainerClass,
+  opponentPositionClass,
   resolveOpponentCardClass,
+  resolveOpponentContainerClass,
 } from "../opponent-indicator";
 
 // ---------------------------------------------------------------------------

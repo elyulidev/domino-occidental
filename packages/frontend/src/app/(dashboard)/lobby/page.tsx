@@ -238,7 +238,7 @@ export default function LobbyPage() {
             className="inline-flex items-center gap-2 rounded-lg border border-gold-500/30 bg-gold-500/10 px-5 py-2.5 text-sm font-medium text-gold-400 transition-all hover:bg-gold-500/20 active:scale-[0.97]"
           >
             Ver planes
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
               <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </Link>

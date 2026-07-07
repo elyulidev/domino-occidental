@@ -11,6 +11,7 @@
     "noEmit": true,
     "isolatedModules": true,
     "declaration": true,
+    "types": ["@types/bun"],
     "declarationMap": true
   },
   "include": ["src/**/*.ts"],

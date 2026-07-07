@@ -248,6 +248,7 @@ function makePlayer(id: string, hand: Tile[]): PlayerState {
     consecutivePasses: 0,
     isConnected: true,
     lastActionAt: new Date(),
+    blockedTileIds: [],
   };
 }
 
@@ -260,7 +261,7 @@ describe("isBlocked", () => {
       makePlayer("p2", [tile(0, 1), tile(2, 3)]),
       makePlayer("p3", [tile(4, 5), tile(6, 7)]),
     ];
-    expect(isBlocked(board, players as any)).toBe(false);
+    expect(isBlocked(board, players)).toBe(false);
   });
 
   it("returns true when no player can play on either side", () => {
@@ -276,7 +277,7 @@ describe("isBlocked", () => {
       makePlayer("p2", [tile(0, 2), tile(1, 3)]),
       makePlayer("p3", [tile(4, 6), tile(5, 7)]),
     ];
-    expect(isBlocked(board, players as any)).toBe(true);
+    expect(isBlocked(board, players)).toBe(true);
   });
 
   it("returns false when at least one player has a valid move", () => {
@@ -292,7 +293,7 @@ describe("isBlocked", () => {
       makePlayer("p2", [tile(0, 2), tile(1, 3)]),
       makePlayer("p3", [tile(4, 6), tile(5, 7)]),
     ];
-    expect(isBlocked(board, players as any)).toBe(false);
+    expect(isBlocked(board, players)).toBe(false);
   });
 
   it("ignores players with empty hands", () => {
@@ -308,7 +309,7 @@ describe("isBlocked", () => {
       makePlayer("p2", [tile(0, 2), tile(1, 3)]),
       makePlayer("p3", [tile(4, 6), tile(5, 7)]),
     ];
-    expect(isBlocked(board, players as any)).toBe(true);
+    expect(isBlocked(board, players)).toBe(true);
   });
 
   it("detects a single playable tile among many unplayable ones", () => {
@@ -323,6 +324,6 @@ describe("isBlocked", () => {
       makePlayer("p2", [tile(3, 9), tile(0, 2)]), // tile(3,9) matches leftEnd=3
       makePlayer("p3", [tile(4, 6), tile(5, 8)]),
     ];
-    expect(isBlocked(board, players as any)).toBe(false);
+    expect(isBlocked(board, players)).toBe(false);
   });
 });

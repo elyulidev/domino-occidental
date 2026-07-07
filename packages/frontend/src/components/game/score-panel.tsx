@@ -1,7 +1,7 @@
 "use client";
 
-import { useGameStore } from "@/stores/game-store";
 import { TARGET_SCORE } from "@domino/shared";
+import { useGameStore } from "@/stores/game-store";
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)

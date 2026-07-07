@@ -1,0 +1,15 @@
+{
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": ["src/**"]
+  },
+  "formatter": {
+    "enabled": false
+  },
+  "json": {
+    "formatter": {
+      "enabled": true
+    }
+  }
+}

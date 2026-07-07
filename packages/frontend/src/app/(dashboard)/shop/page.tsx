@@ -11,7 +11,7 @@ export default function ShopPage() {
       <section className="rounded-2xl border border-domino-700/50 bg-gradient-to-br from-domino-800 to-domino-900 p-6 sm:p-8">
         <p className="text-sm text-domino-400">Tu saldo</p>
         <div className="mt-2 flex items-center gap-3">
-          <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8 text-gold-400">
+          <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8 text-gold-400" aria-hidden="true">
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
             <text x="12" y="16" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">$</text>
           </svg>
@@ -33,7 +33,7 @@ export default function ShopPage() {
             <ul className="mt-4 space-y-2">
               {PREMIUM_FEATURES.map((f) => (
                 <li key={f} className="flex items-center gap-2 text-sm text-domino-300">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0 text-green-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0 text-green-400" aria-hidden="true">
                     <path d="M5 13l4 4L19 7" />
                   </svg>
                   {f}
@@ -72,7 +72,7 @@ export default function ShopPage() {
                   {pkg.badge}
                 </span>
               )}
-              <svg viewBox="0 0 24 24" fill="none" className={`h-10 w-10 ${pkg.badge ? "text-gold-400" : "text-domino-400"}`}>
+              <svg viewBox="0 0 24 24" fill="none" className={`h-10 w-10 ${pkg.badge ? "text-gold-400" : "text-domino-400"}`} aria-hidden="true">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                 <text x="12" y="16" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">$</text>
               </svg>
@@ -114,7 +114,7 @@ export default function ShopPage() {
             disabled={AD_PROGRESS.viewed >= AD_PROGRESS.dailyLimit}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
               <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
               <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -132,6 +132,7 @@ export default function ShopPage() {
           <div className="space-y-3">
             {RECENT_TRANSACTIONS.map((tx, i) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: demo data sin IDs estables
                 key={i}
                 className="flex items-center gap-4 rounded-xl bg-domino-800/40 px-4 py-3"
               >

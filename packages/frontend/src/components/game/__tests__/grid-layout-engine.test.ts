@@ -1,17 +1,15 @@
 import { describe, expect, it } from "bun:test";
-import {
-  calculateGridLayout,
-  type TilePosition,
-  type LayoutResult,
-} from "../grid-layout-engine";
 import type { PlacedTile, Tile } from "@domino/shared";
 import { computeGridLayout } from "@domino/shared/src/game/grid-layout";
+import {
+  calculateGridLayout,
+} from "../grid-layout-engine";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeTile(top: number, bottom: number, id = "t-1"): Tile {
+function _makeTile(top: number, bottom: number, id = "t-1"): Tile {
   return { top, bottom, id };
 }
 
@@ -52,7 +50,7 @@ describe("grid-layout-engine", () => {
     // Single tile: centered at (0, 0)
     it("single tile centered at x=0, y=0", () => {
       const display = [placedTile(6, 6, "left", "t0", 0)];
-      const { positions, boardWidth, boardHeight } = calculateGridLayout(
+      const { positions } = calculateGridLayout(
         display,
         0,
         600,
@@ -506,9 +504,9 @@ describe("grid-layout-engine", () => {
 
       // RightHead one MORE row beyond freeValue: row -3, same col, west
       expect(grid.rightHead).not.toBeNull();
-      expect(grid.rightHead!.row).toBe(-3);
-      expect(grid.rightHead!.col).toBe(15);
-      expect(grid.rightHead!.dir).toBe("west");
+      expect(grid.rightHead?.row).toBe(-3);
+      expect(grid.rightHead?.col).toBe(15);
+      expect(grid.rightHead?.dir).toBe("west");
     });
 
     // ── Mixed turn (space=1) → next tile HORIZONTAL in new row ──

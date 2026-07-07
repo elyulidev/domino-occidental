@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "bun:test";
+import type { MessageResult, SanitizedMatchState, WsClientMessage, WsServerMessage } from "@domino/shared";
 import type { ConnectionManager, WsPlugin } from "../connection";
 import {
   createConnectionManager,
   createWsPlugin,
   sendToPlayer,
 } from "../connection";
-import { MessageResult, SanitizedMatchState, WsClientMessage, WsServerMessage } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Test helpers

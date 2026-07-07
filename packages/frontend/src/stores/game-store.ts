@@ -1,7 +1,7 @@
+import type { BoardState, MatchState, SanitizedMatchState, Side, Tile } from "@domino/shared";
 import { create } from "zustand";
-import type { BoardState, GameEvent, MatchState, SanitizedMatchState, Side, Tile } from "@domino/shared";
-import type { GameEngine, GameStatus } from "@/lib/game/types";
 import { LocalGameEngine } from "@/lib/game/local-engine";
+import type { GameEngine, GameStatus } from "@/lib/game/types";
 
 // ---------------------------------------------------------------------------
 // Hand-over modal data

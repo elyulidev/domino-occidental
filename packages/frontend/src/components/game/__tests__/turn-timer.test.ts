@@ -2,9 +2,9 @@ import { describe, expect, it } from "bun:test";
 import {
   getTimeRemaining,
   isHumanTurn,
-  turnProgressPercent,
-  timerColorClass,
   resolveTimerClasses,
+  timerColorClass,
+  turnProgressPercent,
 } from "../turn-timer";
 
 // ---------------------------------------------------------------------------

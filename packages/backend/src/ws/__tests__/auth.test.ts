@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import crypto from "node:crypto";
+import type { GameStore } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
 import { verifyToken } from "../auth";
 import type { WsPlugin } from "../connection";
 import { createWsPlugin } from "../connection";
-import { GameStore } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -206,7 +206,7 @@ describe("wsPlugin JWT auth integration", () => {
 
   it("rejects connection without token", () => {
     const ws = createMockWs({ query: undefined });
-    const _closeSpy = (ws.close = () => {});
+    ws.close = () => {};
 
     const plugin = createWsPlugin({
       store: makeStore(),
@@ -222,7 +222,7 @@ describe("wsPlugin JWT auth integration", () => {
 
   it("rejects connection with invalid token", () => {
     const ws = createMockWs({ query: { token: "invalid-token" } });
-    const _closeSpy = (ws.close = () => {});
+    ws.close = () => {};
 
     const plugin = createWsPlugin({
       store: makeStore(),

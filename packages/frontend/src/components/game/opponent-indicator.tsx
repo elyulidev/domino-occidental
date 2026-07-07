@@ -1,8 +1,8 @@
 "use client";
 
+import type { Tile } from "@domino/shared";
 import { useGameStore } from "@/stores/game-store";
 import { DominoTile } from "./domino-tile";
-import type { Tile } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)

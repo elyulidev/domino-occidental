@@ -15,7 +15,7 @@ const PADDING = 16;
 // Must be H_TILE_H/2 + V_TILE_H/2 so the vertical bend tile
 // (96px tall) touches the horizontal tiles (48px tall) of the
 // adjacent row edge-to-edge.
-const ROW_STEP = H_TILE_H / 2 + V_TILE_H / 2; // 72
+const _ROW_STEP = H_TILE_H / 2 + V_TILE_H / 2; // 72
 
 export interface TilePosition {
   x: number;

@@ -1,26 +1,26 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
-import { useGameStore } from "@/stores/game-store";
 import type { PlacedTile, Tile } from "@domino/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useGameStore } from "@/stores/game-store";
 import { DominoTile, isDoubleTile } from "./domino-tile";
 import { calculateGridLayout } from "./grid-layout-engine";
 import {
   calculatePanDelta,
-  clampPan,
-  calculateZoomAtCursor,
-  isClick,
-  calculateTouchDistance,
   calculatePinchZoom,
-  MIN_ZOOM,
+  calculateTouchDistance,
+  calculateZoomAtCursor,
+  clampPan,
+  isClick,
   MAX_ZOOM,
+  MIN_ZOOM,
   ZOOM_STEP,
 } from "./pan-zoom-utils";
-// Re-export for tests
-export { isDoubleTile };
 
 // Re-export types from grid-layout-engine (same interface as layout-engine)
-export type { TilePosition, LayoutResult } from "./grid-layout-engine";
+export type { LayoutResult, TilePosition } from "./grid-layout-engine";
+// Re-export for tests
+export { isDoubleTile };
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
@@ -300,6 +300,7 @@ export function GameBoard() {
       </div>
 
       {/* Serpentine board — absolute positioned tiles (fills remaining space) */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: game board maneja pan/zoom nativos del canvas */}
       <div
         ref={containerRef}
         className="relative min-h-0 flex-1 overflow-hidden"
@@ -369,7 +370,7 @@ export function GameBoard() {
 function BoardTile({
   placed,
   position,
-  isFirst,
+  isFirst: _isFirst,
 }: {
   placed: PlacedTile;
   position: import("./grid-layout-engine").TilePosition;

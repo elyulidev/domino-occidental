@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
+import type { PlacedTile, Tile } from "@domino/shared";
 import {
-  isDoubleTile,
+  buildDisplayOrder,
   formatPipValue,
+  isDoubleTile,
   playerColorClass,
   playerIdToIndex,
-  buildDisplayOrder,
 } from "../game-board";
-import type { PlacedTile, Tile } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Helper to build a tile quickly

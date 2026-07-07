@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { place, createBoard } from "../board";
 import type { Tile } from "../../types";
+import { createBoard, place } from "../board";
 
 // ---------------------------------------------------------------------------
 // Helpers

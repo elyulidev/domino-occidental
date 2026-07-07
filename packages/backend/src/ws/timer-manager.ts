@@ -6,8 +6,7 @@ import type {
   SanitizedMatchState,
   SendFn,
 } from "@domino/shared";
-import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS } from "@domino/shared";
-import { sanitizeState } from "@domino/shared";
+import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS, sanitizeState } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Types

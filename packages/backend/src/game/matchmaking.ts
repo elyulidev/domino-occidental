@@ -9,7 +9,7 @@
  */
 
 import type { GameStore, UserChannelManager } from "@domino/shared";
-import { createDeck, deal, shuffle, initializeMatch, startHand } from "@domino/shared/src/game";
+import { createDeck, deal, initializeMatch, shuffle, startHand } from "@domino/shared/src/game";
 import { createGame } from "./store";
 
 // ---------------------------------------------------------------------------

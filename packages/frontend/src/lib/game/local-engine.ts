@@ -1,7 +1,7 @@
 import type { GameEvent, MatchState, Side, Tile } from "@domino/shared";
-import { playTile as sharedPlayTile, passTurn } from "@domino/shared/src/game";
-import type { GameEngine } from "./types";
+import { passTurn, playTile as sharedPlayTile } from "@domino/shared/src/game";
 import { chooseBotMove } from "./bot";
+import type { GameEngine } from "./types";
 
 /**
  * Local game engine that wraps shared game functions and adds bot auto-play.

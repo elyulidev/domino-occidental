@@ -5,15 +5,15 @@ async function main() {
   const players = [];
 
   for (let i = 0; i < 4; i++) {
-    const pid = "p" + i;
-    const ws = new WebSocket(WS_BASE + "/ws/game/" + matchId + "/" + pid);
+    const pid = `p${i}`;
+    const ws = new WebSocket(`${WS_BASE}/ws/game/${matchId}/${pid}`);
     await new Promise((resolve, reject) => {
       ws.onopen = () => {
-        console.log(pid + " connected");
+        console.log(`${pid} connected`);
         resolve();
       };
       ws.onerror = (e) => reject(e);
-      setTimeout(() => reject(new Error("timeout " + pid)), 5000);
+      setTimeout(() => reject(new Error(`timeout ${pid}`)), 5000);
     });
     ws.onmessage = (e) => {
       const d = JSON.parse(e.data);
@@ -36,18 +36,18 @@ async function main() {
 
   // See the first turn
   const firstTurn = players[0].__state?.currentTurn;
-  console.log("\nFirst turn: player " + firstTurn);
+  console.log(`\nFirst turn: player ${firstTurn}`);
 
   // Send pass from first player
   const p = players[firstTurn];
-  console.log("Sending pass from p" + firstTurn);
+  console.log(`Sending pass from p${firstTurn}`);
   p.send(JSON.stringify({ type: "pass" }));
 
   // Wait for response
   await new Promise((r) => setTimeout(r, 2000));
 
   const newTurn = players[0].__state?.currentTurn;
-  console.log("After pass, currentTurn: " + newTurn);
+  console.log(`After pass, currentTurn: ${newTurn}`);
   if (newTurn === firstTurn) console.log("TURN DID NOT CHANGE!");
 
   for (const ws of players) ws.close();

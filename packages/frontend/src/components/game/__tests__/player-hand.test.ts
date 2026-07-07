@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { canPlayOnSide, getPlayableSides, isTilePlayable } from "../player-hand";
 import type { BoardState, Tile } from "@domino/shared";
+import { canPlayOnSide, getPlayableSides, isTilePlayable } from "../player-hand";
 
 // ---------------------------------------------------------------------------
 // Helpers

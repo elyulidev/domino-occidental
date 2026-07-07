@@ -5,7 +5,7 @@ import type {
   Side,
   Tile,
 } from "../types";
-import { resolveSlotIndex, resolveFlipped } from "./board-path";
+import { resolveFlipped, resolveSlotIndex } from "./board-path";
 
 /**
  * Creates an empty domino board.

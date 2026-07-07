@@ -138,10 +138,12 @@ export default function RegisterPage() {
               />
               <label htmlFor="terms" className="text-sm text-domino-400">
                 Acepto los{" "}
+                {/* biome-ignore lint/a11y/useValidAnchor: placeholder, se reemplaza cuando existan las páginas */}
                 <a href="#" className="text-domino-300 underline hover:text-white transition-colors">
                   Términos y condiciones
                 </a>{" "}
                 y la{" "}
+                {/* biome-ignore lint/a11y/useValidAnchor: placeholder, se reemplaza cuando existan las páginas */}
                 <a href="#" className="text-domino-300 underline hover:text-white transition-colors">
                   Política de privacidad
                 </a>

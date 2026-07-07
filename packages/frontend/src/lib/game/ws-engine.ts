@@ -3,10 +3,10 @@ import type {
   GameEvent,
   MatchState,
   MatchStatus,
+  SanitizedMatchState,
   Side,
   Tile,
   WsClientMessage,
-  SanitizedMatchState,
 } from "@domino/shared";
 import type { GameEngine } from "./types";
 

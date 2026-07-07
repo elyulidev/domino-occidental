@@ -1,15 +1,14 @@
-import { describe, expect, it, beforeEach } from "bun:test";
-import { useGameStore } from "../game-store";
-import { createDeck, shuffle, deal, initializeMatch, startHand } from "@domino/shared/src/game";
-import { setCurrentTurn } from "@domino/shared/src/game";
+import { beforeEach, describe, expect, it } from "bun:test";
 import type { SanitizedMatchState, Tile } from "@domino/shared";
+import { createDeck, deal, initializeMatch, setCurrentTurn, shuffle, startHand } from "@domino/shared/src/game";
 import type { GameEngine } from "@/lib/game/types";
+import { useGameStore } from "../game-store";
 
 function setupStore() {
   const deck = shuffle(createDeck());
   const { hands, pool } = deal(deck);
   const matchResult = initializeMatch("test-match", hands, pool);
-  let handResult = startHand(matchResult.match);
+  const handResult = startHand(matchResult.match);
   // Force turn to player 0 (human)
   const forcedTurn = setCurrentTurn(handResult.match.turn, 0);
   // Connect ALL players (bots need isConnected=true or processBotTurns will infinite-loop)

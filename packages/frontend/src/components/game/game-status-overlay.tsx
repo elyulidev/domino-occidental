@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { useGameStore } from "@/stores/game-store";
 import { TARGET_SCORE } from "@domino/shared";
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import type { GameStatus } from "@/lib/game/types";
+import { useGameStore } from "@/stores/game-store";
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)

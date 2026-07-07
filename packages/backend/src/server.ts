@@ -1,14 +1,4 @@
-import { Elysia } from "elysia";
-
-import { createGame, getGame, updateGame } from "./game/store";
-import {
-	type WsPlugin,
-	createConnectionManager,
-	createWsPlugin,
-	sendToPlayer,
-} from "./ws/connection";
-import { createTimerManager } from "./ws/timer-manager";
-import { broadcastEvents } from "./ws/broadcaster";
+import type { SendFn } from "@domino/shared";
 import {
 	checkTimeout,
 	createDeck,
@@ -17,8 +7,17 @@ import {
 	shuffle,
 	startHand,
 } from "@domino/shared/game";
-import type { SendFn } from "@domino/shared";
-import { disconnectPlayer, checkAbandonment } from "./game/connection";
+import { Elysia } from "elysia";
+import { checkAbandonment, disconnectPlayer } from "./game/connection";
+import { createGame, getGame, updateGame } from "./game/store";
+import { broadcastEvents } from "./ws/broadcaster";
+import {
+	createConnectionManager,
+	createWsPlugin,
+	sendToPlayer,
+	type WsPlugin,
+} from "./ws/connection";
+import { createTimerManager } from "./ws/timer-manager";
 
 const PORT = Number(Bun.env.PORT) || 3001;
 
@@ -91,6 +90,7 @@ const app = new Elysia()
 		return { matchId };
 	})
 	// Single WS route: playerId comes from path param (dev) or JWT (auth)
+	// biome-ignore lint/suspicious/noExplicitAny: Elysia WS handler type mismatch with WsPlugin.ws shape
 	.ws("/ws/game/:matchId/:playerId", plugin.ws as any)
 	.listen(PORT);
 

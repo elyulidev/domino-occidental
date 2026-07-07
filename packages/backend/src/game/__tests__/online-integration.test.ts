@@ -1,14 +1,14 @@
-import { describe, expect, it, beforeAll, afterAll } from "bun:test";
-import { Elysia } from "elysia";
-import { createDeck, deal, shuffle } from "@domino/shared/src/game/deck";
-import { initializeMatch, startHand } from "@domino/shared/src/game/match";
-import { createGame, getGame, updateGame } from "../store";
-import { createWsPlugin } from "../../ws/connection";
+import { describe, expect, it } from "bun:test";
 import type {
   SanitizedMatchState,
   Tile,
   WsServerMessage,
 } from "@domino/shared";
+import { createDeck, deal, shuffle } from "@domino/shared/src/game/deck";
+import { initializeMatch, startHand } from "@domino/shared/src/game/match";
+import { Elysia } from "elysia";
+import { createWsPlugin } from "../../ws/connection";
+import { createGame, getGame, updateGame } from "../store";
 
 // ---------------------------------------------------------------------------
 // Test server — lightweight Elysia instance with the same routes as server.ts
@@ -34,6 +34,7 @@ const app = new Elysia()
   })
   .ws(
     "/ws/game/:matchId/:playerId",
+    // biome-ignore lint/suspicious/noExplicitAny: Elysia WS handler type mismatch with WsPlugin.ws shape
     createWsPlugin({ store }).ws as any,
   )
   .listen(PORT);
@@ -225,8 +226,8 @@ describe("Full integration: create match → connect WS → play tile", () => {
         (t) => t.tile.id === tileToPlay.id,
       );
       expect(humanTile).toBeDefined();
-      expect(humanTile!.side).toBe("right");
-      expect(humanTile!.playerId).toBe(playerId);
+      expect(humanTile?.side).toBe("right");
+      expect(humanTile?.playerId).toBe(playerId);
 
       // Board ends should be set
       expect(newState.board.rightEnd).not.toBeNull();

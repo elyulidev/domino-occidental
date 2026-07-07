@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { formatScore, resolveLeadingPair, playerToPair } from "../score-panel";
+import { formatScore, playerToPair, resolveLeadingPair } from "../score-panel";
 
 // ---------------------------------------------------------------------------
 // Tests

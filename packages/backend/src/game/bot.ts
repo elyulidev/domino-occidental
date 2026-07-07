@@ -1,7 +1,5 @@
-import type { BoardState, GameStore, MatchState, Tile } from "@domino/shared";
-import type { GameEvent, Side } from "@domino/shared";
-import { canPlay } from "@domino/shared/src/game";
-import { playTile, passTurn } from "@domino/shared/src/game";
+import type { BoardState, GameEvent, GameStore, MatchState, Side, Tile } from "@domino/shared";
+import { canPlay, passTurn, playTile } from "@domino/shared/src/game";
 
 // ---------------------------------------------------------------------------
 // Bot configuration: players p1, p2, p3 are bots; p0 is the human
@@ -96,7 +94,7 @@ export function executeBotTurns(
 	// eslint-disable-next-line no-constant-condition
 	while (true) {
 		const match = store.getGame(matchId);
-		if (!match || match.status !== "in_progress") break;
+		if (match?.status !== "in_progress") break;
 
 		if (!isCurrentTurnBot(match)) break;
 

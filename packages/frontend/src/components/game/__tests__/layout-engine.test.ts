@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { calculateLayout, type TilePosition, type LayoutResult } from "../layout-engine";
 import type { PlacedTile, Tile } from "@domino/shared";
+import { calculateLayout, } from "../layout-engine";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeTile(top: number, bottom: number, id = "t-1"): Tile {
+function _makeTile(top: number, bottom: number, id = "t-1"): Tile {
   return { top, bottom, id };
 }
 
@@ -31,8 +31,8 @@ const H_TILE_W = CELL * 2; // 96
 const H_TILE_H = CELL;     // 48
 const V_TILE_W = CELL;     // 48
 const V_TILE_H = CELL * 2; // 96
-const GAP = 0;
-const PADDING = 16;
+const _GAP = 0;
+const _PADDING = 16;
 
 // ---------------------------------------------------------------------------
 // Tests — LayoutEngine

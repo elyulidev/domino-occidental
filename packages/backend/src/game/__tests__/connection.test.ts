@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { initializeMatch, setConnected, setCurrentTurn } from "@domino/shared/src/game";
 import {
   checkAbandonment,
   checkReconnectWindow,
@@ -7,7 +8,6 @@ import {
   forfeitMatch,
   reconnectPlayer,
 } from "../connection";
-import { initializeMatch, setCurrentTurn } from "@domino/shared/src/game";
 import type { BoardState, MatchState, Tile } from "../types";
 import {
   ABANDONMENT_THRESHOLD_MS,
@@ -15,7 +15,6 @@ import {
   RECONNECT_WINDOW_MS,
   TURN_TIMEOUT_MS,
 } from "../types";
-import { setConnected } from "@domino/shared/src/game";
 
 // Helper to create a basic match for testing
 function createTestMatch(): MatchState {
@@ -210,6 +209,7 @@ describe("forcePassForDisconnected", () => {
   it("returns game_error for invalid playerIndex below range", () => {
     const match = createTestMatch();
     const now = new Date();
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid boundary test
     const result = forcePassForDisconnected(match, -1 as any, now);
 
     expect(result.events).toHaveLength(1);
@@ -223,6 +223,7 @@ describe("forcePassForDisconnected", () => {
   it("returns game_error for invalid playerIndex above range", () => {
     const match = createTestMatch();
     const now = new Date();
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid boundary test
     const result = forcePassForDisconnected(match, 5 as any, now);
 
     expect(result.events).toHaveLength(1);

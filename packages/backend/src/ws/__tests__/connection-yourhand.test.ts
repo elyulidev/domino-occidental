@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "bun:test";
-import type { ConnectionManager, WsPlugin } from "../connection";
-import { createWsPlugin } from "../connection";
 import type { GameStore, MatchState, PlayerState } from "@domino/shared";
+import { createWsPlugin } from "../connection";
 
 // ---------------------------------------------------------------------------
 // Test helpers

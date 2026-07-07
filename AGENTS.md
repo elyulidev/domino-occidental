@@ -719,5 +719,363 @@ SENTRY_DSN=
 | BAJA      | Panel `/admin`                      | Moderación manual hasta tener el panel              |
 
 ---
+## 18. Esquema Anti-Colusión / Anti-Fraude
+-- =============================================================================
+-- DOMINÓ OCCIDENTAL — Esquema Anti-Colusión / Anti-Fraude
+-- =============================================================================
+-- Diseñado para Supabase (Postgres). Asume que ya existe una tabla `accounts`
+-- (o `players`, ajusta el nombre si es distinto en tu esquema v2.0).
+--
+-- Módulos:
+--   1. Device fingerprinting
+--   2. Inteligencia de red (IP / ASN / VPN)
+--   3. Métodos de pago (para bloquear cobro cruzado)
+--   4. Grafo de asociación entre cuentas
+--   5. Torneos / partidas (mínimo necesario para las stats)
+--   6. Estadísticas por pareja de jugadores (detección de win-rate anómalo)
+--   7. Flags de fraude (resultado final, revisable por un admin)
+--   8. Job de detección (función + trigger de scheduling con pg_cron)
+-- =============================================================================
+
+-- Requiere la extensión pgcrypto para gen_random_uuid() (ya viene activada en Supabase)
+create extension if not exists pgcrypto;
+
+-- -----------------------------------------------------------------------------
+-- 1. DEVICE FINGERPRINTING
+-- -----------------------------------------------------------------------------
+
+create table device_fingerprints (
+  id                uuid primary key default gen_random_uuid(),
+  fingerprint_hash  text not null unique,       -- hash estable (FingerprintJS o similar)
+  raw_signals       jsonb not null default '{}', -- canvas, webgl, fonts, timezone, user_agent...
+  first_seen_at     timestamptz not null default now(),
+  last_seen_at      timestamptz not null default now()
+);
+
+create index idx_device_fingerprints_hash on device_fingerprints (fingerprint_hash);
+
+create table account_device_links (
+  id                  uuid primary key default gen_random_uuid(),
+  account_id          uuid not null references accounts(id) on delete cascade,
+  device_fingerprint_id uuid not null references device_fingerprints(id) on delete cascade,
+  first_seen_at       timestamptz not null default now(),
+  last_seen_at        timestamptz not null default now(),
+  session_count       integer not null default 1,
+  unique (account_id, device_fingerprint_id)
+);
+
+create index idx_account_device_account on account_device_links (account_id);
+create index idx_account_device_device  on account_device_links (device_fingerprint_id);
+
+-- -----------------------------------------------------------------------------
+-- 2. INTELIGENCIA DE RED
+-- -----------------------------------------------------------------------------
+
+create table network_sessions (
+  id             uuid primary key default gen_random_uuid(),
+  account_id     uuid not null references accounts(id) on delete cascade,
+  ip_address     inet not null,
+  asn            integer,                 -- Autonomous System Number
+  asn_org        text,                    -- ej: "DigitalOcean LLC", "NordVPN"
+  is_vpn         boolean not null default false,
+  is_datacenter  boolean not null default false,
+  is_tor         boolean not null default false,
+  country_code   text,
+  connected_at   timestamptz not null default now(),
+  disconnected_at timestamptz,
+  avg_latency_ms integer
+);
+
+create index idx_network_sessions_account on network_sessions (account_id);
+create index idx_network_sessions_ip      on network_sessions (ip_address);
+create index idx_network_sessions_asn     on network_sessions (asn);
+
+-- -----------------------------------------------------------------------------
+-- 3. MÉTODOS DE PAGO (para bloquear cobro cruzado entre "cuentas distintas")
+-- -----------------------------------------------------------------------------
+
+create table payment_methods (
+  id                 uuid primary key default gen_random_uuid(),
+  method_type        text not null check (method_type in ('bank_account', 'mobile_money', 'card')),
+  method_fingerprint text not null unique, -- HASH del número de cuenta/teléfono, nunca el dato crudo
+  created_at         timestamptz not null default now()
+);
+
+create table account_payment_links (
+  id                 uuid primary key default gen_random_uuid(),
+  account_id         uuid not null references accounts(id) on delete cascade,
+  payment_method_id  uuid not null references payment_methods(id) on delete cascade,
+  verified_at        timestamptz,
+  created_at         timestamptz not null default now(),
+  unique (account_id, payment_method_id)
+);
+
+create index idx_account_payment_account on account_payment_links (account_id);
+create index idx_account_payment_method  on account_payment_links (payment_method_id);
+
+-- -----------------------------------------------------------------------------
+-- 4. GRAFO DE ASOCIACIÓN ENTRE CUENTAS
+-- -----------------------------------------------------------------------------
+-- Cada fila es una arista del grafo. account_a siempre < account_b (por uuid)
+-- para evitar duplicados (a,b) y (b,a).
+
+create table account_associations (
+  id                uuid primary key default gen_random_uuid(),
+  account_a         uuid not null references accounts(id) on delete cascade,
+  account_b         uuid not null references accounts(id) on delete cascade,
+  association_type  text not null check (association_type in ('device', 'ip_subnet', 'payment_method', 'phone')),
+  strength          numeric(4,3) not null default 1.0 check (strength between 0 and 1),
+  evidence          jsonb not null default '{}',
+  detected_at       timestamptz not null default now(),
+  unique (account_a, account_b, association_type),
+  check (account_a < account_b)
+);
+
+create index idx_associations_a on account_associations (account_a);
+create index idx_associations_b on account_associations (account_b);
+
+-- Vista de conveniencia: grafo "aplanado" bidireccional para consultas de vecinos
+create view account_associations_bidirectional as
+  select account_a as account_id, account_b as related_account_id, association_type, strength, evidence, detected_at
+  from account_associations
+  union all
+  select account_b as account_id, account_a as related_account_id, association_type, strength, evidence, detected_at
+  from account_associations;
+
+-- -----------------------------------------------------------------------------
+-- 5. TORNEOS / PARTIDAS (mínimo necesario para las estadísticas)
+-- -----------------------------------------------------------------------------
+
+create table tournaments (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  prize_pool  numeric(12,2) not null default 0,
+  starts_at   timestamptz,
+  status      text not null default 'scheduled' check (status in ('scheduled', 'active', 'finished', 'cancelled'))
+);
+
+create table tournament_participants (
+  id             uuid primary key default gen_random_uuid(),
+  tournament_id  uuid not null references tournaments(id) on delete cascade,
+  account_id     uuid not null references accounts(id) on delete cascade,
+  team_id        uuid,
+  unique (tournament_id, account_id)
+);
+
+create table matches (
+  id             uuid primary key default gen_random_uuid(),
+  tournament_id  uuid references tournaments(id) on delete set null,
+  round          integer,
+  started_at     timestamptz not null default now(),
+  ended_at       timestamptz,
+  winning_team   uuid
+);
+
+create table match_players (
+  id          uuid primary key default gen_random_uuid(),
+  match_id    uuid not null references matches(id) on delete cascade,
+  account_id  uuid not null references accounts(id) on delete cascade,
+  team        uuid not null, -- team_id (para 2v2) o account_id mismo si es individual
+  seat        integer,
+  unique (match_id, account_id)
+);
+
+create index idx_match_players_match   on match_players (match_id);
+create index idx_match_players_account on match_players (account_id);
+
+-- -----------------------------------------------------------------------------
+-- 6. ESTADÍSTICAS POR PAREJA (detección de win-rate anómalo)
+-- -----------------------------------------------------------------------------
+
+create table player_pairwise_stats (
+  id                    uuid primary key default gen_random_uuid(),
+  account_a             uuid not null references accounts(id) on delete cascade,
+  account_b             uuid not null references accounts(id) on delete cascade,
+  games_together        integer not null default 0,  -- jugaron en el mismo equipo
+  wins_together         integer not null default 0,
+  games_against         integer not null default 0,  -- jugaron en equipos rivales
+  wins_a_against_b      integer not null default 0,
+  win_rate_together     numeric(5,4),
+  win_rate_a_overall    numeric(5,4),
+  expected_win_rate     numeric(5,4),                -- win-rate esperado si no hay colusión
+  z_score               numeric(6,3),                 -- desviación estadística
+  last_computed_at      timestamptz not null default now(),
+  unique (account_a, account_b),
+  check (account_a < account_b)
+);
+
+create index idx_pairwise_z_score on player_pairwise_stats (z_score desc);
+
+-- -----------------------------------------------------------------------------
+-- 7. FLAGS DE FRAUDE
+-- -----------------------------------------------------------------------------
+
+create table fraud_flags (
+  id                  uuid primary key default gen_random_uuid(),
+  account_id          uuid not null references accounts(id) on delete cascade,
+  related_account_id  uuid references accounts(id) on delete cascade,
+  flag_type           text not null check (flag_type in (
+                        'device_share', 'vpn_datacenter', 'payment_share',
+                        'winrate_anomaly', 'timing_correlation', 'ip_subnet_share'
+                      )),
+  severity            text not null default 'low' check (severity in ('low', 'medium', 'high', 'critical')),
+  evidence            jsonb not null default '{}',
+  status              text not null default 'open' check (status in ('open', 'reviewing', 'confirmed', 'dismissed')),
+  created_at          timestamptz not null default now(),
+  reviewed_by         uuid,
+  reviewed_at         timestamptz
+);
+
+create index idx_fraud_flags_account on fraud_flags (account_id);
+create index idx_fraud_flags_status  on fraud_flags (status);
+create index idx_fraud_flags_severity on fraud_flags (severity);
+
+-- =============================================================================
+-- JOB DE DETECCIÓN: recalcula stats por pareja y genera flags automáticos
+-- =============================================================================
+-- Corre periódicamente (ver scheduling con pg_cron al final del archivo).
+--
+-- Lógica:
+--   1. Para cada par de jugadores que hayan jugado juntos en un torneo con premio,
+--      recalcula games_together / wins_together / win_rate_together.
+--   2. Calcula el win-rate esperado como el promedio de win-rate individual
+--      de ambos jugadores (aproximación simple; se puede sustituir por ELO).
+--   3. Calcula un z-score usando aproximación binomial:
+--        z = (observado - esperado) / sqrt(esperado*(1-esperado)/n)
+--   4. Si z_score > 2.5 (≈ 99% de confianza) y games_together >= 15,
+--      inserta un fraud_flag tipo 'winrate_anomaly'.
+-- =============================================================================
+
+create or replace function recompute_pairwise_stats() returns void as $$
+declare
+  min_games_threshold integer := 15;
+  z_score_threshold    numeric := 2.5;
+begin
+  -- 1) Upsert de estadísticas por pareja, basado en match_players
+  with pair_games as (
+    select
+      least(mp1.account_id, mp2.account_id)    as account_a,
+      greatest(mp1.account_id, mp2.account_id) as account_b,
+      count(*) filter (where mp1.team = mp2.team)                as games_together,
+      count(*) filter (where mp1.team = mp2.team
+                        and mp1.team = m.winning_team)             as wins_together,
+      count(*) filter (where mp1.team <> mp2.team)                as games_against,
+      count(*) filter (where mp1.team <> mp2.team
+                        and mp1.team = m.winning_team)              as wins_a_against_b
+    from match_players mp1
+    join match_players mp2
+      on mp1.match_id = mp2.match_id
+     and mp1.account_id < mp2.account_id
+    join matches m on m.id = mp1.match_id
+    group by least(mp1.account_id, mp2.account_id), greatest(mp1.account_id, mp2.account_id)
+  ),
+  overall_wr as (
+    select
+      mp.account_id,
+      avg((mp.team = m.winning_team)::int)::numeric as win_rate
+    from match_players mp
+    join matches m on m.id = mp.match_id
+    group by mp.account_id
+  )
+  insert into player_pairwise_stats (
+    account_a, account_b, games_together, wins_together,
+    games_against, wins_a_against_b, win_rate_together,
+    win_rate_a_overall, expected_win_rate, z_score, last_computed_at
+  )
+  select
+    pg.account_a,
+    pg.account_b,
+    pg.games_together,
+    pg.wins_together,
+    pg.games_against,
+    pg.wins_a_against_b,
+    case when pg.games_together > 0
+         then pg.wins_together::numeric / pg.games_together
+         else null end                                            as win_rate_together,
+    owr_a.win_rate                                                 as win_rate_a_overall,
+    -- esperado = promedio simple de ambos win-rates individuales
+    (coalesce(owr_a.win_rate, 0.5) + coalesce(owr_b.win_rate, 0.5)) / 2  as expected_win_rate,
+    case when pg.games_together >= 5
+      then (
+        (pg.wins_together::numeric / pg.games_together)
+        - ((coalesce(owr_a.win_rate,0.5) + coalesce(owr_b.win_rate,0.5)) / 2)
+      ) / nullif(sqrt(
+        ((coalesce(owr_a.win_rate,0.5) + coalesce(owr_b.win_rate,0.5)) / 2)
+        * (1 - (coalesce(owr_a.win_rate,0.5) + coalesce(owr_b.win_rate,0.5)) / 2)
+        / pg.games_together
+      ), 0)
+      else null
+    end                                                             as z_score,
+    now()
+  from pair_games pg
+  left join overall_wr owr_a on owr_a.account_id = pg.account_a
+  left join overall_wr owr_b on owr_b.account_id = pg.account_b
+  on conflict (account_a, account_b) do update set
+    games_together      = excluded.games_together,
+    wins_together        = excluded.wins_together,
+    games_against         = excluded.games_against,
+    wins_a_against_b       = excluded.wins_a_against_b,
+    win_rate_together      = excluded.win_rate_together,
+    win_rate_a_overall      = excluded.win_rate_a_overall,
+    expected_win_rate        = excluded.expected_win_rate,
+    z_score                   = excluded.z_score,
+    last_computed_at           = now();
+
+  -- 2) Generar flags para anomalías que superen el umbral y no tengan ya un flag abierto
+  insert into fraud_flags (account_id, related_account_id, flag_type, severity, evidence, status)
+  select
+    pps.account_a,
+    pps.account_b,
+    'winrate_anomaly',
+    case
+      when pps.z_score >= 4 then 'critical'
+      when pps.z_score >= 3 then 'high'
+      else 'medium'
+    end,
+    jsonb_build_object(
+      'games_together', pps.games_together,
+      'win_rate_together', pps.win_rate_together,
+      'expected_win_rate', pps.expected_win_rate,
+      'z_score', pps.z_score
+    ),
+    'open'
+  from player_pairwise_stats pps
+  where pps.games_together >= min_games_threshold
+    and pps.z_score >= z_score_threshold
+    and not exists (
+      select 1 from fraud_flags ff
+      where ff.flag_type = 'winrate_anomaly'
+        and ff.status in ('open', 'reviewing')
+        and ((ff.account_id = pps.account_a and ff.related_account_id = pps.account_b)
+          or (ff.account_id = pps.account_b and ff.related_account_id = pps.account_a))
+    );
+end;
+$$ language plpgsql;
+
+-- -----------------------------------------------------------------------------
+-- 8. SCHEDULING (Supabase soporta pg_cron como extensión)
+-- -----------------------------------------------------------------------------
+-- Descomenta esto una vez actives la extensión pg_cron desde el dashboard
+-- de Supabase (Database → Extensions → pg_cron):
+--
+-- create extension if not exists pg_cron;
+--
+-- select cron.schedule(
+--   'recompute-pairwise-stats',
+--   '0 * * * *',  -- cada hora
+--   $$ select recompute_pairwise_stats(); $$
+-- );
+--
+-- Alternativa: llamarla desde un job de Bun/Elysia con un cron simple
+-- (ej. usando `Bun.serve` + un setInterval, o una Edge Function de Supabase
+-- invocada por un scheduler externo).
+
+Notas rápidas sobre la BD:
+•	Asume que ya tienes una tabla accounts (ajusta el nombre si en tu v2.0 se llama distinto, ej. players).
+•	El z-score usa una aproximación binomial simple con el promedio de win-rate individual como "esperado" — es un punto de partida razonable, pero si más adelante quieres algo más fino, se puede sustituir por el win-rate esperado según ELO (probabilidad de victoria de Elo ya la tienes en tu sistema de rating).
+•	account_associations fuerza account_a < account_b para no duplicar aristas; la vista account_associations_bidirectional te da la consulta "dame todos los relacionados con esta cuenta" sin tener que hacer el OR en cada query.
+•	El job (recompute_pairwise_stats()) es idempotente — puedes correrlo cada hora con pg_cron (Supabase lo soporta como extensión) o desde un cron en tu backend Elysia si prefieres no depender de extensiones de Postgres.
+•	El umbral (z_score >= 2.5, games_together >= 15) son valores de arranque razonables — vas a querer ajustar a medida que veas datos reales de tus torneos.
+
 
 *Documento generado desde el Architecture & Construction Document v2.0 de Dominó Occidental.*

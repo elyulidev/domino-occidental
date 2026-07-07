@@ -25,7 +25,7 @@ export default function PairsPage() {
           href="/users/search"
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-black shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
             <path d="M12 5v14m-7-7h14" />
           </svg>
           Crear pareja
@@ -48,7 +48,7 @@ export default function PairsPage() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700 text-sm font-semibold text-gold-400">
                     {pair.player1.initials}
                   </div>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-domino-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-domino-500" aria-hidden="true">
                     <path d="M12 5v14m-7-7h14" />
                   </svg>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700 text-sm font-semibold text-gold-400">
@@ -110,6 +110,7 @@ export default function PairsPage() {
               stroke="currentColor"
               strokeWidth="1.5"
               className="mx-auto mb-3 h-10 w-10 text-domino-600"
+              aria-hidden="true"
             >
               <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>

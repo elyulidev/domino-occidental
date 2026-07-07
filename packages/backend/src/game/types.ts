@@ -12,33 +12,33 @@
 // ── Core game domain types ──────────────────────────────────────────────────
 
 export type {
-  Tile,
-  PlayerState,
-  DealResult,
-  Side,
-  PlacedTile,
-  BoardState,
-  TurnState,
-  TimeoutResult,
-  PairIndex,
-  ScoreState,
-  HandResult,
-  MatchResult,
-  MatchStatus,
-  MatchState,
   ActionResult,
+  BoardState,
+  DealResult,
   EloConfig,
   EloResult,
   GameEvent,
+  HandResult,
+  MatchResult,
+  MatchState,
+  MatchStatus,
+  PairIndex,
+  PlacedTile,
+  PlayerState,
+  ScoreState,
+  Side,
+  Tile,
+  TimeoutResult,
+  TurnState,
 } from "@domino/shared";
 
 // ── Game constants ──────────────────────────────────────────────────────────
 
 export {
-  TURN_TIMEOUT_MS,
-  PLAYER_COUNT,
-  HEARTBEAT_MS,
-  RECONNECT_WINDOW_MS,
   ABANDONMENT_THRESHOLD_MS,
+  HEARTBEAT_MS,
+  PLAYER_COUNT,
+  RECONNECT_WINDOW_MS,
   TARGET_SCORE,
+  TURN_TIMEOUT_MS,
 } from "@domino/shared";

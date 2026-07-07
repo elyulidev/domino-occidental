@@ -1,8 +1,8 @@
 "use client";
 
+import type { BoardState, Tile } from "@domino/shared";
 import { useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
-import type { BoardState, Tile } from "@domino/shared";
 import { DominoTile } from "./domino-tile";
 
 // ---------------------------------------------------------------------------

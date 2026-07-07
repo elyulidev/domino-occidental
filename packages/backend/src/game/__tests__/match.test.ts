@@ -1,13 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { createDeck, deal, shuffle } from "@domino/shared/src/game";
-import {
-  checkTimeout,
+import { 
+  checkTimeout,createDeck, deal, 
   handleHandEnd,
   initializeMatch,
   passTurn,
-  playTile,
-  startHand,
-} from "@domino/shared/src/game";
+  playTile,shuffle, 
+  startHand,} from "@domino/shared/src/game";
 import type {
   BoardState,
   PlayerState,
@@ -98,23 +96,35 @@ function makePool(): Tile[] {
 }
 
 /**
+ * Type-safe map over the 4-element players tuple preserving the tuple type.
+ * Avoids the "as any" needed when .map() collapses a tuple to PlayerState[].
+ */
+function mapPlayers(
+  match: import("../types").MatchState,
+  fn: (player: PlayerState, index: number) => PlayerState,
+): [PlayerState, PlayerState, PlayerState, PlayerState] {
+  return [
+    fn(match.players[0], 0),
+    fn(match.players[1], 1),
+    fn(match.players[2], 2),
+    fn(match.players[3], 3),
+  ];
+}
+
+/**
  * Connects the player at the given index in the match.
  * Since createPlayer now defaults to isConnected: false,
  * tests that need to play tiles must explicitly connect the relevant player.
  */
 function connectPlayer(match: import("../types").MatchState, playerIndex: number): import("../types").MatchState {
-  return {
-    ...match,
-    players: match.players.map((p, i) =>
-      i === playerIndex ? { ...p, isConnected: true } : p,
-    ) as any,
-  };
+  return { ...match, players: mapPlayers(match, (p, i) => i === playerIndex ? { ...p, isConnected: true } : p) };
 }
 
 /** Connect all players (convenience for tests that don't test connection). */
 function connectAllPlayers(match: import("../types").MatchState): import("../types").MatchState {
   return {
     ...match,
+    // biome-ignore lint/suspicious/noExplicitAny: .map() loses tuple type
     players: match.players.map((p) => ({ ...p, isConnected: true })) as any,
   };
 }
@@ -220,10 +230,7 @@ describe("startHand", () => {
     // Manually set some passes
     const modifiedMatch = {
       ...match,
-      players: match.players.map((p) => ({
-        ...p,
-        consecutivePasses: 3,
-      })) as any,
+      players: mapPlayers(match, (p) => ({ ...p, consecutivePasses: 3 })),
     };
     const result = startHand(modifiedMatch);
     for (const player of result.match.players) {
@@ -398,9 +405,9 @@ describe("playTile", () => {
 
     const disconnectedMatch = {
       ...started,
-      players: started.players.map((p, i) =>
+      players: mapPlayers(started, (p, i) =>
         i === currentTurn ? { ...p, isConnected: false } : p,
-      ) as any,
+      ),
     };
 
     const result = playTile(disconnectedMatch, playerId, "any-tile", "left");
@@ -456,9 +463,9 @@ describe("playTile", () => {
     // Give the player some passes
     const modifiedMatch = {
       ...started,
-      players: started.players.map((p, i) =>
+      players: mapPlayers(started, (p, i) =>
         i === currentTurn ? { ...p, consecutivePasses: 3 } : p,
-      ) as any,
+      ),
     };
     const connected = connectAllPlayers(modifiedMatch);
     const playerId = connected.players[currentTurn].id;
@@ -558,9 +565,9 @@ describe("passTurn", () => {
 
     const disconnectedMatch = {
       ...started,
-      players: started.players.map((p, i) =>
+      players: mapPlayers(started, (p, i) =>
         i === currentTurn ? { ...p, isConnected: false } : p,
-      ) as any,
+      ),
     };
     const playerId = disconnectedMatch.players[currentTurn].id;
 
@@ -601,9 +608,9 @@ describe("passTurn", () => {
     // Empty the player's hand
     const emptyHandMatch = {
       ...started,
-      players: started.players.map((p, i) =>
+      players: mapPlayers(started, (p, i) =>
         i === currentTurn ? { ...p, hand: [] } : p,
-      ) as any,
+      ),
     };
     const connected = connectAllPlayers(emptyHandMatch);
 
@@ -640,6 +647,7 @@ describe("checkTimeout", () => {
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
     const currentTurn = started.turn.currentTurn;
+    // biome-ignore lint/style/noNonNullAssertion: turnDeadline is set by startHand
     const deadline = started.turn.turnDeadline!;
 
     const result = checkTimeout(started, deadline + 1);
@@ -661,6 +669,7 @@ describe("checkTimeout", () => {
     const match = initializeMatch("match-1", hands, pool).match;
     const started = startHand(match).match;
     const currentTurn = started.turn.currentTurn;
+    // biome-ignore lint/style/noNonNullAssertion: turnDeadline is set by startHand
     const deadline = started.turn.turnDeadline!;
 
     const result = checkTimeout(started, deadline + 1);
@@ -705,9 +714,9 @@ describe("handleHandEnd", () => {
     const started = startHand(match).match;
 
     if (overrides.players) {
-      (started as any).players = started.players.map((p, i) => ({
+      started.players = mapPlayers(started, (p, i) => ({
         ...p,
-        ...overrides.players![i],
+        ...overrides.players?.[i],
       }));
     }
     if (overrides.board) {
@@ -1109,6 +1118,7 @@ describe("Integration: full game cycles", () => {
         };
       }
       return p;
+    // biome-ignore lint/suspicious/noExplicitAny: .map() loses tuple type
     }) as any;
 
     const finalMatch = { ...blockedMatch, players: modifiedPlayers };

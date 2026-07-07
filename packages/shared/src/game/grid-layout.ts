@@ -39,7 +39,7 @@
  * @module grid-layout
  */
 
-import type { PlacedTile, Side } from "../types";
+import type { PlacedTile, } from "../types";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -136,7 +136,7 @@ function stepCol(col: number, dir: GridDir): number {
 }
 
 /** Next row moving UP (+1) or DOWN (-1) from current, keeping col */
-function wrapRow(currentRow: number, dir: "up" | "down"): number {
+function _wrapRow(currentRow: number, dir: "up" | "down"): number {
   return dir === "up" ? currentRow + 1 : currentRow - 1;
 }
 
@@ -225,7 +225,7 @@ interface PlacementResult {
 function placeNormal(
   tile: PlacedTile,
   head: HeadPos,
-  occupied: Map<string, number>,
+  _occupied: Map<string, number>,
   vertDir?: VertDir,
 ): PlacementResult {
   const connValue = tile.tile.bottom;
@@ -263,8 +263,8 @@ function placeNormal(
     // Head advances ONE MORE row beyond dropRow so the next tile
     // starts a fresh horizontal row, connecting VERTICALLY (same column)
     // to the freeValue.
-    const dropRow = nextRow(head.row, vertDir!);
-    const beyondRow = nextRow(dropRow, vertDir!);
+    const dropRow = nextRow(head.row, vertDir as VertDir);
+    const beyondRow = nextRow(dropRow, vertDir as VertDir);
     const nd = edgeDir(beyondRow, edgeCol);
     return {
       cells: [
@@ -281,10 +281,10 @@ function placeNormal(
   // connValue goes to nextRow, freeValue goes to beyondRow.
   // Head advances ONE MORE row beyond beyondRow so the next tile
   // starts a fresh horizontal row there.
-  const nxtRow = nextRow(head.row, vertDir!);
-  const bndRow = nextRow(nxtRow, vertDir!);
-  const nd = edgeDir(bndRow, edgeCol);
-  const newNxtRow = nextRow(bndRow, vertDir!);
+  const nxtRow = nextRow(head.row, vertDir as VertDir);
+  const bndRow = nextRow(nxtRow, vertDir as VertDir);
+  const _nd = edgeDir(bndRow, edgeCol);
+  const newNxtRow = nextRow(bndRow, vertDir as VertDir);
   const nd2 = edgeDir(newNxtRow, edgeCol);
   return {
     cells: [
@@ -321,10 +321,10 @@ function placeDouble(
 
   // ── 1) Double L-corner: space=0 — 2 rows vertical ──
   if (space === 0) {
-    const nxtRow = nextRow(head.row, vertDir!);
-    const bndRow = nextRow(nxtRow, vertDir!);
-    const nd = edgeDir(bndRow, head.col);
-    const newNxtRow = nextRow(bndRow, vertDir!);
+    const nxtRow = nextRow(head.row, vertDir as VertDir);
+    const bndRow = nextRow(nxtRow, vertDir as VertDir);
+    const _nd = edgeDir(bndRow, head.col);
+    const newNxtRow = nextRow(bndRow, vertDir as VertDir);
     const nd2 = edgeDir(newNxtRow, head.col);
     return {
       cells: [
@@ -341,8 +341,8 @@ function placeDouble(
   // Doubles fill 2 vertical cells at once. Head advances ONE MORE row
   // beyond dropRow so the next tile starts a fresh horizontal row.
   if (space === 1) {
-    const dropRow = nextRow(head.row, vertDir!);
-    const beyondRow = nextRow(dropRow, vertDir!);
+    const dropRow = nextRow(head.row, vertDir as VertDir);
+    const beyondRow = nextRow(dropRow, vertDir as VertDir);
     const nd = edgeDir(beyondRow, edgeCol);
     return {
       cells: [
@@ -484,7 +484,7 @@ export function computeGridLayout(tiles: PlacedTile[]): GridLayout {
   // ── Place remaining tiles ──
   for (let i = 1; i < tiles.length; i++) {
     const placed = tiles[i];
-    const head: HeadPos = placed.side === "left" ? leftHead! : rightHead!;
+    const head: HeadPos = placed.side === "left" ? leftHead as HeadPos : rightHead as HeadPos;
     const isDouble = placed.tile.top === placed.tile.bottom;
     const space = freeCells(head.col, head.dir);
 

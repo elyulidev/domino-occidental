@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
   calculatePanDelta,
-  clampPan,
-  calculateZoomAtCursor,
-  isClick,
-  calculateTouchDistance,
   calculatePinchZoom,
+  calculateTouchDistance,
+  calculateZoomAtCursor,
+  clampPan,
+  isClick,
 } from "../pan-zoom-utils";
 
 describe("pan-zoom-utils", () => {

@@ -109,6 +109,7 @@ export function calculateGridLayout(
 
   for (let i = 0; i < tiles.length; i++) {
     const placed = tiles[i];
+    // biome-ignore lint/style/noNonNullAssertion: tile was just added to gridMap
     const gt = gridMap.get(placed.tile.id)!;
     const isDouble = gt.isDouble;
 
@@ -141,16 +142,24 @@ export function calculateGridLayout(
 
     cellRects.push({ x, y, w, h });
 
-    // Visual orientation: for horizontal tiles, swap values when the cell
-    // containing tile.bottom (the connection value) is at a smaller column
-    // (visually LEFT) than the cell with tile.top (the free value).
-    // DominoTile horizontal renders LEFT=tile.top, so we need
-    // tile.top=tile.bottom when the connection is on the LEFT half.
-    // NOTE: cells[0] may be conn OR free depending on the center tile's side.
+    // Visual orientation: swap tile.top/tile.bottom when the canonical
+    // connValue ends up on the DOM element's "wrong" half.
+    //
+    // For HORIZONTAL tiles: DominoTile renders LEFT=tile.top, RIGHT=tile.bottom.
+    // When the connValue cell is LEFT of the freeValue cell, LEFT shows freeValue
+    // instead of connValue → swap.
+    //
+    // For VERTICAL tiles: DominoTile renders TOP=tile.top, BOTTOM=tile.bottom.
+    // When going UP (cells[0].row < cells[1].row), the TOP child maps to the
+    // connValue cell (cells[0]) but tile.top = freeValue → swap.
+    // When going DOWN (cells[0].row > cells[1].row), the TOP child maps to the
+    // freeValue cell (cells[1]) → correct, no swap needed.
     const connValue = placed.tile.bottom;
     const connCell = gt.cells[0].value === connValue ? gt.cells[0] : gt.cells[1];
     const freeCell = gt.cells[0].value === connValue ? gt.cells[1] : gt.cells[0];
-    const needsVisualSwap = gt.orientation === "horizontal" && connCell.col < freeCell.col;
+    const needsVisualSwap = 
+      (gt.orientation === "horizontal" && connCell.col < freeCell.col) ||
+      (gt.orientation === "vertical" && connCell.row < freeCell.row);
     const flipped = needsVisualSwap;
 
     // isBend: true for tiles that sit at a grid corner (direction change).

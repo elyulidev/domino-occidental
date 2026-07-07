@@ -1,17 +1,16 @@
 import { describe, expect, it } from "bun:test";
+import type { Tile } from "../../types";
 import {
   generatePath,
-  resolveSlotIndex,
   resolveFlipped,
-  type BoardPathSlot,
+  resolveSlotIndex,
 } from "../board-path";
-import type { Tile } from "../../types";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeTile(top: number, bottom: number, id = "t-1"): Tile {
+function _makeTile(top: number, bottom: number, id = "t-1"): Tile {
   return { top, bottom, id };
 }
 
@@ -32,7 +31,7 @@ describe("board-path", () => {
       const path = generatePath();
       const center = path.find((s) => s.index === 0);
       expect(center).toBeDefined();
-      expect(center!.arm).toBe("center");
+      expect(center?.arm).toBe("center");
     });
 
     it("right arm slots have positive indices 1..54", () => {

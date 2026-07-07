@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { resolvePageView, resolveMatchMode } from "../page-helpers";
-import type { GameStatus } from "@/lib/game/types";
+import { resolveMatchMode, resolvePageView } from "../page-helpers";
 
 // ---------------------------------------------------------------------------
 // Tests for page-helpers
@@ -51,8 +50,8 @@ describe("resolveMatchMode", () => {
 // Tests for match page store integration (unit-level)
 // ---------------------------------------------------------------------------
 
-import { useGameStore } from "@/stores/game-store";
 import type { MatchState, PlayerState, Tile } from "@domino/shared";
+import { useGameStore } from "@/stores/game-store";
 
 /** Build a minimal valid MatchState for testing. */
 function buildTestMatch(matchId: string): MatchState {

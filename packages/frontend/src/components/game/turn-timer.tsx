@@ -1,8 +1,6 @@
 "use client";
-
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useGameStore } from "@/stores/game-store";
-import { TURN_TIMEOUT_MS } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)

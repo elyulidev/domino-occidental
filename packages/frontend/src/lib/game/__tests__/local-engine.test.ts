@@ -1,14 +1,13 @@
 import { describe, expect, it } from "bun:test";
+import type { MatchState, } from "@domino/shared";
+import { createDeck, deal, initializeMatch, setCurrentTurn, shuffle, startHand } from "@domino/shared/src/game";
 import { LocalGameEngine } from "../local-engine";
-import { createDeck, shuffle, deal, initializeMatch, startHand } from "@domino/shared/src/game";
-import { setCurrentTurn } from "@domino/shared/src/game";
-import type { MatchState, Tile } from "@domino/shared";
 
 function createTestEngine(): LocalGameEngine {
   const deck = shuffle(createDeck());
   const { hands, pool } = deal(deck);
   const matchResult = initializeMatch("test-match", hands, pool);
-  let handResult = startHand(matchResult.match);
+  const handResult = startHand(matchResult.match);
   // Force turn to player 0 (human) so tests are deterministic
   const forcedTurn = setCurrentTurn(handResult.match.turn, 0);
   // Connect ALL players (bots need isConnected=true or processBotTurns will infinite-loop)

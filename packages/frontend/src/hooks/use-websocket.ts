@@ -1,8 +1,7 @@
 "use client";
 
+import type { WsClientMessage, WsServerMessage } from "@domino/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { SanitizedMatchState, Tile, WsClientMessage, WsServerMessage } from "@domino/shared";
-import type { GameStatus } from "@/lib/game/types";
 import { WsGameEngine } from "@/lib/game/ws-engine";
 import { useGameStore } from "@/stores/game-store";
 
@@ -81,7 +80,7 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
     wsRef.current = ws;
 
     // Wire the engine's send to the live WS instance
-    engineRef.current!.setSend((msg: WsClientMessage) => {
+    engineRef.current?.setSend((msg: WsClientMessage) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(msg));
       }
@@ -121,7 +120,7 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
               (p) => p.id === playerId,
             );
 
-            engineRef.current!.applyState(
+            engineRef.current?.applyState(
               sanitized,
               msg.yourHand,
               playerIndex >= 0 ? playerIndex : undefined,
@@ -129,6 +128,7 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
 
             // On first message: wire engine to store, then sync
             if (!engineInitializedRef.current) {
+              // biome-ignore lint/style/noNonNullAssertion: engineRef set before connect
               store.setEngine(engineRef.current!);
               engineInitializedRef.current = true;
             }

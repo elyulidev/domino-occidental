@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { resolveOverlayMode, buildMatchResultMessage } from "../game-status-overlay";
-import type { GameStatus } from "@/lib/game/types";
+import { buildMatchResultMessage, resolveOverlayMode } from "../game-status-overlay";
 
 // ---------------------------------------------------------------------------
 // Tests

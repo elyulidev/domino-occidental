@@ -1,4 +1,4 @@
-import type { Side, Tile } from "../types";
+import type { Side, } from "../types";
 
 /**
  * A slot on the abstract board path.
@@ -17,7 +17,7 @@ export interface BoardPathSlot {
  * Maximum number of tiles in a double-9 set: 10×11/2 = 55.
  * Board path has 109 slots (center + 54 right + 54 left).
  */
-const TOTAL_SLOTS = 109;
+const _TOTAL_SLOTS = 109;
 const HALF_SLOTS = 54;
 
 /**
