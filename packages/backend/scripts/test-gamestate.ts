@@ -78,8 +78,10 @@ function waitForMsg(p: Player): Promise<any> {
 
 // Consume initial state messages for all 4
 for (const p of players) {
-  const msg = await waitForMsg(p);
-  console.log(`  ${p.id} connected — handSize=${p.state?.players.find((pl: any) => pl.id === p.id)?.handSize}`);
+  const _msg = await waitForMsg(p);
+  console.log(
+    `  ${p.id} connected — handSize=${p.state?.players.find((pl: any) => pl.id === p.id)?.handSize}`,
+  );
 }
 console.log("  ✅ All 4 connected with initial state");
 
@@ -94,7 +96,10 @@ console.assert(s.players.length === 4, "4 players");
 console.assert(s.board.leftEnd === null, "empty board");
 console.assert(s.board.rightEnd === null, "empty board");
 console.assert(s.board.tiles.length === 0, "no tiles on board");
-console.assert(typeof s.currentTurn === "number", `currentTurn=${s.currentTurn}`);
+console.assert(
+  typeof s.currentTurn === "number",
+  `currentTurn=${s.currentTurn}`,
+);
 console.assert(s.poolCount === 15, `poolCount=${s.poolCount}`);
 console.assert(s.scores[0] === 0 && s.scores[1] === 0, "scores 0-0");
 console.assert(s.status === "in_progress", "status=in_progress");
@@ -135,7 +140,9 @@ while (roundsPlayed < MAX_ROUNDS) {
   const isMatchEnd = state?.status === "finished";
 
   if (state) {
-    console.log(`    → turn=${state.currentTurn} scores=[${state.scores}] status=${state.status}`);
+    console.log(
+      `    → turn=${state.currentTurn} scores=[${state.scores}] status=${state.status}`,
+    );
     turnPlayerIndex = state.currentTurn;
   }
 

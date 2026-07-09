@@ -22,7 +22,10 @@ ws.onmessage = (e) => {
   console.log("  events:", data.events?.length);
   if (data.state) {
     console.log("  state.matchId:", data.state.matchId);
-    console.log("  state.players:", data.state.players.map((p: any) => `${p.id}(sz=${p.handSize})`));
+    console.log(
+      "  state.players:",
+      data.state.players.map((p: any) => `${p.id}(sz=${p.handSize})`),
+    );
     console.log("  state.currentTurn:", data.state.currentTurn);
   }
 };
