@@ -1,0 +1,2 @@
+-- Dominó Occidental — seed data
+-- Run via `supabase db reset` (automatically loads this file).

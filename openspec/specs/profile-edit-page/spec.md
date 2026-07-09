@@ -106,4 +106,4 @@ The system **MUST** provide a gradient "Guardar cambios" button and a "Cancelar"
 
 ### Requirement: Design Consistency
 
-The page **SHOULD** use design tokens matching existing pages: container `mx-auto max-w-2xl space-y-8 px-4 py-6`, cards `rounded-2xl border border-domino-700/50 bg-domino-900/60`, inputs `rounded-lg border border-domino-700 bg-domino-800/50`, CTA `rounded-xl bg-gradient-to-r from-gold-500 to-gold-600`.
+The page **SHOULD** use design tokens matching existing pages: container `mx-auto max-w-2xl space-y-8 px-4 py-6`, cards `rounded-2xl border border-domino-700/50 bg-domino-900/60`, inputs `rounded-lg border border-domino-700 bg-domino-800/50`, CTA `rounded-xl bg-linear-to-r from-gold-500 to-gold-600`.

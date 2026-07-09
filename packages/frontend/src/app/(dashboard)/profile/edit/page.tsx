@@ -1,64 +1,33 @@
-"use client";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { EditProfileForm } from "./EditProfileForm";
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-
-const COUNTRIES = [
-  { code: "AR", name: "Argentina" },
-  { code: "BO", name: "Bolivia" },
-  { code: "BR", name: "Brasil" },
-  { code: "CL", name: "Chile" },
-  { code: "CO", name: "Colombia" },
-  { code: "CR", name: "Costa Rica" },
-  { code: "DO", name: "República Dominicana" },
-  { code: "EC", name: "Ecuador" },
-  { code: "ES", name: "España" },
-  { code: "MX", name: "México" },
-  { code: "PA", name: "Panamá" },
-  { code: "PE", name: "Perú" },
-  { code: "PY", name: "Paraguay" },
-  { code: "UY", name: "Uruguay" },
-  { code: "US", name: "Estados Unidos" },
-  { code: "VE", name: "Venezuela" },
-];
-
-const DEMO_PROFILE = {
-  username: "JugadorDemo",
-  initials: "JD",
-  country: "AR",
-  showElo: true,
-  notifications: true,
+export const metadata = {
+  title: "Editar Perfil — Dominó Occidental",
 };
 
-export default function EditProfilePage() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default async function EditProfilePage() {
+  const supabase = await createClient();
 
-  const [username, setUsername] = useState(DEMO_PROFILE.username);
-  const [country, setCountry] = useState(DEMO_PROFILE.country);
-  const [showElo, setShowElo] = useState(DEMO_PROFILE.showElo);
-  const [notifications, setNotifications] = useState(DEMO_PROFILE.notifications);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    document.title = "Editar perfil — Dominó Occidental";
-  }, []);
-
-  function handleSave() {
-    if (username.length < 3 || username.length > 20) {
-      setError("El nombre de usuario debe tener entre 3 y 20 caracteres.");
-      setSaved(false);
-      return;
-    }
-    if (!/^[a-zA-Z0-9]+$/.test(username)) {
-      setError("El nombre de usuario solo puede contener letras y números.");
-      setSaved(false);
-      return;
-    }
-    setError("");
-    setSaved(true);
+  if (!user) {
+    redirect("/login");
   }
 
+<<<<<<< HEAD
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, avatar_url, country")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) {
+    redirect("/lobby");
+  }
+=======
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* ── Header ── */}
@@ -231,13 +200,15 @@ export default function EditProfilePage() {
           Guardar cambios
         </button>
       </section>
+>>>>>>> origin/main
 
-      {/* ── Success message ── */}
-      {saved && (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-center text-sm text-green-400">
-          Cambios guardados correctamente
-        </div>
-      )}
-    </div>
+  return (
+    <EditProfileForm
+      profile={{
+        username: profile.username,
+        country: profile.country,
+        avatar_url: profile.avatar_url,
+      }}
+    />
   );
 }
