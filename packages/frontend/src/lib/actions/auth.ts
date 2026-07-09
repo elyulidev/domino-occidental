@@ -59,10 +59,9 @@ export async function signUp(
     return { authError: categorized };
   }
 
-  return {
-    success: true,
-    message: "¡Cuenta creada! Revisá tu correo para confirmar tu cuenta.",
-  };
+  // enable_confirmations = false — el usuario ya tiene sesión activa
+  revalidatePath("/", "layout");
+  redirect(AUTHENTICATED_HOME);
 }
 
 export async function signIn(

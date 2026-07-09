@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { signUp } from "@/lib/actions/auth";
 import type { AuthError, AuthErrorCode } from "@/lib/auth-validation";
@@ -122,13 +123,19 @@ export function RegisterForm() {
           />
           <label htmlFor="terms" className="text-sm text-domino-400">
             Acepto los{" "}
-            <span className="text-domino-300 underline">
+            <Link
+              href="/terms"
+              className="text-domino-300 underline transition-colors hover:text-gold-400"
+            >
               Términos y condiciones
-            </span>{" "}
+            </Link>{" "}
             y la{" "}
-            <span className="text-domino-300 underline">
+            <Link
+              href="/privacy"
+              className="text-domino-300 underline transition-colors hover:text-gold-400"
+            >
               Política de privacidad
-            </span>
+            </Link>
           </label>
         </div>
 
