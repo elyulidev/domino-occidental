@@ -40,7 +40,7 @@
 
 ### 3. `/not-found`
 
-- **Layout**: `min-h-dvh`, centered, `bg-gradient-to-br from-domino-950 via-domino-900 to-domino-800`, decorative dots
+- **Layout**: `min-h-dvh`, centered, `bg-linear-to-b from-domino-950 via-domino-900 to-domino-800`, decorative dots
 - **Content**: broken domino SVG icon, "Página no encontrada" title, "La página que buscás no existe o fue movida." description, "Volver al inicio" CTA (Link → `/lobby`), small "Error 404" note
 
 ### 4. `/error`
