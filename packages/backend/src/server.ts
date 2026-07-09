@@ -35,4 +35,6 @@ const app = new Elysia()
   .ws("/ws/game/:matchId/:playerId", createWsPlugin({ store }).ws as any)
   .listen(PORT);
 
-console.log(`[server] Backend running on http://${app.server?.hostname}:${PORT}`);
+console.log(
+  `[server] Backend running on http://${app.server?.hostname}:${PORT}`,
+);

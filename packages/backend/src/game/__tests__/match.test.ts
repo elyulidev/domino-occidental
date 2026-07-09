@@ -674,7 +674,7 @@ describe("handleHandEnd", () => {
     if (overrides.players) {
       (started as any).players = started.players.map((p, i) => ({
         ...p,
-        ...overrides.players![i],
+        ...overrides.players?.[i],
       }));
     }
     if (overrides.board) {
