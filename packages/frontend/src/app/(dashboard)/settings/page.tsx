@@ -13,9 +13,17 @@ export default function SettingsPage() {
       <div className="mb-8 flex items-center gap-3">
         <Link
           href="/lobby"
+          aria-label="Volver al lobby"
           className="flex h-9 w-9 items-center justify-center rounded-lg text-domino-400 transition-colors hover:bg-domino-800/60 hover:text-white"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+            className="h-5 w-5"
+          >
             <path d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
@@ -30,11 +38,25 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {theme === "dark" ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-gold-400">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+                className="h-5 w-5 text-gold-400"
+              >
                 <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-gold-400">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+                className="h-5 w-5 text-gold-400"
+              >
                 <circle cx="12" cy="12" r="5" />
                 <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
               </svg>
@@ -71,14 +93,18 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-white">Mostrar ELO</p>
-              <p className="text-xs text-domino-400">Visible en tu perfil público</p>
+              <p className="text-xs text-domino-400">
+                Visible en tu perfil público
+              </p>
             </div>
             <Toggle defaultChecked />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-white">Notificaciones</p>
-              <p className="text-xs text-domino-400">Recibir alertas de invites y torneos</p>
+              <p className="text-xs text-domino-400">
+                Recibir alertas de invites y torneos
+              </p>
             </div>
             <Toggle defaultChecked />
           </div>
@@ -95,12 +121,28 @@ export default function SettingsPage() {
           className="group flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-domino-800/60"
         >
           <div className="flex items-center gap-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 text-domino-400 group-hover:text-gold-400">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+              className="h-5 w-5 text-domino-400 group-hover:text-gold-400"
+            >
               <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <span className="text-sm font-medium text-white">Editar perfil</span>
+            <span className="text-sm font-medium text-white">
+              Editar perfil
+            </span>
           </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-domino-400 group-hover:text-gold-400">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+            className="h-4 w-4 text-domino-400 group-hover:text-gold-400"
+          >
             <path d="M9 5l7 7-7 7" />
           </svg>
         </Link>
@@ -108,15 +150,24 @@ export default function SettingsPage() {
 
       {/* Cerrar sesión */}
       <section className="rounded-xl border border-domino-800 bg-domino-900/50 p-5">
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          Cerrar sesión
-        </button>
+        <form action="/auth/signout" method="POST">
+          <button
+            type="submit"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+              className="h-5 w-5"
+            >
+              <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Cerrar sesión
+          </button>
+        </form>
       </section>
     </div>
   );

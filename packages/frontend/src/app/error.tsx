@@ -8,7 +8,7 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-domino-950 via-domino-900 to-domino-800 px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-linear-to-b from-domino-950 via-domino-900 to-domino-800 px-4">
       {/* Decorative dots pattern */}
       <div className="pointer-events-none absolute inset-0 select-none opacity-[0.03]">
         <div
@@ -49,7 +49,13 @@ export default function Error({
             onClick={() => reset()}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-4 w-4"
+            >
               <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             Reintentar
@@ -63,9 +69,7 @@ export default function Error({
         </div>
 
         {error.digest && (
-          <p className="mt-6 text-xs text-domino-600">
-            Error {error.digest}
-          </p>
+          <p className="mt-6 text-xs text-domino-600">Error {error.digest}</p>
         )}
       </div>
     </div>

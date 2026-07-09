@@ -18,14 +18,12 @@ export default async function ProfilePage({
 }) {
   const { username } = await params;
   const profile = DEMO_PROFILE;
-  const winRate = Math.round(
-    (profile.stats.wins / profile.stats.played) * 100,
-  );
+  const winRate = Math.round((profile.stats.wins / profile.stats.played) * 100);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* ── Profile header ── */}
-      <section className="rounded-2xl border border-domino-700/50 bg-gradient-to-br from-domino-800 to-domino-900 p-6 sm:p-8">
+      <section className="rounded-2xl border border-domino-700/50 bg-linear-to-b from-domino-800 to-domino-900 p-6 sm:p-8">
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
           {/* Avatar */}
           <div className="relative shrink-0">
@@ -105,15 +103,21 @@ export default async function ProfilePage({
       <section>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5 text-center">
-            <p className="text-3xl font-bold text-white">{profile.stats.played}</p>
+            <p className="text-3xl font-bold text-white">
+              {profile.stats.played}
+            </p>
             <p className="mt-1 text-sm text-domino-400">Partidas jugadas</p>
           </div>
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5 text-center">
-            <p className="text-3xl font-bold text-green-400">{profile.stats.wins}</p>
+            <p className="text-3xl font-bold text-green-400">
+              {profile.stats.wins}
+            </p>
             <p className="mt-1 text-sm text-domino-400">Victorias</p>
           </div>
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5 text-center">
-            <p className="text-3xl font-bold text-gold-400">{profile.stats.streak}</p>
+            <p className="text-3xl font-bold text-gold-400">
+              {profile.stats.streak}
+            </p>
             <p className="mt-1 text-sm text-domino-400">Racha actual</p>
           </div>
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5 text-center">
@@ -207,10 +211,35 @@ const DEMO_PROFILE = {
     { name: "Leyenda", unlocked: false, icon: "⭐" },
   ],
   recentMatches: [
-    { opponent: "María García", result: "Victoria", score: "120–85", date: "Hace 2 horas" },
-    { opponent: "Carlos López", result: "Derrota", score: "90–110", date: "Ayer" },
-    { opponent: "Ana Martínez", result: "Victoria", score: "130–75", date: "Hace 2 días" },
-    { opponent: "Pedro Sánchez", result: "Victoria", score: "105–95", date: "Hace 3 días" },
-    { opponent: "Lucía Fernández", result: "Derrota", score: "80–115", date: "Hace 5 días" },
+    {
+      opponent: "María García",
+      result: "Victoria",
+      score: "120–85",
+      date: "Hace 2 horas",
+    },
+    {
+      opponent: "Carlos López",
+      result: "Derrota",
+      score: "90–110",
+      date: "Ayer",
+    },
+    {
+      opponent: "Ana Martínez",
+      result: "Victoria",
+      score: "130–75",
+      date: "Hace 2 días",
+    },
+    {
+      opponent: "Pedro Sánchez",
+      result: "Victoria",
+      score: "105–95",
+      date: "Hace 3 días",
+    },
+    {
+      opponent: "Lucía Fernández",
+      result: "Derrota",
+      score: "80–115",
+      date: "Hace 5 días",
+    },
   ],
 };

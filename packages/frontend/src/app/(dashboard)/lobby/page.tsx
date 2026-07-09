@@ -39,7 +39,7 @@ export default function LobbyPage() {
 
       {/* ── Quick Match ── */}
       <section>
-        <div className="relative overflow-hidden rounded-2xl border border-domino-700/50 bg-gradient-to-br from-domino-800 via-domino-800/80 to-domino-900 p-6 sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl border border-domino-700/50 bg-linear-to-b from-domino-800 via-domino-800/80 to-domino-900 p-6 sm:p-8">
           {/* Decorative background pattern */}
           <div className="pointer-events-none absolute inset-0 select-none opacity-[0.04]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,#d4a843_0%,transparent_50%)]" />
@@ -51,8 +51,8 @@ export default function LobbyPage() {
                 Partida rápida
               </h2>
               <p className="mt-1.5 max-w-md text-sm text-domino-300">
-                Encontrá una pareja al instante. Sistema de emparejamiento por ELO
-                para partidas equilibradas.
+                Encontrá una pareja al instante. Sistema de emparejamiento por
+                ELO para partidas equilibradas.
               </p>
               <div className="mt-3 flex flex-wrap gap-3">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-domino-700/50 px-3 py-1 text-xs text-domino-300">
@@ -68,7 +68,13 @@ export default function LobbyPage() {
               href="/matchmaking"
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-8 py-3.5 text-base font-semibold text-domino-950 shadow-xl shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 hover:shadow-gold-500/30 active:scale-[0.97]"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-5 w-5"
+              >
                 <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -84,7 +90,9 @@ export default function LobbyPage() {
         <section className="lg:col-span-1">
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Amigos online</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Amigos online
+              </h2>
               <Link
                 href="/friends"
                 className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors"
@@ -128,7 +136,9 @@ export default function LobbyPage() {
 
             {FRIENDS_ONLINE.length === 0 && (
               <div className="py-8 text-center">
-                <p className="text-sm text-domino-400">No hay amigos conectados</p>
+                <p className="text-sm text-domino-400">
+                  No hay amigos conectados
+                </p>
                 <Link
                   href="/users/search"
                   className="mt-2 inline-block text-xs text-gold-400 hover:text-gold-300"
@@ -145,7 +155,9 @@ export default function LobbyPage() {
           {/* Active tournaments */}
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Torneos activos</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Torneos activos
+              </h2>
               <Link
                 href="/tournaments"
                 className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors"
@@ -212,13 +224,13 @@ export default function LobbyPage() {
               </div>
             </div>
             <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-              <h2 className="text-sm font-semibold text-white mb-3">
-                Rachas
-              </h2>
+              <h2 className="text-sm font-semibold text-white mb-3">Rachas</h2>
               <div className="grid grid-cols-2 gap-3 text-center">
                 <div>
                   <p className="text-2xl font-bold text-gold-400">2</p>
-                  <p className="text-xs text-domino-400">Victorias consecutivas</p>
+                  <p className="text-xs text-domino-400">
+                    Victorias consecutivas
+                  </p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">5</p>
@@ -246,7 +258,13 @@ export default function LobbyPage() {
             className="inline-flex items-center gap-2 rounded-lg border border-gold-500/30 bg-gold-500/10 px-5 py-2.5 text-sm font-medium text-gold-400 transition-all hover:bg-gold-500/20 active:scale-[0.97]"
           >
             Ver planes
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-4 w-4"
+            >
               <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </Link>

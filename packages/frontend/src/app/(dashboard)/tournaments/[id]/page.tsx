@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Detalle del Torneo — Dominó Occidental",
@@ -22,7 +21,7 @@ export default async function TournamentDetailPage({
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* ── Header card ── */}
-      <section className="rounded-2xl border border-domino-700/50 bg-gradient-to-br from-domino-800 to-domino-900 p-6 sm:p-8">
+      <section className="rounded-2xl border border-domino-700/50 bg-linear-to-b from-domino-800 to-domino-900 p-6 sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -69,111 +68,384 @@ export default async function TournamentDetailPage({
             xmlns="http://www.w3.org/2000/svg"
           >
             {/* Round labels */}
-            <text x="60" y="30" textAnchor="middle" className="fill-domino-400 text-[11px] font-medium">
+            <text
+              x="60"
+              y="30"
+              textAnchor="middle"
+              className="fill-domino-400 text-[11px] font-medium"
+            >
               Cuartos
             </text>
-            <text x="290" y="30" textAnchor="middle" className="fill-domino-400 text-[11px] font-medium">
+            <text
+              x="290"
+              y="30"
+              textAnchor="middle"
+              className="fill-domino-400 text-[11px] font-medium"
+            >
               Semifinal
             </text>
-            <text x="500" y="30" textAnchor="middle" className="fill-domino-400 text-[11px] font-medium">
+            <text
+              x="500"
+              y="30"
+              textAnchor="middle"
+              className="fill-domino-400 text-[11px] font-medium"
+            >
               Final
             </text>
-            <text x="700" y="30" textAnchor="middle" className="fill-gold-400 text-[11px] font-semibold">
+            <text
+              x="700"
+              y="30"
+              textAnchor="middle"
+              className="fill-gold-400 text-[11px] font-semibold"
+            >
               Campeón
             </text>
 
             {/* ── Quarterfinal 1 ── */}
-            <rect x="10" y="55" width="100" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="15" y="68" className="fill-white text-[10px]">Los Dados</text>
-            <text x="15" y="82" className="fill-domino-400 text-[9px]">ELO 1420</text>
+            <rect
+              x="10"
+              y="55"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="15" y="68" className="fill-white text-[10px]">
+              Los Dados
+            </text>
+            <text x="15" y="82" className="fill-domino-400 text-[9px]">
+              ELO 1420
+            </text>
 
-            <rect x="10" y="95" width="100" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="15" y="108" className="fill-domino-500 text-[10px]">Fichas Rápidas</text>
-            <text x="15" y="122" className="fill-domino-400 text-[9px]">ELO 1180</text>
+            <rect
+              x="10"
+              y="95"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="15" y="108" className="fill-domino-500 text-[10px]">
+              Fichas Rápidas
+            </text>
+            <text x="15" y="122" className="fill-domino-400 text-[9px]">
+              ELO 1180
+            </text>
 
             {/* Winner line QF1 */}
-            <path d="M110 73 H130 V155 H150" className="stroke-domino-600" strokeWidth="1" fill="none" />
+            <path
+              d="M110 73 H130 V155 H150"
+              className="stroke-domino-600"
+              strokeWidth="1"
+              fill="none"
+            />
 
             {/* ── Quarterfinal 2 ── */}
-            <rect x="10" y="145" width="100" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="15" y="158" className="fill-white text-[10px]">El Palmar</text>
-            <text x="15" y="172" className="fill-domino-400 text-[9px]">ELO 1350</text>
+            <rect
+              x="10"
+              y="145"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="15" y="158" className="fill-white text-[10px]">
+              El Palmar
+            </text>
+            <text x="15" y="172" className="fill-domino-400 text-[9px]">
+              ELO 1350
+            </text>
 
-            <rect x="10" y="185" width="100" height="36" rx="6" className="fill-gold-500/10 stroke-gold-500/30" strokeWidth="1" />
-            <text x="15" y="198" className="fill-gold-400 text-[10px] font-medium">Reyes del 9</text>
-            <text x="15" y="212" className="fill-domino-400 text-[9px]">ELO 1510</text>
+            <rect
+              x="10"
+              y="185"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-gold-500/10 stroke-gold-500/30"
+              strokeWidth="1"
+            />
+            <text
+              x="15"
+              y="198"
+              className="fill-gold-400 text-[10px] font-medium"
+            >
+              Reyes del 9
+            </text>
+            <text x="15" y="212" className="fill-domino-400 text-[9px]">
+              ELO 1510
+            </text>
 
             {/* Winner line QF2 */}
-            <path d="M110 163 H130 V155 H150" className="stroke-domino-600" strokeWidth="1" fill="none" />
+            <path
+              d="M110 163 H130 V155 H150"
+              className="stroke-domino-600"
+              strokeWidth="1"
+              fill="none"
+            />
 
             {/* ── Quarterfinal 3 ── */}
-            <rect x="10" y="260" width="100" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="15" y="273" className="fill-white text-[10px]">Doble Nueve</text>
-            <text x="15" y="287" className="fill-domino-400 text-[9px]">ELO 1290</text>
+            <rect
+              x="10"
+              y="260"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="15" y="273" className="fill-white text-[10px]">
+              Doble Nueve
+            </text>
+            <text x="15" y="287" className="fill-domino-400 text-[9px]">
+              ELO 1290
+            </text>
 
-            <rect x="10" y="300" width="100" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="15" y="313" className="fill-domino-500 text-[10px]">Pozo Vacío</text>
-            <text x="15" y="327" className="fill-domino-400 text-[9px]">ELO 1050</text>
+            <rect
+              x="10"
+              y="300"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="15" y="313" className="fill-domino-500 text-[10px]">
+              Pozo Vacío
+            </text>
+            <text x="15" y="327" className="fill-domino-400 text-[9px]">
+              ELO 1050
+            </text>
 
             {/* Winner line QF3 */}
-            <path d="M110 278 H130 V355 H150" className="stroke-domino-600" strokeWidth="1" fill="none" />
+            <path
+              d="M110 278 H130 V355 H150"
+              className="stroke-domino-600"
+              strokeWidth="1"
+              fill="none"
+            />
 
             {/* ── Quarterfinal 4 ── */}
-            <rect x="10" y="350" width="100" height="36" rx="6" className="fill-gold-500/10 stroke-gold-500/30" strokeWidth="1" />
-            <text x="15" y="363" className="fill-gold-400 text-[10px] font-medium">Masters Domino</text>
-            <text x="15" y="377" className="fill-domino-400 text-[9px]">ELO 1580</text>
+            <rect
+              x="10"
+              y="350"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-gold-500/10 stroke-gold-500/30"
+              strokeWidth="1"
+            />
+            <text
+              x="15"
+              y="363"
+              className="fill-gold-400 text-[10px] font-medium"
+            >
+              Masters Domino
+            </text>
+            <text x="15" y="377" className="fill-domino-400 text-[9px]">
+              ELO 1580
+            </text>
 
-            <rect x="10" y="390" width="100" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="15" y="403" className="fill-domino-500 text-[10px]">Par de Ases</text>
-            <text x="15" y="417" className="fill-domino-400 text-[9px]">ELO 1120</text>
+            <rect
+              x="10"
+              y="390"
+              width="100"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="15" y="403" className="fill-domino-500 text-[10px]">
+              Par de Ases
+            </text>
+            <text x="15" y="417" className="fill-domino-400 text-[9px]">
+              ELO 1120
+            </text>
 
             {/* Winner line QF4 */}
-            <path d="M110 368 H130 V355 H150" className="stroke-domino-600" strokeWidth="1" fill="1" />
+            <path
+              d="M110 368 H130 V355 H150"
+              className="stroke-domino-600"
+              strokeWidth="1"
+              fill="1"
+            />
 
             {/* ── Semifinal 1 ── */}
-            <rect x="150" y="135" width="110" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="155" y="148" className="fill-white text-[10px]">Los Dados</text>
-            <text x="155" y="162" className="fill-domino-400 text-[9px]">W QF1</text>
+            <rect
+              x="150"
+              y="135"
+              width="110"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="155" y="148" className="fill-white text-[10px]">
+              Los Dados
+            </text>
+            <text x="155" y="162" className="fill-domino-400 text-[9px]">
+              W QF1
+            </text>
 
-            <rect x="150" y="175" width="110" height="36" rx="6" className="fill-gold-500/10 stroke-gold-500/30" strokeWidth="1" />
-            <text x="155" y="188" className="fill-gold-400 text-[10px] font-medium">Reyes del 9</text>
-            <text x="155" y="202" className="fill-domino-400 text-[9px]">W QF2</text>
+            <rect
+              x="150"
+              y="175"
+              width="110"
+              height="36"
+              rx="6"
+              className="fill-gold-500/10 stroke-gold-500/30"
+              strokeWidth="1"
+            />
+            <text
+              x="155"
+              y="188"
+              className="fill-gold-400 text-[10px] font-medium"
+            >
+              Reyes del 9
+            </text>
+            <text x="155" y="202" className="fill-domino-400 text-[9px]">
+              W QF2
+            </text>
 
             {/* Winner line SF1 */}
-            <path d="M260 153 H280 V255 H300" className="stroke-domino-600" strokeWidth="1" fill="none" />
+            <path
+              d="M260 153 H280 V255 H300"
+              className="stroke-domino-600"
+              strokeWidth="1"
+              fill="none"
+            />
 
             {/* ── Semifinal 2 ── */}
-            <rect x="150" y="335" width="110" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="155" y="348" className="fill-white text-[10px]">Doble Nueve</text>
-            <text x="155" y="362" className="fill-domino-400 text-[9px]">W QF3</text>
+            <rect
+              x="150"
+              y="335"
+              width="110"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="155" y="348" className="fill-white text-[10px]">
+              Doble Nueve
+            </text>
+            <text x="155" y="362" className="fill-domino-400 text-[9px]">
+              W QF3
+            </text>
 
-            <rect x="150" y="375" width="110" height="36" rx="6" className="fill-gold-500/10 stroke-gold-500/30" strokeWidth="1" />
-            <text x="155" y="388" className="fill-gold-400 text-[10px] font-medium">Masters Domino</text>
-            <text x="155" y="402" className="fill-domino-400 text-[9px]">W QF4</text>
+            <rect
+              x="150"
+              y="375"
+              width="110"
+              height="36"
+              rx="6"
+              className="fill-gold-500/10 stroke-gold-500/30"
+              strokeWidth="1"
+            />
+            <text
+              x="155"
+              y="388"
+              className="fill-gold-400 text-[10px] font-medium"
+            >
+              Masters Domino
+            </text>
+            <text x="155" y="402" className="fill-domino-400 text-[9px]">
+              W QF4
+            </text>
 
             {/* Winner line SF2 */}
-            <path d="M260 353 H280 V255 H300" className="stroke-domino-600" strokeWidth="1" fill="none" />
+            <path
+              d="M260 353 H280 V255 H300"
+              className="stroke-domino-600"
+              strokeWidth="1"
+              fill="none"
+            />
 
             {/* ── Final ── */}
-            <rect x="300" y="235" width="120" height="36" rx="6" className="fill-gold-500/10 stroke-gold-500/30" strokeWidth="1.5" />
-            <text x="305" y="248" className="fill-gold-400 text-[10px] font-medium">Reyes del 9</text>
-            <text x="305" y="262" className="fill-domino-400 text-[9px]">W SF1</text>
+            <rect
+              x="300"
+              y="235"
+              width="120"
+              height="36"
+              rx="6"
+              className="fill-gold-500/10 stroke-gold-500/30"
+              strokeWidth="1.5"
+            />
+            <text
+              x="305"
+              y="248"
+              className="fill-gold-400 text-[10px] font-medium"
+            >
+              Reyes del 9
+            </text>
+            <text x="305" y="262" className="fill-domino-400 text-[9px]">
+              W SF1
+            </text>
 
-            <rect x="300" y="275" width="120" height="36" rx="6" className="fill-domino-800 stroke-domino-700" strokeWidth="1" />
-            <text x="305" y="288" className="fill-white text-[10px]">Masters Domino</text>
-            <text x="305" y="302" className="fill-domino-400 text-[9px]">W SF2</text>
+            <rect
+              x="300"
+              y="275"
+              width="120"
+              height="36"
+              rx="6"
+              className="fill-domino-800 stroke-domino-700"
+              strokeWidth="1"
+            />
+            <text x="305" y="288" className="fill-white text-[10px]">
+              Masters Domino
+            </text>
+            <text x="305" y="302" className="fill-domino-400 text-[9px]">
+              W SF2
+            </text>
 
             {/* Winner line Final */}
-            <path d="M420 253 H440 V255 H460" className="stroke-gold-500" strokeWidth="1.5" fill="none" />
+            <path
+              d="M420 253 H440 V255 H460"
+              className="stroke-gold-500"
+              strokeWidth="1.5"
+              fill="none"
+            />
 
             {/* ── Champion ── */}
-            <rect x="460" y="235" width="130" height="46" rx="8" className="fill-gold-500/15 stroke-gold-500" strokeWidth="1.5" />
-            <text x="465" y="252" className="fill-gold-400 text-[11px] font-bold">🏆 Reyes del 9</text>
-            <text x="465" y="268" className="fill-domino-300 text-[9px]">Campeón actual</text>
+            <rect
+              x="460"
+              y="235"
+              width="130"
+              height="46"
+              rx="8"
+              className="fill-gold-500/15 stroke-gold-500"
+              strokeWidth="1.5"
+            />
+            <text
+              x="465"
+              y="252"
+              className="fill-gold-400 text-[11px] font-bold"
+            >
+              🏆 Reyes del 9
+            </text>
+            <text x="465" y="268" className="fill-domino-300 text-[9px]">
+              Campeón actual
+            </text>
 
             {/* Decorative bracket lines connecting rounds */}
-            <line x1="130" y1="155" x2="150" y2="155" className="stroke-domino-600" strokeWidth="1" />
-            <line x1="260" y1="255" x2="300" y2="255" className="stroke-domino-600" strokeWidth="1" />
+            <line
+              x1="130"
+              y1="155"
+              x2="150"
+              y2="155"
+              className="stroke-domino-600"
+              strokeWidth="1"
+            />
+            <line
+              x1="260"
+              y1="255"
+              x2="300"
+              y2="255"
+              className="stroke-domino-600"
+              strokeWidth="1"
+            />
           </svg>
         </div>
       </section>
@@ -218,8 +490,7 @@ export default async function TournamentDetailPage({
             <h3 className="text-sm font-medium text-white mb-1">Formato</h3>
             <p className="text-sm text-domino-300">
               Single Elimination con 8 parejas. Cada ronda elimina a la mitad de
-              los participantes. El ganador avanza; el perdedor queda
-              eliminado.
+              los participantes. El ganador avanza; el perdedor queda eliminado.
             </p>
           </div>
           <div>

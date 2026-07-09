@@ -8,12 +8,31 @@ export default function ShopPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* ── Balance card ── */}
-      <section className="rounded-2xl border border-domino-700/50 bg-gradient-to-br from-domino-800 to-domino-900 p-6 sm:p-8">
+      <section className="rounded-2xl border border-domino-700/50 bg-linear-to-b from-domino-800 to-domino-900 p-6 sm:p-8">
         <p className="text-sm text-domino-400">Tu saldo</p>
         <div className="mt-2 flex items-center gap-3">
-          <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8 text-gold-400">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-            <text x="12" y="16" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">$</text>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            className="h-8 w-8 text-gold-400"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <text
+              x="12"
+              y="16"
+              textAnchor="middle"
+              fill="currentColor"
+              fontSize="12"
+              fontWeight="bold"
+            >
+              $
+            </text>
           </svg>
           <span className="text-4xl font-bold text-gold-400">250</span>
           <span className="text-sm text-domino-400">monedas</span>
@@ -32,8 +51,17 @@ export default function ShopPage() {
             </div>
             <ul className="mt-4 space-y-2">
               {PREMIUM_FEATURES.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-domino-300">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0 text-green-400">
+                <li
+                  key={f}
+                  className="flex items-center gap-2 text-sm text-domino-300"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4 shrink-0 text-green-400"
+                  >
                     <path d="M5 13l4 4L19 7" />
                   </svg>
                   {f}
@@ -56,7 +84,9 @@ export default function ShopPage() {
 
       {/* ── Coin packages ── */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-white">Comprar monedas</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white">
+          Comprar monedas
+        </h2>
         <div className="grid gap-4 sm:grid-cols-3">
           {COIN_PACKAGES.map((pkg) => (
             <div
@@ -72,13 +102,34 @@ export default function ShopPage() {
                   {pkg.badge}
                 </span>
               )}
-              <svg viewBox="0 0 24 24" fill="none" className={`h-10 w-10 ${pkg.badge ? "text-gold-400" : "text-domino-400"}`}>
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                <text x="12" y="16" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">$</text>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className={`h-10 w-10 ${pkg.badge ? "text-gold-400" : "text-domino-400"}`}
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <text
+                  x="12"
+                  y="16"
+                  textAnchor="middle"
+                  fill="currentColor"
+                  fontSize="12"
+                  fontWeight="bold"
+                >
+                  $
+                </text>
               </svg>
               <p className="mt-3 text-2xl font-bold text-white">{pkg.coins}</p>
               <p className="text-xs text-domino-400">monedas</p>
-              <p className="mt-2 text-lg font-semibold text-domino-200">{pkg.price}</p>
+              <p className="mt-2 text-lg font-semibold text-domino-200">
+                {pkg.price}
+              </p>
               <button
                 type="button"
                 className={`mt-4 w-full rounded-lg px-4 py-2 text-sm font-medium transition-all active:scale-[0.97] ${
@@ -98,14 +149,18 @@ export default function ShopPage() {
       <section className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-white">+15 monedas por anuncio</p>
+            <p className="text-sm font-medium text-white">
+              +15 monedas por anuncio
+            </p>
             <p className="mt-1 text-xs text-domino-400">
               {AD_PROGRESS.viewed} / {AD_PROGRESS.dailyLimit} hoy
             </p>
             <div className="mt-2 h-2 w-48 overflow-hidden rounded-full bg-domino-700">
               <div
                 className="h-2 rounded-full bg-gold-500"
-                style={{ width: `${(AD_PROGRESS.viewed / AD_PROGRESS.dailyLimit) * 100}%` }}
+                style={{
+                  width: `${(AD_PROGRESS.viewed / AD_PROGRESS.dailyLimit) * 100}%`,
+                }}
               />
             </div>
           </div>
@@ -114,7 +169,13 @@ export default function ShopPage() {
             disabled={AD_PROGRESS.viewed >= AD_PROGRESS.dailyLimit}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-4 w-4"
+            >
               <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
               <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>

@@ -36,7 +36,9 @@ export default function EditProfilePage() {
   const [username, setUsername] = useState(DEMO_PROFILE.username);
   const [country, setCountry] = useState(DEMO_PROFILE.country);
   const [showElo, setShowElo] = useState(DEMO_PROFILE.showElo);
-  const [notifications, setNotifications] = useState(DEMO_PROFILE.notifications);
+  const [notifications, setNotifications] = useState(
+    DEMO_PROFILE.notifications,
+  );
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
@@ -84,7 +86,9 @@ export default function EditProfilePage() {
 
       {/* ── Avatar ── */}
       <section className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-6">
-        <h2 className="mb-4 text-sm font-semibold text-domino-300">Foto de perfil</h2>
+        <h2 className="mb-4 text-sm font-semibold text-domino-300">
+          Foto de perfil
+        </h2>
         <div className="flex items-center gap-6">
           <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-domino-700 text-3xl font-bold text-gold-400">
             {DEMO_PROFILE.initials}
@@ -136,9 +140,7 @@ export default function EditProfilePage() {
         <p className="mt-2 text-xs text-domino-500">
           3–20 caracteres, solo letras y números.
         </p>
-        {error && (
-          <p className="mt-2 text-xs text-red-400">{error}</p>
-        )}
+        {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
       </section>
 
       {/* ── Country ── */}

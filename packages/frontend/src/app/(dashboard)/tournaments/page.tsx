@@ -15,9 +15,7 @@ export default function TournamentsPage() {
       {/* ── Header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
-            Torneos
-          </h1>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">Torneos</h1>
           <p className="mt-1 text-sm text-domino-400">
             Competí contra otras parejas y escalá en el ranking.
           </p>
@@ -26,7 +24,13 @@ export default function TournamentsPage() {
           href="/tournaments/create"
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="h-4 w-4"
+          >
             <path d="M12 5v14m7-7H5" />
           </svg>
           Crear torneo

@@ -25,7 +25,13 @@ export default function PairsPage() {
           href="/users/search"
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="h-4 w-4"
+          >
             <path d="M12 5v14m-7-7h14" />
           </svg>
           Crear pareja
@@ -34,7 +40,9 @@ export default function PairsPage() {
 
       {/* ── Active pairs ── */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-white">Parejas activas</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white">
+          Parejas activas
+        </h2>
 
         {hasActivePairs ? (
           <div className="space-y-4">
@@ -48,7 +56,13 @@ export default function PairsPage() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700 text-sm font-semibold text-gold-400">
                     {pair.player1.initials}
                   </div>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-domino-500">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4 text-domino-500"
+                  >
                     <path d="M12 5v14m-7-7h14" />
                   </svg>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700 text-sm font-semibold text-gold-400">
