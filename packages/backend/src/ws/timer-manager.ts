@@ -3,9 +3,10 @@ import type {
   GameEvent,
   GameStore,
   MatchState,
+  SanitizedMatchState,
   SendFn,
 } from "@domino/shared";
-import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS } from "@domino/shared";
+import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS, sanitizeState } from "@domino/shared";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,6 +24,8 @@ export interface TimerManagerDeps {
     matchId: string,
     actingPlayerId: string,
     sendFn: SendFn,
+    playerIds?: string[],
+    state?: SanitizedMatchState,
   ) => void;
   sendFn: SendFn;
   checkTimeout: (match: MatchState, now: number) => ActionResult;
@@ -68,6 +71,7 @@ export interface TimerManager {
 interface MatchTimers {
   heartbeatIntervals: Map<string, number>;
   turnCheckerInterval: number;
+  playerIds: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +130,10 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
                   new Date(nowFn()),
                 );
                 if (result.events.length > 0) {
-                  broadcastEvents(result.events, matchId, playerId, sendFn);
+                  if (result.match !== match) {
+                    store.updateGame(matchId, result.match);
+                  }
+                  broadcastEvents(result.events, matchId, playerId, sendFn, playerIds, sanitizeState(result.match));
                 }
               }
             }
@@ -140,16 +147,35 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
         if (!match) return;
         const result = checkTimeout(match, nowFn());
         if (result.events.length > 0) {
+          // Persist the updated match state (blocked tiles, turn advance, etc.)
+          if (result.match !== match) {
+            store.updateGame(matchId, result.match);
+          }
           broadcastEvents(
             result.events,
             matchId,
             result.match.players[result.match.turn.currentTurn].id,
             sendFn,
+            playerIds,
+            sanitizeState(result.match),
           );
+
+          // After a hand redeal via timeout: each player needs their new hand
+          const matchAfterTimeout = store.getGame(matchId);
+          if (matchAfterTimeout && result.events.some((e) => e.type === "round_started")) {
+            for (const p of matchAfterTimeout.players) {
+              sendFn(p.id, {
+                type: "game_events",
+                events: [],
+                state: sanitizeState(matchAfterTimeout),
+                yourHand: p.hand,
+              });
+            }
+          }
         }
       }, 2000) as unknown as number;
 
-      matchTimers.set(matchId, { heartbeatIntervals, turnCheckerInterval });
+      matchTimers.set(matchId, { heartbeatIntervals, turnCheckerInterval, playerIds });
     },
 
     registerDisconnect(
@@ -167,7 +193,12 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
         if (!record) return;
         const result = checkAbandonment(match, record, new Date(nowFn()));
         if (result.events.length > 0) {
-          broadcastEvents(result.events, matchId, playerId, sendFn);
+          if (result.match !== match) {
+            store.updateGame(matchId, result.match);
+          }
+          const timers = matchTimers.get(matchId);
+          const playerIds = timers?.playerIds ?? match.players.map((p) => p.id);
+          broadcastEvents(result.events, matchId, playerId, sendFn, playerIds, sanitizeState(result.match));
         }
         // Clean up the record after timeout fires
         disconnectRecords.delete(key);

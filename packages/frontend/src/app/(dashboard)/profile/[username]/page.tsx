@@ -94,10 +94,24 @@ export default async function ProfilePage({
 
           {/* Actions */}
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+<<<<<<< HEAD
             {isOwnProfile && (
               <Link
                 href="/profile/edit"
                 className="inline-flex items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+=======
+            <Link
+              href="/profile/edit"
+              className="inline-flex items-center gap-2 rounded-lg border border-domino-700 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+                aria-hidden="true"
+>>>>>>> origin/main
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -123,8 +137,12 @@ export default async function ProfilePage({
                 stroke="currentColor"
                 strokeWidth="2"
                 className="h-4 w-4"
+<<<<<<< HEAD
                 role="img"
                 aria-label="Agregar como amigo"
+=======
+                aria-hidden="true"
+>>>>>>> origin/main
               >
                 <path d="M12 4v16m8-8H4" />
               </svg>
@@ -172,9 +190,46 @@ export default async function ProfilePage({
           Partidas recientes
         </h2>
         <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
+<<<<<<< HEAD
           <p className="py-8 text-center text-sm text-domino-400">
             Sin partidas recientes
           </p>
+=======
+          {profile.recentMatches.length > 0 ? (
+            <div className="space-y-3">
+              {profile.recentMatches.map((match, i) => (
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: demo data sin IDs estables
+                  key={i}
+                  className="flex items-center gap-4 rounded-xl bg-domino-800/40 px-4 py-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-sm font-medium text-white">
+                      vs {match.opponent}
+                    </p>
+                    <p className="text-xs text-domino-400">{match.date}</p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      match.result === "Victoria"
+                        ? "bg-green-500/15 text-green-400"
+                        : "bg-domino-700/60 text-domino-400"
+                    }`}
+                  >
+                    {match.result}
+                  </span>
+                  <span className="text-sm font-medium text-domino-200">
+                    {match.score}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-8 text-center text-sm text-domino-400">
+              Sin partidas recientes
+            </p>
+          )}
+>>>>>>> origin/main
         </div>
       </section>
     </div>

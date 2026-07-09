@@ -15,7 +15,7 @@ export default async function TournamentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: _tournamentId } = await params;
   const tournament = DEMO_TOURNAMENT;
 
   return (
@@ -66,6 +66,7 @@ export default async function TournamentDetailPage({
             viewBox="0 0 820 520"
             className="w-full min-w-[600px]"
             xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
             {/* Round labels */}
             <text

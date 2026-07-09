@@ -24,10 +24,7 @@ export default function CreateTournamentPage() {
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5 space-y-5">
             {/* Name */}
             <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-white mb-1.5"
-              >
+              <label htmlFor="name" className="block text-sm font-medium text-white mb-1.5">
                 Nombre del torneo
               </label>
               <input
@@ -40,10 +37,7 @@ export default function CreateTournamentPage() {
 
             {/* Description */}
             <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-white mb-1.5"
-              >
+              <label htmlFor="description" className="block text-sm font-medium text-white mb-1.5">
                 Descripción y reglas
               </label>
               <textarea
@@ -55,10 +49,10 @@ export default function CreateTournamentPage() {
             </div>
 
             {/* Bracket type */}
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
+            <fieldset>
+              <legend className="block text-sm font-medium text-white mb-2">
                 Tipo de bracket
-              </label>
+              </legend>
               <div className="space-y-2">
                 <label className="flex items-center gap-3 rounded-lg border border-domino-700 p-3 cursor-pointer transition-colors has-[:checked]:border-gold-500 has-[:checked]:bg-gold-500/5">
                   <input
@@ -88,7 +82,9 @@ export default function CreateTournamentPage() {
                     <p className="text-sm font-medium text-white">
                       Double Elimination
                     </p>
-                    <p className="text-xs text-domino-400">Doble eliminación</p>
+                    <p className="text-xs text-domino-400">
+                      Doble eliminación
+                    </p>
                   </div>
                 </label>
                 <label className="flex items-center gap-3 rounded-lg border border-domino-700 p-3 cursor-pointer transition-colors has-[:checked]:border-gold-500 has-[:checked]:bg-gold-500/5">
@@ -108,25 +104,16 @@ export default function CreateTournamentPage() {
                   </div>
                 </label>
               </div>
-            </div>
+            </fieldset>
 
             {/* Entry fee */}
             <div>
-              <label
-                htmlFor="entry_fee"
-                className="block text-sm font-medium text-white mb-1.5"
-              >
+              <label htmlFor="entry_fee" className="block text-sm font-medium text-white mb-1.5">
                 Costo de inscripción
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-400">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4 w-4"
-                  >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 6v12m-3-9h6a2 2 0 012 2v1a2 2 0 01-2 2h-6a2 2 0 01-2-2v-1a2 2 0 012-2z" />
                   </svg>
@@ -143,10 +130,7 @@ export default function CreateTournamentPage() {
 
             {/* Max pairs */}
             <div>
-              <label
-                htmlFor="max_pairs"
-                className="block text-sm font-medium text-white mb-1.5"
-              >
+              <label htmlFor="max_pairs" className="block text-sm font-medium text-white mb-1.5">
                 Máximo de parejas
               </label>
               <select
@@ -170,21 +154,12 @@ export default function CreateTournamentPage() {
 
             {/* Prize pool */}
             <div>
-              <label
-                htmlFor="prize_pool"
-                className="block text-sm font-medium text-white mb-1.5"
-              >
+              <label htmlFor="prize_pool" className="block text-sm font-medium text-white mb-1.5">
                 Pozo de premios
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold-400">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4 w-4"
-                  >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 6v12m-3-9h6a2 2 0 012 2v1a2 2 0 01-2 2h-6a2 2 0 01-2-2v-1a2 2 0 012-2z" />
                   </svg>
@@ -204,7 +179,7 @@ export default function CreateTournamentPage() {
           <div className="flex items-center gap-4">
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
             >
               Crear torneo
             </button>

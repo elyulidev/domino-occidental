@@ -9,7 +9,7 @@ import {
   setConnected,
   sumHand,
   updateLastAction,
-} from "../player";
+} from "@domino/shared/src/game";
 import type { Tile } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ describe("createPlayer", () => {
     const player = createPlayer("p1");
     expect(player.id).toBe("p1");
     expect(player.hand).toEqual([]);
-    expect(player.isConnected).toBe(true);
+    expect(player.isConnected).toBe(false);
     expect(player.consecutivePasses).toBe(0);
     expect(player.lastActionAt).toBeInstanceOf(Date);
   });
@@ -113,8 +113,8 @@ describe("setConnected", () => {
 
   it("does not mutate the original player", () => {
     const player = createPlayer("p1");
-    setConnected(player, false);
-    expect(player.isConnected).toBe(true);
+    setConnected(player, true);
+    expect(player.isConnected).toBe(false);
   });
 });
 

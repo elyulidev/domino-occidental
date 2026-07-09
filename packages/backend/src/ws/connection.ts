@@ -2,7 +2,6 @@ import type {
   GameEvent,
   GameStore,
   MatchState,
-  MessageResult,
   SanitizedMatchState,
   SendFn,
   WsClientMessage,
@@ -11,7 +10,7 @@ import type {
 import { sanitizeState } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
 import { handleMessage as defaultHandleMessage } from "../game/handler";
-import { broadcastEvents as defaultBroadcastEvents } from "./broadcaster";
+import { broadcastEvents as defaultBroadcastEvents, sendState as defaultSendState } from "./broadcaster";
 import type { TimerManager } from "./timer-manager";
 
 // ---------------------------------------------------------------------------
@@ -79,6 +78,8 @@ export interface WsPluginDeps {
   rateLimiter?: RateLimiterApi;
   /** Optional timer manager for heartbeat and abandonment timers. */
   timerManager?: TimerManager;
+  /** Optional external connection manager. When provided, uses it instead of creating a new one. */
+  connectionManager?: ConnectionManager;
 }
 
 /** Return type for createWsPlugin — exposes manager for testing. */
@@ -155,9 +156,10 @@ export function sendToPlayer(
 // ---------------------------------------------------------------------------
 
 export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
-  const manager = createConnectionManager();
+  const manager = deps.connectionManager ?? createConnectionManager();
   const handleMessage = deps.handleMessage ?? defaultHandleMessage;
   const broadcastEvents = deps.broadcastEvents ?? defaultBroadcastEvents;
+  const sendState = defaultSendState;
   const disconnectPlayerFn = deps.disconnectPlayer;
   const reconnectPlayerFn = deps.reconnectPlayer;
   const startedMatches = new Set<string>();
@@ -168,218 +170,282 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
   return {
     manager,
     ws: {
-      open(ws: ElysiaWS) {
-        const matchId = ws.data.params.matchId as string;
-        (ws.data as Record<string, unknown>).matchId = matchId;
+        open(ws: ElysiaWS) {
+          const matchId = ws.data.params.matchId as string;
+          (ws.data as Record<string, unknown>).matchId = matchId;
 
-        // --- JWT Authentication ---
-        if (deps.verifyToken) {
-          const query = (ws.data as Record<string, unknown>).query as
-            | Record<string, string>
-            | undefined;
-          const token = query?.token;
-          if (!token) {
-            ws.close(4001, "Missing authentication token");
-            return;
-          }
+          // --- JWT Authentication ---
+          if (deps.verifyToken) {
+            const query = (ws.data as Record<string, unknown>).query as
+              | Record<string, string>
+              | undefined;
+            const token = query?.token;
+            if (!token) {
+              ws.close(4001, "Missing authentication token");
+              return;
+            }
 
-          const verified = deps.verifyToken(token);
-          if (!verified) {
-            ws.close(4001, "Invalid or expired token");
-            return;
-          }
+            const verified = deps.verifyToken(token);
+            if (!verified) {
+              ws.close(4001, "Invalid or expired token");
+              return;
+            }
 
-          // Player identity comes from the verified JWT
-          const playerId = verified.userId;
-          (ws.data as Record<string, unknown>).playerId = playerId;
+            // Player identity comes from the verified JWT
+            const playerId = verified.userId;
+            (ws.data as Record<string, unknown>).playerId = playerId;
 
-          manager.register(matchId, playerId, ws);
+            manager.register(matchId, playerId, ws);
 
-          // Send initial state on every join (first join or reconnect)
-          const match = deps.store.getGame(matchId);
-          if (match) {
-            sendFn(playerId, {
-              type: "game_events",
-              events: [],
-              state: sanitizeState(match),
-            });
-          }
-
-          // Attempt reconnect if player was previously disconnected
-          if (reconnectPlayerFn) {
+            // Update isConnected in the store on every join
             const match = deps.store.getGame(matchId);
             if (match) {
-              const playerIds = match.players.map((p) => p.id);
-              const result = reconnectPlayerFn(match, playerId, new Date());
-              if (result.events.length > 0) {
-                broadcastEvents(
-                  result.events,
-                  matchId,
-                  playerId,
-                  sendFn,
-                  playerIds,
-                );
+              const newPlayers = match.players.map((p) =>
+                p.id === playerId
+                  ? { ...p, isConnected: true, lastActionAt: new Date() }
+                  : p,
+              ) as MatchState["players"];
+              if (newPlayers !== match.players) {
+                deps.store.updateGame(matchId, { ...match, players: newPlayers });
+              }
+
+		// biome-ignore lint/style/noNonNullAssertion: game exists because we just updated it
+		const updatedMatch = deps.store.getGame(matchId)!;
+		const player = updatedMatch.players.find((p) => p.id === playerId);
+		sendFn(playerId, {
+			type: "game_events",
+			events: [],
+			state: sanitizeState(updatedMatch),
+			yourHand: player?.hand,
+		});
+
+		// Attempt reconnect notification if player was previously disconnected
+              if (reconnectPlayerFn) {
+                const playerIds = updatedMatch.players.map((p) => p.id);
+                const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
+                if (result.events.length > 0) {
+                  if (result.match !== updatedMatch) {
+                    deps.store.updateGame(matchId, result.match);
+                  }
+                  broadcastEvents(
+                    result.events,
+                    matchId,
+                    playerId,
+                    sendFn,
+                    playerIds,
+                    sanitizeState(result.match),
+                  );
+                }
+              }
+
+              // Broadcast updated state to ALL OTHER connected players
+              const broadcastState = sanitizeState(
+                deps.store.getGame(matchId) ?? updatedMatch,
+              );
+              for (const p of updatedMatch.players) {
+                if (p.id !== playerId && manager.getConnection(p.id)) {
+                  sendState(p.id, broadcastState, sendFn);
+                }
+              }
+            }
+
+            // Cancel abandonment timer on reconnect
+            deps.timerManager?.cancelDisconnect(matchId, playerId);
+
+            // All-4-connected detection: start match timers once
+            if (!startedMatches.has(matchId)) {
+              const playerIds = manager.getPlayerIdsForMatch(matchId);
+              if (playerIds.length === 4) {
+                startedMatches.add(matchId);
+                deps.timerManager?.startMatch(matchId, playerIds);
+              }
+            }
+          } else {
+            // No auth configured — use playerId from upstream (dev/testing)
+            const playerId = ws.data.params.playerId as string;
+            (ws.data as Record<string, unknown>).playerId = playerId;
+            manager.register(matchId, playerId, ws);
+
+            // Set player as connected and notify others on every join
+            const match = deps.store.getGame(matchId);
+            if (match) {
+              const newPlayers = match.players.map((p) =>
+                p.id === playerId
+                  ? { ...p, isConnected: true, lastActionAt: new Date() }
+                  : p,
+              ) as MatchState["players"];
+
+              if (newPlayers !== match.players) {
+                deps.store.updateGame(matchId, { ...match, players: newPlayers });
+              }
+
+		// Re-use the updated match for state sending
+		// biome-ignore lint/style/noNonNullAssertion: game exists because we just updated it
+		const updatedMatch = deps.store.getGame(matchId)!;
+              const player = updatedMatch.players.find((p) => p.id === playerId);
+              sendFn(playerId, {
+                type: "game_events",
+                events: [],
+                state: sanitizeState(updatedMatch),
+                yourHand: player?.hand,
+              });
+
+              // Notify all players and run reconnect/connect logic
+              if (reconnectPlayerFn) {
+                const playerIds = updatedMatch.players.map((p) => p.id);
+                const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
+                if (result.events.length > 0) {
+                  if (result.match !== updatedMatch) {
+                    deps.store.updateGame(matchId, result.match);
+                  }
+                  broadcastEvents(
+                    result.events,
+                    matchId,
+                    playerId,
+                    sendFn,
+                    playerIds,
+                    sanitizeState(result.match),
+                  );
+                }
+              }
+
+              // Broadcast updated state to ALL OTHER connected players so they see
+              // the new isConnected status in real time
+              const broadcastState = sanitizeState(
+                deps.store.getGame(matchId) ?? updatedMatch,
+              );
+              for (const p of updatedMatch.players) {
+                if (p.id !== playerId && manager.getConnection(p.id)) {
+                  sendState(p.id, broadcastState, sendFn);
+                }
+              }
+            }
+
+            // Cancel abandonment timer on reconnect
+            deps.timerManager?.cancelDisconnect(matchId, playerId);
+
+            // All-4-connected detection: start match timers once
+            if (!startedMatches.has(matchId)) {
+              const playerIds = manager.getPlayerIdsForMatch(matchId);
+              if (playerIds.length === 4) {
+                startedMatches.add(matchId);
+                deps.timerManager?.startMatch(matchId, playerIds);
               }
             }
           }
 
-          // Cancel abandonment timer on reconnect
-          deps.timerManager?.cancelDisconnect(matchId, playerId);
+        },
 
-          // All-4-connected detection: start match timers once
-          if (!startedMatches.has(matchId)) {
-            const playerIds = manager.getPlayerIdsForMatch(matchId);
-            if (playerIds.length === 4) {
-              startedMatches.add(matchId);
-              deps.timerManager?.startMatch(matchId, playerIds);
-            }
-          }
-        } else {
-          // No auth configured — use playerId from upstream (dev/testing)
-          const playerId = ws.data.params.playerId as string;
-          (ws.data as Record<string, unknown>).playerId = playerId;
-          manager.register(matchId, playerId, ws);
+        message(ws: ElysiaWS, rawData: string | Buffer | Record<string, unknown>) {
+          const matchId = ws.data.matchId as string;
+          const playerId = ws.data.playerId as string;
 
-          // Send initial state on every join (first join or reconnect)
-          const match = deps.store.getGame(matchId);
-          if (match) {
-            sendFn(playerId, {
-              type: "game_events",
-              events: [],
-              state: sanitizeState(match),
-            });
-          }
-
-          if (reconnectPlayerFn) {
-            const match = deps.store.getGame(matchId);
-            if (match) {
-              const playerIds = match.players.map((p) => p.id);
-              const result = reconnectPlayerFn(match, playerId, new Date());
-              if (result.events.length > 0) {
-                broadcastEvents(
-                  result.events,
-                  matchId,
-                  playerId,
-                  sendFn,
-                  playerIds,
-                );
-              }
-            }
-          }
-
-          // Cancel abandonment timer on reconnect
-          deps.timerManager?.cancelDisconnect(matchId, playerId);
-
-          // All-4-connected detection: start match timers once
-          if (!startedMatches.has(matchId)) {
-            const playerIds = manager.getPlayerIdsForMatch(matchId);
-            if (playerIds.length === 4) {
-              startedMatches.add(matchId);
-              deps.timerManager?.startMatch(matchId, playerIds);
-            }
-          }
-        }
-      },
-
-      message(
-        ws: ElysiaWS,
-        rawData: string | Buffer | Record<string, unknown>,
-      ) {
-        const matchId = ws.data.matchId as string;
-        const playerId = ws.data.playerId as string;
-
-        // --- Rate Limiting ---
-        if (deps.rateLimiter && !deps.rateLimiter.tryConsume(playerId)) {
-          sendFn(playerId, {
-            type: "game_events",
-            events: [
-              {
-                type: "game_error",
-                code: "RATE_LIMITED",
-                message: "Rate limit exceeded: 10 messages/second",
-              },
-            ],
-          });
-          return;
-        }
-
-        // Elysia 1.x auto-parses JSON WS messages — rawData may be already parsed or raw string
-        let parsed: WsClientMessage;
-        if (typeof rawData === "object" && !Buffer.isBuffer(rawData)) {
-          parsed = rawData as unknown as WsClientMessage;
-        } else {
-          try {
-            parsed = JSON.parse(
-              typeof rawData === "string"
-                ? rawData
-                : (rawData as Buffer).toString(),
-            );
-          } catch {
+          // --- Rate Limiting ---
+          if (deps.rateLimiter && !deps.rateLimiter.tryConsume(playerId)) {
             sendFn(playerId, {
               type: "game_events",
               events: [
                 {
                   type: "game_error",
-                  code: "INVALID_MESSAGE",
-                  message: "Invalid JSON",
+                  code: "RATE_LIMITED",
+                  message: "Rate limit exceeded: 10 messages/second",
                 },
               ],
             });
             return;
           }
-        }
 
-        const result = handleMessage(deps.store, matchId, playerId, parsed);
-
-        // Broadcast events to ALL recipients with sanitized state included
-        if (result.events.length > 0) {
-          const match = deps.store.getGame(matchId);
-          const playerIds = match?.players.map((p) => p.id);
-          broadcastEvents(
-            result.events,
-            matchId,
-            playerId,
-            sendFn,
-            playerIds,
-            result.sanitizedState,
-          );
-        }
-        // If no events but there is state (e.g. initial join), send state directly
-        if (result.events.length === 0 && result.sanitizedState) {
-          sendFn(playerId, {
-            type: "game_events",
-            events: [],
-            state: result.sanitizedState,
-          });
-        }
-      },
-
-      close(ws: ElysiaWS) {
-        const playerId = ws.data.playerId as string;
-        const matchId = ws.data.matchId as string;
-
-        manager.unregister(playerId);
-
-        if (disconnectPlayerFn) {
-          const match = deps.store.getGame(matchId);
-          if (match) {
-            const playerIds = match.players.map((p) => p.id);
-            const result = disconnectPlayerFn(match, playerId, new Date());
-            if (result.events.length > 0) {
-              broadcastEvents(
-                result.events,
-                matchId,
-                playerId,
-                sendFn,
-                playerIds,
+          // Elysia 1.x auto-parses JSON WS messages — rawData may be already parsed or raw string
+          let parsed: WsClientMessage;
+          if (typeof rawData === "object" && !Buffer.isBuffer(rawData)) {
+            parsed = rawData as unknown as WsClientMessage;
+          } else {
+            try {
+              parsed = JSON.parse(
+                typeof rawData === "string" ? rawData : (rawData as Buffer).toString(),
               );
+            } catch {
+              sendFn(playerId, {
+                type: "game_events",
+                events: [
+                  {
+                    type: "game_error",
+                    code: "INVALID_MESSAGE",
+                    message: "Invalid JSON",
+                  },
+                ],
+              });
+              return;
             }
           }
-        }
 
-        // Schedule abandonment timer on disconnect
-        deps.timerManager?.registerDisconnect(matchId, playerId, new Date());
-      },
+          const result = handleMessage(deps.store, matchId, playerId, parsed);
+
+          // Broadcast events to ALL recipients with sanitized state included
+          if (result.events.length > 0) {
+            const match = deps.store.getGame(matchId);
+            const playerIds = match?.players.map((p) => p.id);
+            broadcastEvents(
+              result.events,
+              matchId,
+              playerId,
+              sendFn,
+              playerIds,
+              result.sanitizedState,
+            );
+
+            // After a hand redeal: each player needs their new hand
+            if (match && result.events.some((e) => e.type === "round_started")) {
+              for (const p of match.players) {
+                sendFn(p.id, {
+                  type: "game_events",
+                  events: [],
+                  state: sanitizeState(match),
+                  yourHand: p.hand,
+                });
+              }
+            }
+          }
+          // If no events but there is state (e.g. initial join), send state directly
+          if (result.events.length === 0 && result.sanitizedState) {
+            sendFn(playerId, {
+              type: "game_events",
+              events: [],
+              state: result.sanitizedState,
+            });
+          }
+        },
+
+        close(ws: ElysiaWS) {
+          const playerId = ws.data.playerId as string;
+          const matchId = ws.data.matchId as string;
+
+          manager.unregister(playerId);
+
+          if (disconnectPlayerFn) {
+            const match = deps.store.getGame(matchId);
+            if (match) {
+              const playerIds = match.players.map((p) => p.id);
+              const result = disconnectPlayerFn(match, playerId, new Date());
+              if (result.events.length > 0) {
+                if (result.match !== match) {
+                  deps.store.updateGame(matchId, result.match);
+                }
+                broadcastEvents(
+                  result.events,
+                  matchId,
+                  playerId,
+                  sendFn,
+                  playerIds,
+                  sanitizeState(result.match),
+                );
+              }
+            }
+          }
+
+          // Schedule abandonment timer on disconnect
+          deps.timerManager?.registerDisconnect(matchId, playerId, new Date());
+        },
     },
   };
 }

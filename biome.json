@@ -17,14 +17,16 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noUnknownAtRules": "off"
       }
     },
     "domains": {
       "next": "recommended",
-      "react": "recommended"
+      "react": "recommended",
+      "drizzle": "recommended",
+      "tailwind": "recommended"
     }
   },
   "css": {

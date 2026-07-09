@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from "bun:test";
-import type {
-  GameStore,
-  MessageResult,
-  SanitizedMatchState,
-  WsClientMessage,
-} from "../../game/handler";
-import type { WsServerMessage } from "../broadcaster";
+import type { MessageResult, SanitizedMatchState, WsClientMessage, WsServerMessage } from "@domino/shared";
 import type { ConnectionManager, WsPlugin } from "../connection";
 import {
   createConnectionManager,
@@ -18,13 +12,17 @@ import {
 // ---------------------------------------------------------------------------
 
 function createMockWs(playerId?: string, matchId?: string) {
+  const pid = playerId ?? "p1";
+  const mid = matchId ?? "match-1";
   return {
     send: vi.fn(),
     subscribe: vi.fn(),
     publish: vi.fn(),
     data: {
-      playerId: playerId ?? "p1",
-      matchId: matchId ?? "match-1",
+      params: { matchId: mid, playerId: pid },
+      playerId: pid,
+      matchId: mid,
+      query: {},
     },
     close: vi.fn(),
     remoteAddress: "127.0.0.1",
@@ -120,9 +118,10 @@ function makeStore(
 }
 
 function getHandler(plugin: WsPlugin, _event: "open" | "message" | "close") {
-  return (plugin as unknown as Record<string, unknown>).ws[
-    "/ws/game/:matchId"
-  ] as Record<string, (...args: unknown[]) => void>;
+  return plugin.ws as unknown as Record<
+    string,
+    (...args: unknown[]) => void
+  >;
 }
 
 // ---------------------------------------------------------------------------
@@ -499,12 +498,10 @@ describe("wsPlugin message handler", () => {
     const mockHandleMessage = vi.fn(() =>
       makeMessageResult({ sanitizedState: state }),
     );
-    const mockBroadcastEvents = vi.fn();
 
     const plugin = createWsPlugin({
-      store: makeStore(),
+      store: makeStore(makeMatch()),
       handleMessage: mockHandleMessage,
-      broadcastEvents: mockBroadcastEvents,
       disconnectPlayer: vi.fn(() => ({ match: makeMatch(), events: [] })),
       reconnectPlayer: vi.fn(() => ({ match: makeMatch(), events: [] })),
     });
@@ -680,6 +677,7 @@ describe("wsPlugin timerManager integration", () => {
       subscribe: vi.fn(),
       publish: vi.fn(),
       data: {
+        params: { matchId: "match-1" },
         matchId: "match-1",
         query: { token: "valid-token" },
       },
@@ -792,7 +790,7 @@ describe("wsPlugin timerManager integration", () => {
       send: vi.fn(),
       subscribe: vi.fn(),
       publish: vi.fn(),
-      data: { matchId: "match-1", query: { token: "valid-token" } },
+      data: { params: { matchId: "match-1" }, matchId: "match-1", query: { token: "valid-token" } },
       close: vi.fn(),
       remoteAddress: "127.0.0.1",
     };
@@ -845,7 +843,7 @@ describe("wsPlugin timerManager integration", () => {
       send: vi.fn(),
       subscribe: vi.fn(),
       publish: vi.fn(),
-      data: { matchId: "match-1", query: { token: "valid-token" } },
+      data: { params: { matchId: "match-1" }, matchId: "match-1", query: { token: "valid-token" } },
       close: vi.fn(),
       remoteAddress: "127.0.0.1",
     };
@@ -907,7 +905,7 @@ describe("wsPlugin timerManager integration", () => {
       send: vi.fn(),
       subscribe: vi.fn(),
       publish: vi.fn(),
-      data: { matchId: "match-1", query: { token: "u1" } },
+      data: { params: { matchId: "match-1" }, matchId: "match-1", query: { token: "u1" } },
       close: vi.fn(),
       remoteAddress: "127.0.0.1",
     };

@@ -25,6 +25,7 @@ export default function UserSearchPage() {
           stroke="currentColor"
           strokeWidth="2"
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-domino-500"
+          aria-hidden="true"
         >
           <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" />
           <path d="M21 21l-4.35-4.35" />
@@ -63,15 +64,9 @@ export default function UserSearchPage() {
               {user.friendStatus === "none" && (
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-linear-to-r from-gold-500 to-gold-600 px-4 py-1.5 text-xs font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-4 py-1.5 text-xs font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    className="h-3 w-3"
-                  >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3" aria-hidden="true">
                     <path d="M12 5v14m-7-7h14" />
                   </svg>
                   Agregar
@@ -100,6 +95,7 @@ export default function UserSearchPage() {
             stroke="currentColor"
             strokeWidth="1.5"
             className="mx-auto mb-3 h-10 w-10 text-domino-600"
+            aria-hidden="true"
           >
             <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" />
             <path d="M21 21l-4.35-4.35" />

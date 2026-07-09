@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { QuickMatchButton } from "./_components/quick-match-button";
 
 export const metadata: Metadata = {
   title: "Inicio — Dominó Occidental",
@@ -11,7 +12,7 @@ export default function LobbyPage() {
       {/* ── Welcome header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-domino-50 sm:text-3xl">
             Buenas, <span className="text-gold-400">JugadorDemo</span>
           </h1>
           <p className="mt-1 text-sm text-domino-400">
@@ -22,7 +23,7 @@ export default function LobbyPage() {
           {/* ELO badge */}
           <div className="rounded-xl border border-domino-700 bg-domino-900/60 px-4 py-2 text-center">
             <p className="text-xs text-domino-400">ELO</p>
-            <p className="text-lg font-bold text-white">1,200</p>
+            <p className="text-lg font-bold text-domino-50">1,200</p>
           </div>
           {/* Coins badge */}
           <div className="rounded-xl border border-domino-700 bg-domino-900/60 px-4 py-2 text-center">
@@ -32,14 +33,14 @@ export default function LobbyPage() {
           {/* Rank badge */}
           <div className="rounded-xl border border-domino-700 bg-domino-900/60 px-4 py-2 text-center">
             <p className="text-xs text-domino-400">Ranking</p>
-            <p className="text-lg font-bold text-white">#842</p>
+            <p className="text-lg font-bold text-domino-50">#842</p>
           </div>
         </div>
       </section>
 
       {/* ── Quick Match ── */}
       <section>
-        <div className="relative overflow-hidden rounded-2xl border border-domino-700/50 bg-linear-to-b from-domino-800 via-domino-800/80 to-domino-900 p-6 sm:p-8">
+        <div className="relative overflow-hidden rounded-2xl border border-domino-700/50 bg-gradient-to-br from-domino-800 via-domino-800/80 to-domino-900 p-6 sm:p-8">
           {/* Decorative background pattern */}
           <div className="pointer-events-none absolute inset-0 select-none opacity-[0.04]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,#d4a843_0%,transparent_50%)]" />
@@ -47,12 +48,12 @@ export default function LobbyPage() {
 
           <div className="relative flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white sm:text-2xl">
+              <h2 className="text-xl font-bold text-domino-50 sm:text-2xl">
                 Partida rápida
               </h2>
               <p className="mt-1.5 max-w-md text-sm text-domino-300">
-                Encontrá una pareja al instante. Sistema de emparejamiento por
-                ELO para partidas equilibradas.
+                Encontrá una pareja al instante. Sistema de emparejamiento por ELO
+                para partidas equilibradas.
               </p>
               <div className="mt-3 flex flex-wrap gap-3">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-domino-700/50 px-3 py-1 text-xs text-domino-300">
@@ -64,24 +65,7 @@ export default function LobbyPage() {
                 </span>
               </div>
             </div>
-            <Link
-              href="/matchmaking"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-linear-to-r from-gold-500 to-gold-600 px-8 py-3.5 text-base font-semibold text-domino-950 shadow-xl shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 hover:shadow-gold-500/30 active:scale-[0.97]"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-                focusable="false"
-                className="h-5 w-5"
-              >
-                <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Jugar ahora
-            </Link>
+            <QuickMatchButton />
           </div>
         </div>
       </section>
@@ -92,9 +76,7 @@ export default function LobbyPage() {
         <section className="lg:col-span-1">
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">
-                Amigos online
-              </h2>
+              <h2 className="text-lg font-semibold text-domino-50">Amigos online</h2>
               <Link
                 href="/friends"
                 className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors"
@@ -119,7 +101,7 @@ export default function LobbyPage() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium text-white">
+                    <p className="truncate text-sm font-medium text-domino-50">
                       {friend.name}
                     </p>
                     <p className="text-xs text-domino-400">
@@ -128,7 +110,7 @@ export default function LobbyPage() {
                   </div>
                   <button
                     type="button"
-                    className="rounded-lg border border-domino-700 px-3 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-white"
+                    className="rounded-lg border border-domino-700 px-3 py-1.5 text-xs font-medium text-domino-300 transition-colors hover:bg-domino-700 hover:text-domino-50"
                   >
                     Retar
                   </button>
@@ -138,9 +120,7 @@ export default function LobbyPage() {
 
             {FRIENDS_ONLINE.length === 0 && (
               <div className="py-8 text-center">
-                <p className="text-sm text-domino-400">
-                  No hay amigos conectados
-                </p>
+                <p className="text-sm text-domino-400">No hay amigos conectados</p>
                 <Link
                   href="/users/search"
                   className="mt-2 inline-block text-xs text-gold-400 hover:text-gold-300"
@@ -157,9 +137,7 @@ export default function LobbyPage() {
           {/* Active tournaments */}
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">
-                Torneos activos
-              </h2>
+              <h2 className="text-lg font-semibold text-domino-50">Torneos activos</h2>
               <Link
                 href="/tournaments"
                 className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors"
@@ -192,7 +170,7 @@ export default function LobbyPage() {
                       {t.pairs} parejas
                     </span>
                   </div>
-                  <h3 className="text-sm font-semibold text-white group-hover:text-gold-400 transition-colors">
+                  <h3 className="text-sm font-semibold text-domino-50 group-hover:text-gold-400 transition-colors">
                     {t.name}
                   </h3>
                   <div className="mt-2 flex items-center justify-between text-xs text-domino-400">
@@ -207,12 +185,12 @@ export default function LobbyPage() {
           {/* Recent activity / Stats row */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-              <h2 className="text-sm font-semibold text-white mb-3">
+              <h2 className="text-sm font-semibold text-domino-50 mb-3">
                 Estadísticas de hoy
               </h2>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-white">3</p>
+                  <p className="text-2xl font-bold text-domino-50">3</p>
                   <p className="text-xs text-domino-400">Partidas</p>
                 </div>
                 <div>
@@ -226,16 +204,16 @@ export default function LobbyPage() {
               </div>
             </div>
             <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-              <h2 className="text-sm font-semibold text-white mb-3">Rachas</h2>
+              <h2 className="text-sm font-semibold text-domino-50 mb-3">
+                Rachas
+              </h2>
               <div className="grid grid-cols-2 gap-3 text-center">
                 <div>
                   <p className="text-2xl font-bold text-gold-400">2</p>
-                  <p className="text-xs text-domino-400">
-                    Victorias consecutivas
-                  </p>
+                  <p className="text-xs text-domino-400">Victorias consecutivas</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">5</p>
+                  <p className="text-2xl font-bold text-domino-50">5</p>
                   <p className="text-xs text-domino-400">Días seguidos</p>
                 </div>
               </div>
@@ -245,10 +223,10 @@ export default function LobbyPage() {
       </div>
 
       {/* ── Premium upsell ── */}
-      <section className="rounded-2xl border border-gold-500/20 bg-linear-to-r from-gold-500/5 via-domino-800/60 to-gold-500/5 p-5 sm:p-6">
+      <section className="rounded-2xl border border-gold-500/20 bg-gradient-to-r from-gold-500/5 via-domino-800/60 to-gold-500/5 p-5 sm:p-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-white">
+            <h2 className="text-base font-semibold text-domino-50">
               Desbloqueá <span className="text-gold-400">Premium</span>
             </h2>
             <p className="mt-1 text-sm text-domino-300">
@@ -260,15 +238,7 @@ export default function LobbyPage() {
             className="inline-flex items-center gap-2 rounded-lg border border-gold-500/30 bg-gold-500/10 px-5 py-2.5 text-sm font-medium text-gold-400 transition-all hover:bg-gold-500/20 active:scale-[0.97]"
           >
             Ver planes
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-              focusable="false"
-              className="h-4 w-4"
-            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
               <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </Link>

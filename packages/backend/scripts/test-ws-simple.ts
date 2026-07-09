@@ -22,15 +22,12 @@ ws.onmessage = (e) => {
   console.log("  events:", data.events?.length);
   if (data.state) {
     console.log("  state.matchId:", data.state.matchId);
-    console.log(
-      "  state.players:",
-      data.state.players.map((p: any) => `${p.id}(sz=${p.handSize})`),
-    );
+    console.log("  state.players:", data.state.players.map((p: { id: string; handSize: number }) => `${p.id}(sz=${p.handSize})`));
     console.log("  state.currentTurn:", data.state.currentTurn);
   }
 };
 
-ws.onerror = (e) => console.log("Error:", (e as any).message || e);
+ws.onerror = (e: Event) => console.log("Error:", (e as ErrorEvent).message || e);
 ws.onclose = (e) => console.log("Close:", e.code, e.reason);
 
 await new Promise<void>((resolve, reject) => {

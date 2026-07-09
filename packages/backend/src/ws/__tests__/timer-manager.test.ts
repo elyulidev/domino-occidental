@@ -181,6 +181,8 @@ describe("TimerManager", () => {
         "match-1",
         expect.any(String),
         deps.sendFn,
+        ["p1", "p2", "p3", "p4"],
+        expect.any(Object),
       );
     });
 
@@ -250,6 +252,8 @@ describe("TimerManager", () => {
         "match-1",
         "p1",
         deps.sendFn,
+        ["p1"],
+        expect.any(Object),
       );
     });
 
@@ -324,6 +328,8 @@ describe("TimerManager", () => {
         "match-1",
         "p1",
         deps.sendFn,
+        ["p1", "p2", "p3", "p4"],
+        expect.any(Object),
       );
     });
 

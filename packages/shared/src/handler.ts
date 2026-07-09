@@ -34,6 +34,7 @@ export interface SanitizedMatchState {
     id: string;
     handSize: number;
     isConnected: boolean;
+    blockedTileIds: string[];
   }>;
   board: {
     leftEnd: number | null;
@@ -50,6 +51,12 @@ export interface SanitizedMatchState {
   poolCount: number;
   status: string;
   targetScore: number;
+  /** Deadline for the current turn in Unix ms, or null if not yet set */
+  turnDeadline: number | null;
+  /** Number of consecutive null (blocked) rounds */
+  consecutiveNullRounds: number;
+  /** Winner of the last hand, or null for the first hand of the match */
+  lastHandWinner: number | null;
 }
 
 /**
@@ -67,6 +74,7 @@ export function sanitizeState(match: MatchState): SanitizedMatchState {
       id: p.id,
       handSize: p.hand.length,
       isConnected: p.isConnected,
+      blockedTileIds: p.blockedTileIds,
     })),
     board: match.board,
     currentTurn: match.turn.currentTurn,
@@ -75,5 +83,8 @@ export function sanitizeState(match: MatchState): SanitizedMatchState {
     poolCount: match.poolCount,
     status: match.status,
     targetScore: match.targetScore,
+    turnDeadline: match.turn.turnDeadline,
+    consecutiveNullRounds: match.turn.consecutiveNullRounds,
+    lastHandWinner: match.turn.lastHandWinner,
   };
 }

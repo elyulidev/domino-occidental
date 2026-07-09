@@ -32,6 +32,9 @@ export interface PlayerState {
   isConnected: boolean;
   /** Timestamp of the player's last action (play, pass, or reconnect) */
   lastActionAt: Date;
+  /** Tile IDs blocked by timeout (playable tiles during a forced pass).
+   *  Cannot be played for the rest of the hand. Reset on redeal. */
+  blockedTileIds: string[];
 }
 
 /**
@@ -62,6 +65,10 @@ export interface PlacedTile {
   side: Side;
   /** Player who placed the tile */
   playerId: string;
+  /** Slot index: center=0, right→1..N, left→-1..-N */
+  slotIndex: number;
+  /** True when tile.top connects to the board end (renderer swaps top/bottom) */
+  flipped: boolean;
 }
 
 /**
@@ -252,6 +259,7 @@ export type GameEvent =
     }
   | { type: "player_passed"; playerId: string }
   | { type: "turn_timeout"; playerId: string; forcedPass: boolean }
+  | { type: "player_tiles_blocked"; playerId: string; tileIds: string[] }
   | {
       type: "hand_ended";
       winner: number | null;
