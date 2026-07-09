@@ -66,13 +66,15 @@ export default function LobbyPage() {
             </div>
             <Link
               href="/matchmaking"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-8 py-3.5 text-base font-semibold text-domino-950 shadow-xl shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 hover:shadow-gold-500/30 active:scale-[0.97]"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-linear-to-r from-gold-500 to-gold-600 px-8 py-3.5 text-base font-semibold text-domino-950 shadow-xl shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 hover:shadow-gold-500/30 active:scale-[0.97]"
             >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                aria-hidden="true"
+                focusable="false"
                 className="h-5 w-5"
               >
                 <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -243,7 +245,7 @@ export default function LobbyPage() {
       </div>
 
       {/* ── Premium upsell ── */}
-      <section className="rounded-2xl border border-gold-500/20 bg-gradient-to-r from-gold-500/5 via-domino-800/60 to-gold-500/5 p-5 sm:p-6">
+      <section className="rounded-2xl border border-gold-500/20 bg-linear-to-r from-gold-500/5 via-domino-800/60 to-gold-500/5 p-5 sm:p-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-white">
@@ -263,6 +265,8 @@ export default function LobbyPage() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
+              aria-hidden="true"
+              focusable="false"
               className="h-4 w-4"
             >
               <path d="M13 7l5 5m0 0l-5 5m5-5H6" />

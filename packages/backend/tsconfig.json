@@ -11,7 +11,6 @@
     "noEmit": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "types": ["bun-types"],
     "paths": {
       "@domino/shared": ["../shared/src"],
       "@domino/shared/*": ["../shared/src/*"]

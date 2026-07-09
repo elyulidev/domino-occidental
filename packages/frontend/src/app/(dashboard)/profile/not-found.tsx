@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function NotFound() {
+export default function ProfileNotFound() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-linear-to-b from-domino-950 via-domino-900 to-domino-800 px-4">
       {/* Decorative dots pattern */}
@@ -59,10 +59,10 @@ export default function NotFound() {
         </div>
 
         <h1 className="text-3xl font-bold text-white sm:text-4xl">
-          Página no encontrada
+          Perfil no encontrado
         </h1>
         <p className="mt-3 max-w-md text-sm text-domino-400">
-          La página que buscás no existe o fue movida.
+          El usuario que buscás no existe.
         </p>
 
         <Link
@@ -75,6 +75,8 @@ export default function NotFound() {
             stroke="currentColor"
             strokeWidth="2"
             className="h-4 w-4"
+            role="img"
+            aria-label="Volver al inicio"
           >
             <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>

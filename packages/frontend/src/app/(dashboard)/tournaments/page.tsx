@@ -22,7 +22,7 @@ export default function TournamentsPage() {
         </div>
         <Link
           href="/tournaments/create"
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-linear-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
           <svg
             viewBox="0 0 24 24"

@@ -40,7 +40,7 @@ export default function ShopPage() {
       </section>
 
       {/* ── Premium section ── */}
-      <section className="rounded-2xl border border-gold-500/20 bg-gradient-to-r from-gold-500/5 via-domino-800/60 to-gold-500/5 p-6 sm:p-8">
+      <section className="rounded-2xl border border-gold-500/20 bg-linear-to-r from-gold-500/5 via-domino-800/60 to-gold-500/5 p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export default function ShopPage() {
             <p className="text-sm text-domino-400">/ mes</p>
             <button
               type="button"
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-gold-500 to-gold-600 px-6 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
             >
               Suscribirse
             </button>
@@ -134,7 +134,7 @@ export default function ShopPage() {
                 type="button"
                 className={`mt-4 w-full rounded-lg px-4 py-2 text-sm font-medium transition-all active:scale-[0.97] ${
                   pkg.badge
-                    ? "bg-gradient-to-r from-gold-500 to-gold-600 text-domino-950 shadow-lg shadow-gold-500/20 hover:from-gold-400 hover:to-gold-500"
+                    ? "bg-linear-to-r from-gold-500 to-gold-600 text-domino-950 shadow-lg shadow-gold-500/20 hover:from-gold-400 hover:to-gold-500"
                     : "border border-domino-700 text-domino-300 hover:bg-domino-700 hover:text-white"
                 }`}
               >
