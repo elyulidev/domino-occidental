@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { RegisterForm } from "../register-form";
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -18,13 +18,9 @@ describe("RegisterForm", () => {
   it("renders username, email, password, and confirm-password fields", () => {
     render(<RegisterForm />);
     expect(screen.getByLabelText(/nombre de usuario/i)).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/correo electrónico/i),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^contraseña$/i)).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/confirmar contraseña/i),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/confirmar contraseña/i)).toBeInTheDocument();
   });
 
   it("renders a submit button", () => {
@@ -36,9 +32,7 @@ describe("RegisterForm", () => {
 
   it("renders a Google OAuth button", () => {
     render(<RegisterForm />);
-    expect(
-      screen.getByRole("button", { name: /google/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /google/i })).toBeInTheDocument();
   });
 
   it("does not render a GitHub button", () => {

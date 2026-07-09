@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Iniciar sesión — Dominó Occidental",
 };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const supabase = await createClient();
+
+  if ((await supabase.auth.getUser())?.data.user?.email) redirect("/lobby");
+
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-domino-950 via-domino-900 to-domino-800 px-4">
+    <main className="flex min-h-dvh items-center justify-center bg-linear-to-b from-domino-950 via-domino-900 to-domino-800 px-4">
       {/* Background decorative dots */}
       <div className="pointer-events-none fixed inset-0 select-none opacity-[0.03]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,#fff_1px,transparent_1px)] bg-[length:40px_40px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,#fff_1px,transparent_1px)] bg-size-[40px_40px]" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -18,7 +24,7 @@ export default function LoginPage() {
         <div className="rounded-2xl border border-domino-700/50 bg-domino-900/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-10">
           {/* Logo / Brand */}
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-lg shadow-gold-500/20">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-linear-to-b from-gold-400 to-gold-600 shadow-lg shadow-gold-500/20">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"

@@ -1,43 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { signIn } from "@/app/actions/auth";
+import { useSearchParams } from "next/navigation";
+import { useActionState } from "react";
+import { signIn } from "@/lib/actions/auth";
 import type { AuthError, AuthErrorCode } from "@/lib/auth-validation";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
-  const router = useRouter();
-  const [authError, setAuthError] = useState<AuthError | null>(null);
-  const [pending, setPending] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  async function handleSubmit(formData: FormData) {
-    setPending(true);
-    setAuthError(null);
-
-    const result = await signIn(null, formData);
-
-    if (result?.authError) {
-      setAuthError(result.authError);
-      setPending(false);
-      return;
-    }
-
-    if (result?.error && !result?.authError) {
-      setAuthError({
-        code: "unknown",
-        message: result.error,
-      });
-      setPending(false);
-      return;
-    }
-
-    router.push("/dashboard");
-  }
+  const [authError, formAction, isPending] = useActionState(signIn, null);
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/lobby";
 
   async function handleGoogleSignIn() {
-    const supabase = createClient();
+    const supabase = createBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -45,33 +20,15 @@ export function LoginForm() {
       },
     });
     if (error) {
-      setAuthError({
-        code: "unknown",
-        message: error.message,
-      });
+      // TODO: show toast or inline error — OAuth errors are rare
+      console.error("Google sign-in error:", error.message);
     }
-  }
-
-  function handleRetry() {
-    if (formRef.current) {
-      formRef.current.requestSubmit();
-    }
-  }
-
-  function handleResend() {
-    // TODO: implement resend confirmation email action
   }
 
   return (
     <div className="space-y-6">
-      <form ref={formRef} action={handleSubmit} className="space-y-5">
-        {authError && (
-          <ErrorAlert
-            authError={authError}
-            onRetry={handleRetry}
-            onResend={handleResend}
-          />
-        )}
+      <form action={formAction} className="space-y-5">
+        {authError && <ErrorAlert authError={authError} />}
 
         {/* Email */}
         <div>
@@ -111,13 +68,16 @@ export function LoginForm() {
           />
         </div>
 
+        {/* Hidden next field */}
+        <input type="hidden" name="next" value={next} />
+
         {/* Submit */}
         <button
           type="submit"
-          disabled={pending}
+          disabled={isPending}
           className="w-full rounded-lg bg-gradient-to-r from-gold-500 to-gold-600 px-4 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.98] disabled:opacity-50"
         >
-          {pending ? "Iniciando sesión..." : "Iniciar sesión"}
+          {isPending ? "Iniciando sesión..." : "Iniciar sesión"}
         </button>
       </form>
 
@@ -176,16 +136,8 @@ export function LoginForm() {
   );
 }
 
-function ErrorAlert({
-  authError,
-  onRetry,
-  onResend,
-}: {
-  authError: AuthError;
-  onRetry?: () => void;
-  onResend?: () => void;
-}) {
-  const { code, message, retry, resend } = authError;
+function ErrorAlert({ authError }: { authError: AuthError }) {
+  const { code, message, resend } = authError;
 
   const colorMap: Record<AuthErrorCode, string> = {
     invalid_credentials: "border-red-500/50 bg-red-500/10 text-red-400",
@@ -203,23 +155,10 @@ function ErrorAlert({
       className={`rounded-lg border px-4 py-3 text-sm ${colorMap[code]}`}
     >
       <p>{message}</p>
-      {retry && onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-2 text-xs font-medium underline transition-colors hover:opacity-80"
-        >
-          Reintentar
-        </button>
-      )}
-      {resend && onResend && (
-        <button
-          type="button"
-          onClick={onResend}
-          className="mt-2 text-xs font-medium underline transition-colors hover:opacity-80"
-        >
-          Reenviar correo de confirmación
-        </button>
+      {resend && (
+        <p className="mt-2 text-xs text-domino-300">
+          Revisá tu bandeja de entrada o de spam.
+        </p>
       )}
     </div>
   );

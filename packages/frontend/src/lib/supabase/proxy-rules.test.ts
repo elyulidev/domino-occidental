@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isProtectedRoute, getAuthRedirectUrl } from "./proxy-rules";
+import {
+  AUTHENTICATED_HOME,
+  getAuthRedirectUrl,
+  isAuthRoute,
+  isProtectedRoute,
+} from "./proxy-rules";
 
 describe("isProtectedRoute", () => {
   it("returns true for dashboard routes", () => {
@@ -64,6 +69,46 @@ describe("isProtectedRoute", () => {
   });
 });
 
+describe("isAuthRoute", () => {
+  it("returns true for login route", () => {
+    expect(isAuthRoute("/login")).toBe(true);
+  });
+
+  it("returns true for register route", () => {
+    expect(isAuthRoute("/register")).toBe(true);
+  });
+
+  it("returns true for nested auth routes", () => {
+    expect(isAuthRoute("/login/foo")).toBe(true);
+    expect(isAuthRoute("/register/foo")).toBe(true);
+  });
+
+  it("returns false for protected routes", () => {
+    expect(isAuthRoute("/lobby")).toBe(false);
+    expect(isAuthRoute("/dashboard")).toBe(false);
+  });
+
+  it("returns false for auth callback routes", () => {
+    expect(isAuthRoute("/auth/callback")).toBe(false);
+    expect(isAuthRoute("/auth/error")).toBe(false);
+  });
+
+  it("returns false for root path", () => {
+    expect(isAuthRoute("/")).toBe(false);
+  });
+
+  it("does not match unrelated routes containing 'login' or 'register' as substring", () => {
+    expect(isAuthRoute("/loginhistory")).toBe(false);
+    expect(isAuthRoute("/registered-users")).toBe(false);
+  });
+});
+
+describe("AUTHENTICATED_HOME", () => {
+  it("points to /lobby", () => {
+    expect(AUTHENTICATED_HOME).toBe("/lobby");
+  });
+});
+
 describe("getAuthRedirectUrl", () => {
   it("returns login path with next param for protected routes", () => {
     const url = getAuthRedirectUrl("/dashboard", "http://localhost:3000");
@@ -71,7 +116,10 @@ describe("getAuthRedirectUrl", () => {
   });
 
   it("encodes complex paths in next param", () => {
-    const url = getAuthRedirectUrl("/profile/jugador1", "http://localhost:3000");
+    const url = getAuthRedirectUrl(
+      "/profile/jugador1",
+      "http://localhost:3000",
+    );
     expect(url).toBe("http://localhost:3000/login?next=%2Fprofile%2Fjugador1");
   });
 

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { LoginForm } from "../login-form";
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -14,14 +14,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-
-
 describe("LoginForm", () => {
   it("renders email and password fields", () => {
     render(<LoginForm />);
-    expect(
-      screen.getByLabelText(/correo electrónico/i),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
   });
 
@@ -34,9 +30,7 @@ describe("LoginForm", () => {
 
   it("renders a Google OAuth button", () => {
     render(<LoginForm />);
-    expect(
-      screen.getByRole("button", { name: /google/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /google/i })).toBeInTheDocument();
   });
 
   it("does not render a GitHub button", () => {
@@ -48,8 +42,9 @@ describe("LoginForm", () => {
 
   it("renders a link to register page", () => {
     render(<LoginForm />);
-    expect(
-      screen.getByRole("link", { name: /registrate/i }),
-    ).toHaveAttribute("href", "/register");
+    expect(screen.getByRole("link", { name: /registrate/i })).toHaveAttribute(
+      "href",
+      "/register",
+    );
   });
 });

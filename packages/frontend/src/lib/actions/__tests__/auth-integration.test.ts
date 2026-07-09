@@ -2,7 +2,7 @@
  * Integration test specifications for auth flows.
  *
  * These tests require a running Supabase instance (supabase start).
- * Run with: npx vitest run src/app/actions/__tests__/auth-integration.test.ts
+ * Run with: npx vitest run src/lib/actions/__tests__/auth-integration.test.ts
  *
  * They document the expected end-to-end behavior for:
  * - 5.1: Register via email/password

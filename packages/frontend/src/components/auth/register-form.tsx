@@ -1,45 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { signUp } from "@/app/actions/auth";
+import { useActionState } from "react";
+import { signUp } from "@/lib/actions/auth";
 import type { AuthError, AuthErrorCode } from "@/lib/auth-validation";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserClient } from "@/lib/supabase/client";
 
 export function RegisterForm() {
-  const router = useRouter();
-  const [authError, setAuthError] = useState<AuthError | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [state, formAction, isPending] = useActionState(signUp, null);
 
-  async function handleSubmit(formData: FormData) {
-    setPending(true);
-    setAuthError(null);
-    setMessage(null);
-
-    const result = await signUp(formData);
-
-    if (result?.error) {
-      // Check if we can categorize further from the raw error
-      setAuthError({
-        code: "unknown",
-        message: result.error,
-      });
-      setPending(false);
-      return;
-    }
-
-    if (result?.success) {
-      setMessage("¡Cuenta creada! Revisá tu correo para confirmar tu cuenta.");
-      setPending(false);
-      return;
-    }
-
-    router.push("/dashboard");
-  }
+  const authError = state?.authError ?? null;
+  const successMessage = state?.success ? state.message : null;
 
   async function handleGoogleSignIn() {
-    const supabase = createClient();
+    const supabase = createBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -47,27 +20,19 @@ export function RegisterForm() {
       },
     });
     if (error) {
-      setAuthError({
-        code: "unknown",
-        message: error.message,
-      });
+      // TODO: show toast or inline error — OAuth errors are rare
+      console.error("Google sign-in error:", error.message);
     }
-  }
-
-  function handleResend() {
-    // TODO: implement resend confirmation email action
   }
 
   return (
     <div className="space-y-6">
-      <form action={handleSubmit} className="space-y-5">
-        {authError && (
-          <ErrorAlert authError={authError} onResend={handleResend} />
-        )}
+      <form action={formAction} className="space-y-5">
+        {authError && <ErrorAlert authError={authError} />}
 
-        {message && (
+        {successMessage && (
           <div className="rounded-lg border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm text-green-400">
-            {message}
+            {successMessage}
           </div>
         )}
 
@@ -170,10 +135,10 @@ export function RegisterForm() {
         {/* Submit */}
         <button
           type="submit"
-          disabled={pending}
-          className="w-full rounded-lg bg-gradient-to-r from-gold-500 to-gold-600 px-4 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.98] disabled:opacity-50"
+          disabled={isPending}
+          className="w-full rounded-lg bg-linear-to-r from-gold-500 to-gold-600 px-4 py-2.5 text-sm font-semibold text-domino-950 shadow-lg shadow-gold-500/20 transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.98] disabled:opacity-50"
         >
-          {pending ? "Creando cuenta..." : "Crear cuenta"}
+          {isPending ? "Creando cuenta..." : "Crear cuenta"}
         </button>
       </form>
 
@@ -232,15 +197,8 @@ export function RegisterForm() {
   );
 }
 
-function ErrorAlert({
-  authError,
-  onResend,
-}: {
-  authError: AuthError;
-  onRetry?: () => void;
-  onResend?: () => void;
-}) {
-  const { code, message, resend } = authError;
+function ErrorAlert({ authError }: { authError: AuthError }) {
+  const { code, message } = authError;
 
   const colorMap: Record<AuthErrorCode, string> = {
     invalid_credentials: "border-red-500/50 bg-red-500/10 text-red-400",
@@ -258,15 +216,6 @@ function ErrorAlert({
       className={`rounded-lg border px-4 py-3 text-sm ${colorMap[code]}`}
     >
       <p>{message}</p>
-      {resend && onResend && (
-        <button
-          type="button"
-          onClick={onResend}
-          className="mt-2 text-xs font-medium underline transition-colors hover:opacity-80"
-        >
-          Reenviar correo de confirmación
-        </button>
-      )}
     </div>
   );
 }
