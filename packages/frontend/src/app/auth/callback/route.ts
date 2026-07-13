@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   console.log("🔵 CALLBACK HIT:", request.url);
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  console.log("🔵 CALLBACK CODE:", code);
 
   // Prevent open redirects — only allow relative paths
   let next = searchParams.get("next") ?? "/lobby";
@@ -15,7 +16,25 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+    console.log("exchangeCodeForSession ERROR", error);
     if (!error) {
+      // Ensure profile exists — GoTrue bypasses DB triggers, so the
+      // trigger-based profile creation never fires for OAuth signups.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { error: profileError } = await supabase
+          .rpc("create_profile_for_user", {
+            user_id: user.id,
+            user_metadata: user.user_metadata ?? {},
+            user_email: user.email ?? "",
+          });
+        if (profileError) {
+          console.error("create_profile_for_user RPC error:", profileError);
+        }
+      }
+
       const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {
