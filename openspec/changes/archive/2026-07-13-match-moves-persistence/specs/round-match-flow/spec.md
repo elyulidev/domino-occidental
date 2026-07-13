@@ -1,33 +1,11 @@
-# Round-Match Flow Specification
+# Delta for Round-Match Flow
 
-## Purpose
-
-Define the match lifecycle orchestration layer that connects deck, board, player, turn, and scoring modules into a cohesive event-driven flow: initialize → start hand → play/pass/timeout → score hand → end match. This is the final pure-logic module (Module 6 of 7) before WebSocket integration.
-
-## Requirements
-
-### Requirement: Match Types
-
-The system MUST define `MatchStatus`, `MatchState`, `ActionResult`, and `GameEvent` in `src/game/types.ts`.
-
-#### Scenario: MatchState after initialization
-
-- GIVEN 4 player hands of 10 tiles each and a 15-tile pool
-- WHEN `initializeMatch()` is called
-- THEN `status` MUST be `in_progress`
-- AND `poolCount` MUST equal `pool.length`
-- AND `targetScore` MUST default to 200
-
-#### Scenario: ActionResult contracts
-
-- GIVEN any action on a valid `MatchState`
-- WHEN the function returns
-- THEN `match` MUST be a complete immutable `MatchState`
-- AND `events` MUST be `GameEvent[]` in causal order
+## MODIFIED Requirements
 
 ### Requirement: Match Lifecycle Functions
 
 The system MUST provide 7 pure functions. Every action validates preconditions and returns `ActionResult { match, events }`. The handler SHALL capture move metadata and persist via `recordMatchMove` after each state-changing `play_tile` or `pass` action. `leave` (forfeit) actions MUST NOT record moves.
+(Previously: Handler routed messages to game functions without move persistence.)
 
 | Function | Preconditions | Postconditions | Events |
 |----------|--------------|----------------|--------|
