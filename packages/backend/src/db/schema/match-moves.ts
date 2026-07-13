@@ -11,7 +11,7 @@ import {
 /**
  * Match moves table — historial de jugadas para replay y auditoría.
  * Schema mirrors the SQL migration. The actual writes go through
- * `recordMatchMove()` in `../moves.ts` which uses raw postgres (fire-and-forget).
+ * `recordMatchMove()` in `../moves.ts` which uses Drizzle ORM (fire-and-forget).
  * This schema exists for consistency and future typed reads.
  */
 export const matchMoves = pgTable("match_moves", {

@@ -116,7 +116,7 @@ export function handleMessage(
 
   // Fire-and-forget: record match move for replay (never blocks the game loop)
   if (moveData) {
-    recordMatchMove(moveData);
+    void recordMatchMove(moveData);
   }
 
   return {

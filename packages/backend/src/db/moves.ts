@@ -7,31 +7,8 @@
  * The game loop is NEVER blocked by DB writes — recordMatchMove is fire-and-forget.
  */
 
-import type postgres from "postgres";
-
-// ---------------------------------------------------------------------------
-// Lazy connection
-// ---------------------------------------------------------------------------
-
-let sql: ReturnType<typeof postgres> | null = null;
-
-function getDb(): ReturnType<typeof postgres> | null {
-  if (sql) return sql;
-
-  const url = process.env.SUPABASE_DB_URL ?? (Bun.env as Record<string, string | undefined>).SUPABASE_DB_URL;
-  if (!url) return null;
-
-  // Dynamic import to avoid crashing if postgres is not installed
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const postgresModule = require("postgres") as typeof postgres;
-    sql = postgresModule(url, { max: 1, idle_timeout: 10 });
-    return sql;
-  } catch {
-    console.warn("[db/moves] postgres module not available, will log to console");
-    return null;
-  }
-}
+import { getDb } from "./client";
+import { matchMoves } from "./schema";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -76,27 +53,32 @@ function nextMoveNumber(matchId: string): number {
  * If the DB connection is unavailable (no SUPABASE_DB_URL), logs to console
  * so local development is not disrupted.
  */
-export function recordMatchMove(move: MoveRecord): void {
-  const db = getDb();
+export async function recordMatchMove(move: MoveRecord): Promise<void> {
+  const db = await getDb();
 
   const moveNumber = nextMoveNumber(move.matchId);
 
   if (db) {
     // Fire-and-forget: don't await — game loop is never blocked
-    void db`
-      insert into public.match_moves (
-        match_id, round_number, player_index, move_number,
-        is_pass, action_source, tile_id, tile_top, tile_bottom, side,
-        board_left_end, board_right_end
-      ) values (
-        ${move.matchId}, ${move.roundNumber}, ${move.playerIndex}, ${moveNumber},
-        ${move.isPass}, ${move.actionSource}, ${move.tileId ?? null}, ${move.tileTop ?? null},
-        ${move.tileBottom ?? null}, ${move.side ?? null},
-        ${move.boardLeftEnd}, ${move.boardRightEnd}
-      )
-    `.catch((err: unknown) => {
-      console.error("[db/moves] failed to record match move:", err);
-    });
+    void db
+      .insert(matchMoves)
+      .values({
+        matchId: move.matchId,
+        roundNumber: move.roundNumber,
+        playerIndex: move.playerIndex,
+        moveNumber: moveNumber,
+        isPass: move.isPass,
+        actionSource: move.actionSource,
+        tileId: move.tileId ?? undefined,
+        tileTop: move.tileTop ?? undefined,
+        tileBottom: move.tileBottom ?? undefined,
+        side: move.side ?? undefined,
+        boardLeftEnd: move.boardLeftEnd,
+        boardRightEnd: move.boardRightEnd,
+      })
+      .catch((err: unknown) => {
+        console.error("[db/moves] failed to record match move:", err);
+      });
   } else {
     // Dev fallback: log to console
     console.log(
