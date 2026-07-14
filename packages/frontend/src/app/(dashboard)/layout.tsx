@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import MobileMenu from "@/components/mobile-menu";
+import { createClient } from "@/lib/supabase/server";
 
 
 const NAV_ITEMS: Array<{
@@ -19,7 +20,20 @@ const NAV_ITEMS: Array<{
   { href: "/settings", label: "Configuración", icon: SettingsIcon },
 ];
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let profile = null;
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username, elo, coins, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    profile = data;
+  }
+
   return (
     <div className="flex min-h-dvh bg-domino-950">
       {/* Sidebar */}
@@ -59,17 +73,36 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* User footer */}
-        <Link href="/profile/JugadorDemo" className="block border-t border-domino-800 px-6 py-4 transition-colors hover:bg-domino-800/40">
+        <Link
+          href={`/profile/${profile?.username ?? ""}`}
+          className="block border-t border-domino-800 px-6 py-4 transition-colors hover:bg-domino-800/40"
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700 text-sm font-semibold text-gold-400">
-              JD
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-domino-700">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.username}
+                  className="h-full w-full rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-gold-400">
+                  {profile?.username?.slice(0, 2).toUpperCase() ?? "??"}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium text-domino-50">JugadorDemo</p>
-              <p className="text-xs text-domino-400">ELO 1,200</p>
+              <p className="truncate text-sm font-medium text-domino-50">
+                {profile?.username ?? "Invitado"}
+              </p>
+              <p className="text-xs text-domino-400">
+                ELO {profile?.elo?.toLocaleString("es-AR") ?? "—"}
+              </p>
             </div>
             <div className="flex items-center gap-1 rounded-full bg-gold-500/10 px-2.5 py-1">
-              <span className="text-xs font-semibold text-gold-400">250</span>
+              <span className="text-xs font-semibold text-gold-400">
+                {profile?.coins ?? 0}
+              </span>
             </div>
           </div>
         </Link>
