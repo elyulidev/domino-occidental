@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { QuickMatchButton } from "./_components/quick-match-button";
 
 export const metadata = {
-  title: "Inicio — Dominó Occidental",
+  title: "Lobby — Dominó Occidental",
 };
 
 // --- Sub-components (pure functions) ---
@@ -395,7 +395,7 @@ export default async function LobbyPage() {
         .from("profiles")
         .select("id, username, avatar_url, elo, coins, country")
         .eq("id", user.id)
-        .single(),
+        .maybeSingle(),
       supabase
         .from("profiles")
         .select("id, username, avatar_url, elo")
@@ -404,11 +404,14 @@ export default async function LobbyPage() {
       supabase
         .from("friendships")
         .select("requester_id, addressee_id, status")
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
         .eq("status", "accepted"),
       supabase
         .from("tournaments")
         .select("id, name, status, pairs_count, prize_pool")
-        .in("status", ["registration", "in_progress"]),
+        .in("status", ["registration", "in_progress"])
+        .order("starts_at", { ascending: true })
+        .limit(4),
     ]);
 
     if (
