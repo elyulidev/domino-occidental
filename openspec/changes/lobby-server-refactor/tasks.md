@@ -39,37 +39,37 @@ Chain strategy: pending
 
 ## Phase 3: Lobby Page — Data Layer
 
-- [ ] 3.1 Remove `"use client"` directive and all React client imports (useState, useEffect, apiFetch) from `page.tsx`
-- [ ] 3.2 Add `createClient` import from `@/lib/supabase/server` and new type imports
-- [ ] 3.3 Create `fetchLobbyData()` async function — calls `supabase.auth.getUser()` then runs 4 parallel queries via `Promise.allSettled`: profile, leaderboard, friends, tournaments
-- [ ] 3.4 Implement friends query — single `or` filter `requester_id.eq.{uid},addressee_id.eq.{uid}` with `status='accepted'`, join profiles for friend data
-- [ ] 3.5 Implement tournaments query — `.in('status', ['registration', 'in_progress']).order('starts_at').limit(4)`
-- [ ] 3.6 Add per-query error handling — each `Promise.allSettled` result checked, fallback to empty array/null on rejection
+- [x] 3.1 Remove `"use client"` directive and all React client imports (useState, useEffect, apiFetch) from `page.tsx`
+- [x] 3.2 Add `createClient` import from `@/lib/supabase/server` and new type imports
+- [x] 3.3 Create `fetchLobbyData()` async function — calls `supabase.auth.getUser()` then runs 4 parallel queries via `Promise.allSettled`: profile, leaderboard, friends, tournaments
+- [x] 3.4 Implement friends query — single `or` filter `requester_id.eq.{uid},addressee_id.eq.{uid}` with `status='accepted'`, join profiles for friend data
+- [x] 3.5 Implement tournaments query — `.in('status', ['registration', 'in_progress']).order('starts_at').limit(4)`
+- [x] 3.6 Add per-query error handling — each `Promise.allSettled` result checked, fallback to empty array/null on rejection
 
 ## Phase 4: Lobby Page — Sub-Components
 
-- [ ] 4.1 Define `WelcomeHeader` function — receives `{ username, elo, coins, rank }`, renders greeting section with badges
-- [ ] 4.2 Define `QuickMatchCard` function — renders quick match section, imports `<QuickMatchButton />` (only client component)
-- [ ] 4.3 Define `LeaderboardCard` function — receives `{ entries: LeaderboardEntry[] }`, renders top 10 list with empty state
-- [ ] 4.4 Define `FriendsOnlineCard` function — receives `{ friends: FriendEntry[] }`, renders friends list with empty state + link to `/users/search`
-- [ ] 4.5 Define `TournamentsCard` function — receives `{ tournaments: TournamentEntry[] }`, renders active tournaments with empty state + link to `/tournaments`
-- [ ] 4.6 Define `StatsCard` function — hardcoded values with `// TODO: wire to match_moves when schema exists`
-- [ ] 4.7 Define `StreaksCard` function — hardcoded values with `// TODO: wire to match_moves when schema exists`
-- [ ] 4.8 Define `PremiumUpsell` function — static content, no props needed
+- [x] 4.1 Define `WelcomeHeader` function — receives `{ username, elo, coins, rank }`, renders greeting section with badges
+- [x] 4.2 Define `QuickMatchCard` function — renders quick match section, imports `<QuickMatchButton />` (only client component)
+- [x] 4.3 Define `LeaderboardCard` function — receives `{ entries: LeaderboardEntry[] }`, renders top 10 list with empty state
+- [x] 4.4 Define `FriendsOnlineCard` function — receives `{ friends: FriendEntry[] }`, renders friends list with empty state + link to `/users/search`
+- [x] 4.5 Define `TournamentsCard` function — receives `{ tournaments: TournamentEntry[] }`, renders active tournaments with empty state + link to `/tournaments`
+- [x] 4.6 Define `StatsCard` function — hardcoded values with `// TODO: wire to match_moves when schema exists`
+- [x] 4.7 Define `StreaksCard` function — hardcoded values with `// TODO: wire to match_moves when schema exists`
+- [x] 4.8 Define `PremiumUpsell` function — static content, no props needed
 
 ## Phase 5: Lobby Page — Assembly
 
-- [ ] 5.1 Export `metadata` object with title "Lobby — Dominó Occidental"
-- [ ] 5.2 Rewrite `LobbyPage` as async server component — call `fetchLobbyData()`, destructure results, pass to sub-components
-- [ ] 5.3 Remove all hardcoded `FRIENDS_ONLINE` and `TOURNAMENTS` arrays (lines 419-452)
-- [ ] 5.4 Remove skeleton loading states — server components render after data arrives
-- [ ] 5.5 Verify `bun run build` passes — confirms RLS allows server-side reads
+- [x] 5.1 Export `metadata` object with title "Lobby — Dominó Occidental"
+- [x] 5.2 Rewrite `LobbyPage` as async server component — call `fetchLobbyData()`, destructure results, pass to sub-components
+- [x] 5.3 Remove all hardcoded `FRIENDS_ONLINE` and `TOURNAMENTS` arrays (lines 419-452)
+- [x] 5.4 Remove skeleton loading states — server components render after data arrives
+- [x] 5.5 Verify `bun run build` passes — confirms RLS allows server-side reads
 
 ## Phase 6: Cleanup & Verification
 
-- [ ] 6.1 Verify no `"use client"` remains in `page.tsx`
-- [ ] 6.2 Verify no `useState`, `useEffect`, or `apiFetch` calls in `page.tsx`
-- [ ] 6.3 Verify no hardcoded "JugadorDemo" in `layout.tsx`
-- [ ] 6.4 Run `bun run biome:check` — lint and format both modified files
+- [x] 6.1 Verify no `"use client"` remains in `page.tsx`
+- [x] 6.2 Verify no `useState`, `useEffect`, or `apiFetch` calls in `page.tsx`
+- [x] 6.3 Verify no hardcoded "JugadorDemo" in `layout.tsx`
+- [x] 6.4 Run `bun run biome:check` — lint and format both modified files
 - [ ] 6.5 Manual E2E: visit `/lobby` while authenticated — verify username, leaderboard, tournaments render with real data
 - [ ] 6.6 Manual E2E: visit any dashboard page — verify sidebar shows real user profile
