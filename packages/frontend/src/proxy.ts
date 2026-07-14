@@ -6,7 +6,7 @@ import {AUTHENTICATED_HOME,
   isProtectedRoute,
 } from "@/lib/supabase/proxy-rules";
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

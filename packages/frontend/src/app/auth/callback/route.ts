@@ -1,11 +1,10 @@
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
-  console.log("🔵 CALLBACK HIT:", request.url);
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  console.log("🔵 CALLBACK CODE:", code);
 
   // Prevent open redirects — only allow relative paths
   let next = searchParams.get("next") ?? "/lobby";
@@ -14,9 +13,44 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error(
+        "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      );
+    }
+
+    const forwardedHost = request.headers.get("x-forwarded-host");
+    const isLocalEnv = process.env.NODE_ENV === "development";
+    const redirectUrl = isLocalEnv
+      ? `${origin}${next}`
+      : forwardedHost
+        ? `https://${forwardedHost}${next}`
+        : `${origin}${next}`;
+
+    // Create the redirect response FIRST so we can set cookies on it
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            redirectResponse.cookies.set(name, value, {
+              ...options,
+              // Supabase defaults to secure:true, which breaks on local HTTP
+              secure: process.env.NODE_ENV === "production",
+            });
+          });
+        },
+      },
+    });
+
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    console.log("exchangeCodeForSession ERROR", error);
     if (!error) {
       // Ensure profile exists — GoTrue bypasses DB triggers, so the
       // trigger-based profile creation never fires for OAuth signups.
@@ -35,16 +69,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === "development";
-      if (isLocalEnv) {
-        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
+      return redirectResponse;
     }
   }
   // return the user to an error page with instructions

@@ -11,8 +11,7 @@ import { Elysia } from "elysia";
 import { authErrorHandler, authGuard } from "./auth/guard";
 import { checkAbandonment, disconnectPlayer } from "./game/connection";
 import { createGame, getGame, updateGame } from "./game/store";
-import { leaderboardRoutes } from "./routes/leaderboard";
-import { profileRoutes } from "./routes/profile";
+
 import { broadcastEvents } from "./ws/broadcaster";
 import {
 	createConnectionManager,
@@ -96,9 +95,7 @@ const app = new Elysia()
 	// -----------------------------------------------------------------------
 	// Authenticated routes — JWT required
 	// -----------------------------------------------------------------------
-	.group("/api/v1", (app) =>
-		app.use(authGuard()).use(profileRoutes).use(leaderboardRoutes),
-	)
+	.group("/api/v1", (app) => app.use(authGuard()))
 	// Single WS route: playerId comes from path param (dev) or JWT (auth)
 	// biome-ignore lint/suspicious/noExplicitAny: Elysia WS handler type mismatch with WsPlugin.ws shape
 	.ws("/ws/game/:matchId/:playerId", plugin.ws as any)
