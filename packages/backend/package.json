@@ -12,6 +12,7 @@
     "@domino/shared": "workspace:*",
     "@elysia/eden": "^1.4.10",
     "@elysiajs/cors": "^1.4.2",
+    "@elysiajs/jwt": "^1.4.2",
     "@paralleldrive/cuid2": "^3.3.0",
     "drizzle-orm": "^0.45.2",
     "elysia": "latest",

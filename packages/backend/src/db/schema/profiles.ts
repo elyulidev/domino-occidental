@@ -1,4 +1,5 @@
 import {
+  char,
   integer,
   pgTable,
   text,
@@ -16,6 +17,8 @@ export const profiles = pgTable("profiles", {
     .references(() => authUsers.id, { onDelete: "cascade" }),
   username: text("username").notNull(),
   avatarUrl: text("avatar_url"),
+  status: text("status").default("offline"),
+  country: char("country", { length: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
