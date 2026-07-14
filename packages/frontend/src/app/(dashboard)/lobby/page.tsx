@@ -1,19 +1,93 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { AuthError, apiFetch } from "../../../lib/api/client";
+import type {
+  LeaderboardEntry,
+  LeaderboardResponse,
+  ProfileResponse,
+} from "../../../lib/api/types";
 import { QuickMatchButton } from "./_components/quick-match-button";
 
-export const metadata: Metadata = {
-  title: "Inicio — Dominó Occidental",
-};
-
 export default function LobbyPage() {
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = "Inicio — Dominó Occidental";
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfile() {
+      try {
+        const data = await apiFetch<ProfileResponse>("/api/v1/profile/me");
+        if (!cancelled) setProfile(data);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof AuthError) {
+          setProfileError("inicia sesión para ver tu perfil");
+        } else {
+          setProfileError("No se pudo cargar tu perfil");
+        }
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    }
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLeaderboard() {
+      try {
+        const data = await apiFetch<LeaderboardResponse>(
+          "/api/v1/leaderboard/individual?page=1&limit=10",
+        );
+        if (!cancelled) setLeaderboard(data.data);
+      } catch {
+        if (!cancelled) setLeaderboardError("No se pudo cargar el leaderboard");
+      } finally {
+        if (!cancelled) setLeaderboardLoading(false);
+      }
+    }
+
+    loadLeaderboard();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const formatElo = (elo: number) => elo.toLocaleString("es-AR");
+
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* ── Welcome header ── */}
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-domino-50 sm:text-3xl">
-            Buenas, <span className="text-gold-400">JugadorDemo</span>
+            Buenas,{" "}
+            <span className="text-gold-400">
+              {profileLoading ? (
+                <span className="inline-block h-7 w-32 animate-pulse rounded bg-domino-700 align-middle" />
+              ) : profileError ? (
+                <span className="text-base text-domino-400">{profileError}</span>
+              ) : (
+                profile?.username ?? "Jugador"
+              )}
+            </span>
           </h1>
           <p className="mt-1 text-sm text-domino-400">
             Bienvenido de vuelta. Tus amigos te esperan.
@@ -23,17 +97,35 @@ export default function LobbyPage() {
           {/* ELO badge */}
           <div className="rounded-xl border border-domino-700 bg-domino-900/60 px-4 py-2 text-center">
             <p className="text-xs text-domino-400">ELO</p>
-            <p className="text-lg font-bold text-domino-50">1,200</p>
+            {profileLoading ? (
+              <div className="mx-auto h-6 w-14 animate-pulse rounded bg-domino-700" />
+            ) : (
+              <p className="text-lg font-bold text-domino-50">
+                {profile ? formatElo(profile.elo) : "—"}
+              </p>
+            )}
           </div>
           {/* Coins badge */}
           <div className="rounded-xl border border-domino-700 bg-domino-900/60 px-4 py-2 text-center">
             <p className="text-xs text-domino-400">Monedas</p>
-            <p className="text-lg font-bold text-gold-400">250</p>
+            {profileLoading ? (
+              <div className="mx-auto h-6 w-14 animate-pulse rounded bg-domino-700" />
+            ) : (
+              <p className="text-lg font-bold text-gold-400">
+                {profile ? formatElo(profile.coins) : "—"}
+              </p>
+            )}
           </div>
           {/* Rank badge */}
           <div className="rounded-xl border border-domino-700 bg-domino-900/60 px-4 py-2 text-center">
             <p className="text-xs text-domino-400">Ranking</p>
-            <p className="text-lg font-bold text-domino-50">#842</p>
+            {profileLoading ? (
+              <div className="mx-auto h-6 w-14 animate-pulse rounded bg-domino-700" />
+            ) : (
+              <p className="text-lg font-bold text-domino-50">
+                {profile ? `#${formatElo(profile.rank)}` : "—"}
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -52,8 +144,8 @@ export default function LobbyPage() {
                 Partida rápida
               </h2>
               <p className="mt-1.5 max-w-md text-sm text-domino-300">
-                Encontrá una pareja al instante. Sistema de emparejamiento por ELO
-                para partidas equilibradas.
+                Encontrá una pareja al instante. Sistema de emparejamiento por
+                ELO para partidas equilibradas.
               </p>
               <div className="mt-3 flex flex-wrap gap-3">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-domino-700/50 px-3 py-1 text-xs text-domino-300">
@@ -70,13 +162,76 @@ export default function LobbyPage() {
         </div>
       </section>
 
+      {/* ── Leaderboard ── */}
+      <section className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-domino-50">
+            Leaderboard — Top 10
+          </h2>
+          <Link
+            href="/leaderboard"
+            className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors"
+          >
+            Ver completo
+          </Link>
+        </div>
+
+        {leaderboardLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={`skeleton-${String(i)}`}
+                className="flex items-center gap-3 rounded-xl bg-domino-800/40 px-3 py-2.5"
+              >
+                <div className="h-5 w-8 animate-pulse rounded bg-domino-700" />
+                <div className="h-5 w-5 animate-pulse rounded-full bg-domino-700" />
+                <div className="h-5 w-24 animate-pulse rounded bg-domino-700" />
+                <div className="ml-auto h-5 w-12 animate-pulse rounded bg-domino-700" />
+              </div>
+            ))}
+          </div>
+        ) : leaderboardError ? (
+          <p className="py-4 text-center text-sm text-domino-400">
+            {leaderboardError}
+          </p>
+        ) : leaderboard.length === 0 ? (
+          <p className="py-4 text-center text-sm text-domino-400">
+            Aún no hay jugadores en el ranking
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {leaderboard.map((entry) => (
+              <div
+                key={entry.username}
+                className="flex items-center gap-3 rounded-xl bg-domino-800/40 px-3 py-2.5 transition-colors hover:bg-domino-800/60"
+              >
+                <span className="w-8 text-right text-sm font-bold text-domino-300">
+                  #{entry.rank}
+                </span>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-domino-700 text-xs font-semibold text-gold-400">
+                  {entry.username.slice(0, 2).toUpperCase()}
+                </div>
+                <span className="flex-1 truncate text-sm font-medium text-domino-50">
+                  {entry.username}
+                </span>
+                <span className="text-sm font-bold text-domino-300">
+                  {formatElo(entry.elo)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* ── Main grid: Friends + Tournaments ── */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Friends Online */}
         <section className="lg:col-span-1">
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-domino-50">Amigos online</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-domino-50">
+                Amigos online
+              </h2>
               <Link
                 href="/friends"
                 className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors"
@@ -100,7 +255,7 @@ export default function LobbyPage() {
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
                     </span>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-domino-50">
                       {friend.name}
                     </p>
@@ -120,7 +275,9 @@ export default function LobbyPage() {
 
             {FRIENDS_ONLINE.length === 0 && (
               <div className="py-8 text-center">
-                <p className="text-sm text-domino-400">No hay amigos conectados</p>
+                <p className="text-sm text-domino-400">
+                  No hay amigos conectados
+                </p>
                 <Link
                   href="/users/search"
                   className="mt-2 inline-block text-xs text-gold-400 hover:text-gold-300"
@@ -133,11 +290,13 @@ export default function LobbyPage() {
         </section>
 
         {/* Tournaments + Side info */}
-        <section className="lg:col-span-2 space-y-6">
+        <section className="space-y-6 lg:col-span-2">
           {/* Active tournaments */}
           <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-domino-50">Torneos activos</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-domino-50">
+                Torneos activos
+              </h2>
               <Link
                 href="/tournaments"
                 className="text-xs font-medium text-gold-400 hover:text-gold-300 transition-colors"
@@ -153,7 +312,7 @@ export default function LobbyPage() {
                   href={`/tournaments/${t.id}`}
                   className="group rounded-xl border border-domino-700/40 bg-domino-800/30 p-4 transition-all hover:border-gold-500/30 hover:bg-domino-800/50"
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="mb-2 flex items-center gap-2">
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                         t.status === "En vivo"
@@ -170,7 +329,7 @@ export default function LobbyPage() {
                       {t.pairs} parejas
                     </span>
                   </div>
-                  <h3 className="text-sm font-semibold text-domino-50 group-hover:text-gold-400 transition-colors">
+                  <h3 className="text-sm font-semibold text-domino-50 transition-colors group-hover:text-gold-400">
                     {t.name}
                   </h3>
                   <div className="mt-2 flex items-center justify-between text-xs text-domino-400">
@@ -185,7 +344,7 @@ export default function LobbyPage() {
           {/* Recent activity / Stats row */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-              <h2 className="text-sm font-semibold text-domino-50 mb-3">
+              <h2 className="mb-3 text-sm font-semibold text-domino-50">
                 Estadísticas de hoy
               </h2>
               <div className="grid grid-cols-3 gap-3 text-center">
@@ -204,13 +363,15 @@ export default function LobbyPage() {
               </div>
             </div>
             <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-              <h2 className="text-sm font-semibold text-domino-50 mb-3">
+              <h2 className="mb-3 text-sm font-semibold text-domino-50">
                 Rachas
               </h2>
               <div className="grid grid-cols-2 gap-3 text-center">
                 <div>
                   <p className="text-2xl font-bold text-gold-400">2</p>
-                  <p className="text-xs text-domino-400">Victorias consecutivas</p>
+                  <p className="text-xs text-domino-400">
+                    Victorias consecutivas
+                  </p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-domino-50">5</p>
@@ -238,7 +399,14 @@ export default function LobbyPage() {
             className="inline-flex items-center gap-2 rounded-lg border border-gold-500/30 bg-gold-500/10 px-5 py-2.5 text-sm font-medium text-gold-400 transition-all hover:bg-gold-500/20 active:scale-[0.97]"
           >
             Ver planes
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-4 w-4"
+              aria-hidden="true"
+            >
               <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </Link>
