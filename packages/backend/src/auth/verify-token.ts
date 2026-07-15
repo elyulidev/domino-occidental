@@ -8,12 +8,7 @@
  * and can be called from WS handlers or other non-Elysia contexts.
  */
 
-import { jwt } from "@elysiajs/jwt";
-
-const secret =
-  process.env.SUPABASE_JWT_SECRET ??
-  (Bun.env as Record<string, string>).SUPABASE_JWT_SECRET ??
-  "";
+import { jwtVerify } from "jose";
 
 /**
  * Verifies a Supabase JWT token and returns the user ID.
@@ -24,7 +19,18 @@ export async function verifyToken(
   token: string,
 ): Promise<{ sub: string } | null> {
   try {
-    const payload = await jwt.verify(token, secret);
+    const secret =
+      process.env.SUPABASE_JWT_SECRET ??
+      (Bun.env as Record<string, string>).SUPABASE_JWT_SECRET ??
+      "";
+
+    const encoder = new TextEncoder();
+    const key = encoder.encode(secret);
+
+    const { payload } = await jwtVerify(token, key, {
+      algorithms: ["HS256"],
+    });
+
     if (!payload?.sub) return null;
     return { sub: payload.sub as string };
   } catch {
