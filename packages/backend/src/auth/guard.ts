@@ -13,27 +13,16 @@
  * IMPORTANT: Add `authErrorHandler` to the app's `onError` for JSON error
  * responses. Without it, auth errors return the error message as plain text.
  *
- * NOTE: authGuard() is a factory — it reads SUPABASE_JWT_SECRET at call time,
- * not at module load time. This avoids stale secrets from module caching.
+ * Supports both ES256 (Supabase v2 EC keys) and HS256 (legacy shared secret)
+ * via verifyToken().
  */
 
-import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
+import { verifyToken } from "./verify-token";
 
 export function authGuard() {
-  const secret =
-    process.env.SUPABASE_JWT_SECRET ??
-    (Bun.env as Record<string, string>).SUPABASE_JWT_SECRET ??
-    "";
-
   return new Elysia({ name: "auth-guard" })
-    .use(
-      jwt({
-        name: "jwt",
-        secret,
-      }),
-    )
-    .resolve({ as: "scoped" }, async ({ jwt, headers, set }) => {
+    .resolve({ as: "scoped" }, async ({ headers, set }) => {
       const authHeader = headers.authorization;
       if (!authHeader?.startsWith("Bearer ")) {
         set.status = 401;
@@ -41,14 +30,14 @@ export function authGuard() {
       }
 
       const token = authHeader.slice(7);
-      const payload = await jwt.verify(token);
+      const result = await verifyToken(token);
 
-      if (!payload?.sub) {
+      if (!result?.sub) {
         set.status = 401;
         throw new Error("Invalid or expired token");
       }
 
-      return { userId: payload.sub as string };
+      return { userId: result.sub };
     });
 }
 
