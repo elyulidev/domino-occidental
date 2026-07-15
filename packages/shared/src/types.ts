@@ -307,6 +307,11 @@ export type MatchmakingEvent =
       playerIds: string[];
       timestamp: string;
     }
+  | {
+      type: "match_cancelled";
+      matchId: string;
+      reason: "connection_timeout" | "player_left";
+    }
   | { type: "queue_error"; code: string; message: string };
 
 /**
