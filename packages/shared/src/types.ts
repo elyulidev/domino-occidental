@@ -290,3 +290,47 @@ export type GameEvent =
       reason: "abandonment" | "forfeit";
     }
   | { type: "game_error"; code: string; message: string };
+
+// ---------------------------------------------------------------------------
+// Matchmaking types
+// ---------------------------------------------------------------------------
+
+/**
+ * Events emitted by the matchmaking system via WebSocket channels.
+ */
+export type MatchmakingEvent =
+  | { type: "queue_joined"; queueType: "individual" | "pair" }
+  | { type: "queue_position_update"; position: number; queueCount: number }
+  | {
+      type: "match_found";
+      matchId: string;
+      playerIds: string[];
+      timestamp: string;
+    }
+  | {
+      type: "match_cancelled";
+      matchId: string;
+      reason: "connection_timeout" | "player_left";
+    }
+  | { type: "queue_error"; code: string; message: string };
+
+/**
+ * Payload sent to each player when a match is found.
+ */
+export interface MatchFoundPayload {
+  type: "match_found";
+  matchId: string;
+  playerIds: string[];
+  timestamp: string;
+}
+
+/**
+ * Response for GET /api/v1/matchmaking/status.
+ */
+export interface MatchmakingStatusResponse {
+  inQueue: boolean;
+  queueType: "individual" | "pair" | null;
+  position: number;
+  estimatedWait: number;
+  queueCount: number;
+}

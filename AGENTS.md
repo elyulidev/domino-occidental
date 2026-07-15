@@ -346,6 +346,95 @@ state.turnDeadline = calculateDeadline(state)  // TURN_TIMEOUT_MS = 45_000
 | 30 – 60 s      | ± 600 (cualquiera) |
 | > 60 s         | Notificar, devolver al lobby |
 
+═══════════════════════════════════════════════════════════════
+  COLA DE PARTIDA RÁPIDA — Flujo de Matchmaking
+═══════════════════════════════════════════════════════════════
+
+  JUGADOR ENTRA A LA COLA
+  POST /api/v1/matchmaking/quick { token }
+       │
+       ▼
+  ┌─────────────────────────────────────┐
+  │  1. Validar JWT → userId            │
+  │  2. Verificar que no esté ya en cola │
+  │  3. Obtener perfil (elo_individual)  │
+  │  4. Obtener parejas del usuario      │
+  │     (ordenadas por prioridad 1,2,3)  │
+  └──────────────┬──────────────────────┘
+                 │
+                 ▼
+  ┌─────────────────────────────────────┐
+  │  ¿Alguna pareja está en la cola?    │
+  │                                     │
+  │  SÍ ──────────► Emparejar con la    │
+  │                 de mayor prioridad  │
+  │                 → Cola de PAREJAS   │
+  │                                     │
+  │  NO ───────────► Entrar a cola solo │
+  │                  → Cola INDIVIDUAL  │
+  └──────────────┬──────────────────────┘
+                 │
+                 ▼
+  ╔═════════════════════════════════════╗
+  ║  MATCHMAKER (cada 2s)              ║
+  ║                                     ║
+  ║  PASO A: Formar parejas             ║
+  ║  ┌─────────────────────────────┐    ║
+  ║  │ Cola individual:            │    ║
+  ║  │ • Buscar 2 jugadores con    │    ║
+  ║  │   elo_individual similar    │    ║
+  ║  │   (±200 → ±400 → ±600)     │    ║
+  ║  │ • Si match → nueva pareja   │    ║
+  ║  │   en cola de PAREJAS        │    ║
+  ║  └─────────────────────────────┘    ║
+  ║                                     ║
+  ║  PASO B: Encontrar contrincantes    ║
+  ║  ┌─────────────────────────────┐    ║
+  ║  │ Cola de parejas:            │    ║
+  ║  │ • Buscar 2 parejas con      │    ║
+  ║  │   elo_pareja similar        │    ║
+  ║  │   (±200 → ±400 → ±600)     │    ║
+  ║  │ • Si match → CREAR PARTIDA  │    ║
+  ║  │   via game engine           │    ║
+  ║  └─────────────────────────────┘    ║
+  ╚═════════════════════╤═══════════════╝
+                        │
+                        ▼
+  ┌─────────────────────────────────────┐
+  │  MATCH ENCONTRADO                   │
+  │                                     │
+  │  1. Crear partida (game engine)     │
+  │  2. Asignar posiciones:             │
+  │     P1+P3 = Pareja A                │
+  │     P2+P4 = Pareja B                │
+  │  3. Notificar vía WS:              │
+  │     match_found { matchId, team }   │
+  │  4. Redirigir a /match/:id          │
+  │                                     │
+  │  Si no hay match: esperar próximo  │
+  │  ciclo (2s) con ventana expandida  │
+  └─────────────────────────────────────┘
+═══════════════════════════════════════════════════════════════
+  VENTANA DESLIZANTE (tiempo en cola)
+═══════════════════════════════════════════════════════════════
+
+  0-10s  → ±200 puntos ELO
+  10-30s → ±400 puntos ELO
+  30-60s → ±600 puntos (cualquiera)
+  >60s   → Notificar "sin pareja disponible"
+
+═══════════════════════════════════════════════════════════════
+  ELO: INDIVIDUAL vs PAREJA
+═══════════════════════════════════════════════════════════════
+
+  • elo_individual: rating personal (se actualiza por partida)
+  • elo_pareja: promedio de ambos + bonus/penalización
+
+  Matching:
+  • Si entras con pareja → comparar elo_pareja de ambas parejas
+  • Si entras solo → comparar elo_individual para formar pareja,
+    luego comparar elo_pareja para encontrar contrincantes
+
 ### Fórmula ELO
 
 ```typescript

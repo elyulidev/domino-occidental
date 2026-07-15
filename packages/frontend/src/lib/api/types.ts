@@ -54,3 +54,12 @@ export interface LobbyData {
   friends: FriendEntry[];
   tournaments: TournamentEntry[];
 }
+
+// ---------------------------------------------------------------------------
+// Matchmaking (re-exported from @domino/shared for convenience)
+// ---------------------------------------------------------------------------
+
+export type {
+  MatchFoundPayload,
+  MatchmakingStatusResponse,
+} from "@domino/shared";

@@ -5,11 +5,15 @@
  * Matching uses sliding ELO windows based on wait time.
  * processMatchmaking() bridges queue → game creation → player notification.
  *
+ * Supports pair-priority matching: if two registered partners are both in
+ * the queue, they are matched together before the ELO scan runs.
+ *
  * @see AGENTS.md §6 for matchmaking rules
  */
 
 import type { GameStore, UserChannelManager } from "@domino/shared";
 import { createDeck, deal, initializeMatch, shuffle, startHand } from "@domino/shared/src/game";
+import { getDb } from "../db/client";
 import { createGame } from "./store";
 
 // ---------------------------------------------------------------------------
@@ -20,6 +24,12 @@ export interface QueueEntry {
   userId: string;
   elo: number;
   joinedAt: number; // Date.now()
+  /** Resolved partner pair ID (null if solo or unresolved). */
+  pairId?: string;
+  /** Partner's userId if they are also in the queue. */
+  partnerId?: string;
+  /** Which ELO to use for matching: individual or pair average. */
+  eloType: "individual" | "pair";
 }
 
 export interface MatchGroup {
@@ -48,6 +58,13 @@ export interface ProcessMatchmakingDeps {
 const QUEUE_CLEANUP_THRESHOLD_MS = 60_000;
 const PLAYER_COUNT = 4;
 const CLEANUP_INTERVAL_MS = 30_000;
+
+/**
+ * Maximum time (ms) to wait for all 4 players to connect after a match is found.
+ * If fewer than 4 connect within this window, the match is cancelled and
+ * players are re-enqueued.
+ */
+export const MATCH_FOUND_TIMEOUT_MS = 30_000;
 
 /** Sliding window definitions for ELO matching. */
 interface EloWindow {
@@ -81,6 +98,13 @@ export function createMatchmakingQueue() {
     const entries = Array.from(queue.values());
     if (entries.length < PLAYER_COUNT) return null;
 
+    // --- Pair-priority pre-pass ---
+    // Scan for pairs where both partners are queued. If we find 2+ complete
+    // pairs within ELO range, match them immediately (skip solo ELO scan).
+    const pairMatch = findPairMatch(entries);
+    if (pairMatch) return pairMatch;
+
+    // --- Solo ELO scan (existing algorithm) ---
     // Sort by joinedAt (oldest first — FIFO)
     entries.sort((a, b) => a.joinedAt - b.joinedAt);
 
@@ -128,6 +152,69 @@ export function createMatchmakingQueue() {
     return null;
   }
 
+  /**
+   * Pair-priority pre-pass: find two complete pairs (both partners queued)
+   * within ELO range and match them immediately.
+   */
+  function findPairMatch(entries: QueueEntry[]): MatchGroup | null {
+    // Build a lookup of pairId → queued entries for that pair
+    const pairMap = new Map<string, QueueEntry[]>();
+    for (const entry of entries) {
+      if (!entry.pairId) continue;
+      const existing = pairMap.get(entry.pairId) ?? [];
+      existing.push(entry);
+      pairMap.set(entry.pairId, existing);
+    }
+
+    // Collect complete pairs (exactly 2 members)
+    const completePairs: Array<{ pairId: string; entries: [QueueEntry, QueueEntry] }> = [];
+    for (const [pairId, members] of pairMap) {
+      if (members.length === 2) {
+        completePairs.push({ pairId, entries: [members[0], members[1]] });
+      }
+    }
+
+    if (completePairs.length < 2) return null;
+
+    // Sort pairs by average ELO (oldest pair first for FIFO fairness)
+    completePairs.sort((a, b) => {
+      const avgA = (a.entries[0].elo + a.entries[1].elo) / 2;
+      const avgB = (b.entries[0].elo + b.entries[1].elo) / 2;
+      return avgA - avgB;
+    });
+
+    const now = Date.now();
+
+    // Try each pair as the "anchor" and find a second pair within range
+    for (const anchor of completePairs) {
+      const anchorAvg = (anchor.entries[0].elo + anchor.entries[1].elo) / 2;
+      const anchorWait = now - Math.min(anchor.entries[0].joinedAt, anchor.entries[1].joinedAt);
+      const range = getEloRange(anchorWait);
+
+      for (const other of completePairs) {
+        if (other.pairId === anchor.pairId) continue;
+        const otherAvg = (other.entries[0].elo + other.entries[1].elo) / 2;
+        if (Math.abs(anchorAvg - otherAvg) <= range) {
+          const matched = [...anchor.entries, ...other.entries];
+          const elos = matched.map((e) => e.elo);
+          return {
+            playerIds: matched.map((e) => e.userId) as [
+              string,
+              string,
+              string,
+              string,
+            ],
+            avgElo: Math.round(elos.reduce((a, b) => a + b, 0) / PLAYER_COUNT),
+            eloRange: { min: Math.min(...elos), max: Math.max(...elos) },
+            waitTimeMs: anchorWait,
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
   function getWaitTime(userId: string): number | null {
     const entry = queue.get(userId);
     if (!entry) return null;
@@ -165,6 +252,54 @@ export function createMatchmakingQueue() {
     getQueue,
     cleanupStale,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Partner resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Queries the `pairs` table for a registered partner of the given user.
+ * Returns the partner's userId and pairId if found, or null if no active
+ * partner exists or the DB query fails.
+ *
+ * Partners are checked by priority order (1 → 2 → 3) as defined in the
+ * pairs table.
+ */
+export async function resolvePartner(
+  userId: string,
+): Promise<{ partnerId: string; pairId: string } | null> {
+  try {
+    const db = await getDb();
+    if (!db) return null;
+
+    // Raw SQL since we don't have a Drizzle schema for pairs yet.
+    // The pairs table has: id, user_a, user_b, status, priority, elo_pareja
+    const result = await db.execute<{
+      id: string;
+      user_a: string;
+      user_b: string;
+    }>`
+      SELECT id, user_a, user_b
+      FROM pairs
+      WHERE status = 'active'
+        AND (user_a = ${userId} OR user_b = ${userId})
+      ORDER BY priority ASC
+      LIMIT 1
+    `;
+
+    if (result.length === 0) return null;
+
+    const pair = result[0];
+    const partnerId = pair.user_a === userId ? pair.user_b : pair.user_a;
+    return { partnerId, pairId: pair.id };
+  } catch (err) {
+    console.warn(
+      "[matchmaking] resolvePartner failed:",
+      (err as Error)?.message,
+    );
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
