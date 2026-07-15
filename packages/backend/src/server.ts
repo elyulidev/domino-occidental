@@ -10,7 +10,9 @@ import {
 import { Elysia } from "elysia";
 import { authErrorHandler, authGuard } from "./auth/guard";
 import { checkAbandonment, disconnectPlayer } from "./game/connection";
+import { createMatchmakingQueue, startCleanupScheduler } from "./game/matchmaking";
 import { createGame, getGame, updateGame } from "./game/store";
+import { matchmakingRoutes } from "./routes/matchmaking";
 
 import { broadcastEvents } from "./ws/broadcaster";
 import {
@@ -24,6 +26,12 @@ import { createTimerManager } from "./ws/timer-manager";
 const PORT = Number(Bun.env.PORT) || 3001;
 
 const store = { getGame, updateGame };
+
+// ---------------------------------------------------------------------------
+// Matchmaking queue + cleanup scheduler
+// ---------------------------------------------------------------------------
+const matchmakingQueue = createMatchmakingQueue();
+const cancelCleanup = startCleanupScheduler(matchmakingQueue);
 
 // ---------------------------------------------------------------------------
 // Connection manager + SendFn (shared by WS plugin and TimerManager)
@@ -95,7 +103,9 @@ const app = new Elysia()
 	// -----------------------------------------------------------------------
 	// Authenticated routes — JWT required
 	// -----------------------------------------------------------------------
-	.group("/api/v1", (app) => app.use(authGuard()))
+	.group("/api/v1", (app) =>
+		app.use(authGuard()).use(matchmakingRoutes(matchmakingQueue)),
+	)
 	// Single WS route: playerId comes from path param (dev) or JWT (auth)
 	// biome-ignore lint/suspicious/noExplicitAny: Elysia WS handler type mismatch with WsPlugin.ws shape
 	.ws("/ws/game/:matchId/:playerId", plugin.ws as any)
@@ -104,3 +114,9 @@ const app = new Elysia()
 console.log(
 	`[server] Backend running on http://${app.server?.hostname}:${PORT}`,
 );
+
+// Graceful shutdown — stop cleanup scheduler
+process.on("SIGINT", () => {
+	cancelCleanup();
+	process.exit(0);
+});
