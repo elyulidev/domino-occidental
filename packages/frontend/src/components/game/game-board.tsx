@@ -347,10 +347,33 @@ export function GameBoard() {
 
   if (boardTiles.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
-        <p className="text-sm text-domino-400 italic">
-          Waiting for first move…
-        </p>
+      <div className="flex h-full flex-col rounded-2xl border border-domino-700/50 bg-domino-900/60 p-4">
+        {/* Empty state with avatars */}
+        <div className="flex h-full items-center justify-center relative">
+          <p className="text-sm text-domino-400 italic">
+            Waiting for first move…
+          </p>
+
+          {/* Player avatars — visible even when board is empty */}
+          {[0, 1, 2, 3].map((playerIdx) => {
+            const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
+            const pairLabel = playerIdx % 2 === 0 ? "Pair 0" : "Pair 1";
+            return (
+              <PlayerAvatar
+                key={players[playerIdx]?.id ?? playerIdx}
+                avatarUrl={avatarUrls[playerIdx] ?? ""}
+                playerName={players[playerIdx]?.name ?? `P${playerIdx + 1}`}
+                isActive={currentTurn === playerIdx}
+                isConnected={players[playerIdx]?.isConnected ?? true}
+                disconnectedSince={disconnectedSince.get(players[playerIdx]?.id ?? "") ?? null}
+                seatIndex={seatIndex}
+                handSize={players[playerIdx]?.handSize}
+                pairLabel={pairLabel}
+                data-seat={playerIdx}
+              />
+            );
+          })}
+        </div>
       </div>
     );
   }

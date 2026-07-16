@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect } from "react";
 import { GameBoard } from "@/components/game/game-board";
@@ -8,7 +7,6 @@ import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { HandOverModal } from "@/components/game/hand-over-modal";
 import { PlayerHand } from "@/components/game/player-hand";
 import { ScorePanel } from "@/components/game/score-panel";
-import { TurnTimer } from "@/components/game/turn-timer";
 import type { WsStatus } from "@/hooks/use-websocket";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useGameStore } from "@/stores/game-store";
@@ -91,54 +89,31 @@ function MatchContent() {
 	// Ready — render game board
 	return (
 		<div className='relative min-h-screen bg-domino-950 text-domino-50'>
-			{/* Player badge — helps identify which player this tab controls */}
-			<div className='pointer-events-none absolute top-1 left-1 z-10 flex items-center gap-2'>
-				<span className='inline-flex items-center gap-1.5 rounded-full bg-gold-500/10 border border-gold-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-gold-300'>
-					<span className='h-1.5 w-1.5 rounded-full bg-gold-400' />
-					You: {playerId.toUpperCase()}
-				</span>
-				<span className='inline-flex items-center gap-1.5 text-[10px] text-domino-500 pointer-events-auto'>
-					<span>+ open:</span>
-					{["p1", "p2", "p3"].map((id) => (
-						<Link
-							key={id}
-							href={`/match/${params.id}?playerId=${id}`}
-							target='_blank'
-							rel='noopener noreferrer'
-							className='rounded bg-domino-800/60 px-1.5 py-0.5 font-mono text-gold-400 transition-colors hover:bg-domino-700 hover:text-gold-300'
-						>
-							{id}
-						</Link>
-					))}
-				</span>
-			</div>
-
 			{/* Leave match button — top right */}
-			<div className='absolute top-1 right-1 z-10'>
+			<div className='absolute top-2 right-2 z-20'>
 				<button
 					type='button'
 					onClick={handleLeaveMatch}
-					className='pointer-events-auto rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300'
+					className='rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300'
 				>
 					Leave Match
 				</button>
 			</div>
 
-			<div className='grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 p-4 h-screen max-h-screen'>
-				{/* Left: Sidebar (ScorePanel + TurnTimer) */}
-				<div className='hidden lg:flex lg:flex-col lg:gap-3 lg:overflow-y-auto'>
-					<ScorePanel />
-					<TurnTimer compact />
+			{/* Grid: 2 rows × 2 columns */}
+			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[200px_1fr] gap-2 p-2 h-screen max-h-screen'>
+				{/* Row 1: Board (spans both columns) */}
+				<div className='lg:col-span-2 min-h-0'>
+					<GameBoard />
 				</div>
 
-				{/* Center: Game Area */}
-				<div className='flex flex-col gap-4 min-h-0'>
-					{/* Board */}
-					<div className='flex-1 min-h-0'>
-						<GameBoard />
-					</div>
+				{/* Row 2, Col 1: ScorePanel */}
+				<div className='hidden lg:block'>
+					<ScorePanel />
+				</div>
 
-					{/* Hand */}
+				{/* Row 2, Col 2: PlayerHand */}
+				<div className='min-h-0'>
 					<PlayerHand />
 				</div>
 			</div>
