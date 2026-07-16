@@ -24,6 +24,10 @@ interface GameState {
   ownHand: Tile[];
   /** Tile IDs blocked by timeout for the current player (from server). */
   blockedTileIds: string[];
+  /** Avatar URLs for each player, indexed by seat position (0–3). */
+  avatarUrls: [string, string, string, string];
+  /** Map of playerId → disconnect timestamp (Date.now() or null). */
+  disconnectedSince: Map<string, number | null>;
   /** Index (0-3) of the player THIS client controls. Used for turn checking. */
   playerIndex: number;
   turn: {
@@ -69,6 +73,8 @@ const defaultGameState: GameState = {
   players: [],
   ownHand: [],
   blockedTileIds: [],
+  avatarUrls: ["", "", "", ""],
+  disconnectedSince: new Map(),
   playerIndex: 0,
   turn: {
     currentTurn: 0,
@@ -102,6 +108,8 @@ function syncGameState(state: StoreState, match: MatchState): Partial<StoreState
       })),
       ownHand: state.engine?.hand ?? match.players[0].hand,
       blockedTileIds: match.players[playerIdx]?.blockedTileIds ?? [],
+      avatarUrls: state.game?.avatarUrls ?? ["", "", "", ""],
+      disconnectedSince: state.game?.disconnectedSince ?? new Map(),
       playerIndex: playerIdx,
       turn: {
         currentTurn: match.turn.currentTurn,
@@ -153,6 +161,22 @@ export const useGameStore = create<StoreState>((set, get) => ({
     const existingPlayers = store.game.players;
     const playerIdx = store.engine?.playerIndex ?? 0;
 
+    // Track disconnect timestamps
+    const newDisconnectedSince = new Map(store.game.disconnectedSince);
+    for (let i = 0; i < sanitized.players.length; i++) {
+      const p = sanitized.players[i];
+      const existing = existingPlayers[i];
+      if (!p || !existing) continue;
+
+      if (!p.isConnected && existing.isConnected) {
+        // Player just disconnected — record timestamp
+        newDisconnectedSince.set(p.id, Date.now());
+      } else if (p.isConnected) {
+        // Player reconnected — clear timestamp
+        newDisconnectedSince.delete(p.id);
+      }
+    }
+
     set({
       game: {
         board: sanitized.board as BoardState,
@@ -165,6 +189,8 @@ export const useGameStore = create<StoreState>((set, get) => ({
         })),
         ownHand: yourHand ?? store.game.ownHand,
         blockedTileIds: sanitized.players[playerIdx]?.blockedTileIds ?? [],
+        avatarUrls: sanitized.avatarUrls,
+        disconnectedSince: newDisconnectedSince,
         playerIndex: playerIdx,
         turn: {
           currentTurn: sanitized.currentTurn as 0 | 1 | 2 | 3,

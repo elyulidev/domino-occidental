@@ -85,6 +85,9 @@ describe("match page store integration", () => {
         scores: [0, 0],
         players: [],
         ownHand: [],
+        avatarUrls: ["", "", "", ""],
+        disconnectedSince: new Map(),
+        playerIndex: 0,
         turn: {
           currentTurn: 0,
           turnDeadline: null,

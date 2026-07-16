@@ -141,6 +141,58 @@ describe("sanitizeState — turn-related fields", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tests — SanitizedMatchState avatarUrls
+// ---------------------------------------------------------------------------
+
+describe("sanitizeState — avatarUrls", () => {
+  it("includes avatarUrls tuple of 4 strings in output", () => {
+    const match = makeMatch();
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
+    const sanitized = sanitizeState(match as any);
+    expect(sanitized.avatarUrls).toEqual(["", "", "", ""]);
+    expect(sanitized.avatarUrls).toHaveLength(4);
+  });
+
+  it("uses provided avatarUrls when passed as second argument", () => {
+    const match = makeMatch();
+    const urls: [string, string, string, string] = [
+      "https://example.com/a.png",
+      "https://example.com/b.png",
+      "",
+      "https://example.com/d.png",
+    ];
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
+    const sanitized = sanitizeState(match as any, urls);
+    expect(sanitized.avatarUrls).toEqual(urls);
+  });
+
+  it("defaults to empty strings when avatarUrls is undefined", () => {
+    const match = makeMatch();
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
+    const sanitized = sanitizeState(match as any, undefined);
+    expect(sanitized.avatarUrls).toEqual(["", "", "", ""]);
+  });
+
+  it("preserves URLs with special characters", () => {
+    const match = makeMatch();
+    const urls: [string, string, string, string] = [
+      "https://cdn.example.com/path/to/avatar%201.png?token=abc&size=64",
+      "",
+      "https://storage.supabase.co/v1/object/public/avatars/user-123.jpg",
+      "",
+    ];
+    // biome-ignore lint/suspicious/noExplicitAny: makeMatch() returns partial MatchState, cast needed
+    const sanitized = sanitizeState(match as any, urls);
+    expect(sanitized.avatarUrls[0]).toBe(
+      "https://cdn.example.com/path/to/avatar%201.png?token=abc&size=64",
+    );
+    expect(sanitized.avatarUrls[2]).toBe(
+      "https://storage.supabase.co/v1/object/public/avatars/user-123.jpg",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tests — SanitizedMatchState backward compatibility
 // ---------------------------------------------------------------------------
 

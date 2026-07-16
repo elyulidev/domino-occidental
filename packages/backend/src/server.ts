@@ -12,12 +12,12 @@ import { authErrorHandler, authGuard } from "./auth/guard";
 import { checkAbandonment, disconnectPlayer } from "./game/connection";
 import {
 	createMatchmakingQueue,
-	fetchPlayerNames,
+	fetchPlayerProfiles,
 	MATCH_FOUND_TIMEOUT_MS,
 	processMatchmaking,
 	startCleanupScheduler,
 } from "./game/matchmaking";
-import { createGame, getGame, removeGame, setPlayerNames, updateGame } from "./game/store";
+import { createGame, getGame, getPlayerProfiles, removeGame, setPlayerProfiles, updateGame } from "./game/store";
 import { matchmakingRoutes } from "./routes/matchmaking";
 
 import { broadcastEvents } from "./ws/broadcaster";
@@ -102,16 +102,16 @@ const matchmakerInterval = setInterval(() => {
 
 	const { matchId, playerIds } = matchCreated;
 
-	// Fetch player display names (async, non-blocking — names will be available
+	// Fetch player profiles (async, non-blocking — profiles will be available
 	// before the match transitions from "waiting" to "in_progress")
-	fetchPlayerNames(playerIds).then((names) => {
-		setPlayerNames(matchId, names);
+	fetchPlayerProfiles(playerIds).then((profiles) => {
+		setPlayerProfiles(matchId, profiles);
 		// Apply names to the stored match state so sanitizeState includes them
 		const match = getGame(matchId);
 		if (match) {
 			const namedPlayers = match.players.map((p) => ({
 				...p,
-				name: names.get(p.id) ?? undefined,
+				name: profiles.get(p.id)?.name ?? undefined,
 			})) as typeof match.players;
 			match.players = namedPlayers;
 			updateGame(matchId, match);

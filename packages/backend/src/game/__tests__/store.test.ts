@@ -5,9 +5,11 @@ import {
   getActiveCount,
   getAllActive,
   getGame,
+  getPlayerProfiles,
   hasGame,
   removeGame,
   resetStore,
+  setPlayerProfiles,
   updateGame,
 } from "../store";
 import type { MatchState, PlayerState } from "../types";
@@ -393,5 +395,54 @@ describe("getAllActive", () => {
     const all = getAllActive();
     expect(all.length).toBe(2);
     expect(all.map((e) => e[0]).sort()).toEqual(["m1", "m2"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Player profiles (setPlayerProfiles / getPlayerProfiles)
+// ---------------------------------------------------------------------------
+
+describe("setPlayerProfiles + getPlayerProfiles", () => {
+  beforeEach(() => resetStore());
+
+  it("stores and retrieves player profiles with name and avatarUrl", () => {
+    const profiles = new Map<string, { name: string; avatarUrl: string }>([
+      ["p0", { name: "Alice", avatarUrl: "https://example.com/alice.png" }],
+      ["p1", { name: "Bob", avatarUrl: "" }],
+    ]);
+    setPlayerProfiles("m1", profiles);
+    const result = getPlayerProfiles("m1");
+    expect(result).toBeDefined();
+    expect(result?.get("p0")?.name).toBe("Alice");
+    expect(result?.get("p0")?.avatarUrl).toBe("https://example.com/alice.png");
+    expect(result?.get("p1")?.name).toBe("Bob");
+    expect(result?.get("p1")?.avatarUrl).toBe("");
+  });
+
+  it("returns undefined for unknown matchId", () => {
+    expect(getPlayerProfiles("nonexistent")).toBeUndefined();
+  });
+
+  it("stores empty avatarUrl as empty string", () => {
+    const profiles = new Map<string, { name: string; avatarUrl: string }>([
+      ["p0", { name: "Charlie", avatarUrl: "" }],
+    ]);
+    setPlayerProfiles("m1", profiles);
+    const result = getPlayerProfiles("m1");
+    expect(result?.get("p0")?.avatarUrl).toBe("");
+  });
+
+  it("overwrites previous profiles for same matchId", () => {
+    const first = new Map<string, { name: string; avatarUrl: string }>([
+      ["p0", { name: "Alice", avatarUrl: "a.png" }],
+    ]);
+    const second = new Map<string, { name: string; avatarUrl: string }>([
+      ["p0", { name: "Alice v2", avatarUrl: "a2.png" }],
+    ]);
+    setPlayerProfiles("m1", first);
+    setPlayerProfiles("m1", second);
+    const result = getPlayerProfiles("m1");
+    expect(result?.get("p0")?.name).toBe("Alice v2");
+    expect(result?.get("p0")?.avatarUrl).toBe("a2.png");
   });
 });

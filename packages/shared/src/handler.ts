@@ -58,6 +58,8 @@ export interface SanitizedMatchState {
   consecutiveNullRounds: number;
   /** Winner of the last hand, or null for the first hand of the match */
   lastHandWinner: number | null;
+  /** Avatar URLs for each player, indexed by seat position (0–3). Empty string if no avatar. */
+  avatarUrls: [string, string, string, string];
 }
 
 /**
@@ -68,7 +70,10 @@ export interface SanitizedMatchState {
  * - Exposes only `poolCount` (integer)
  * - Drops internal fields like `consecutivePasses`, `lastActionAt`, etc.
  */
-export function sanitizeState(match: MatchState): SanitizedMatchState {
+export function sanitizeState(
+  match: MatchState,
+  avatarUrls?: [string, string, string, string],
+): SanitizedMatchState {
   return {
     matchId: match.matchId,
     players: match.players.map((p) => ({
@@ -88,5 +93,6 @@ export function sanitizeState(match: MatchState): SanitizedMatchState {
     turnDeadline: match.turn.turnDeadline,
     consecutiveNullRounds: match.turn.consecutiveNullRounds,
     lastHandWinner: match.turn.lastHandWinner,
+    avatarUrls: avatarUrls ?? ["", "", "", ""],
   };
 }

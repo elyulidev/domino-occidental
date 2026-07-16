@@ -29,6 +29,10 @@ describe("useGameStore", () => {
         scores: [0, 0],
         players: [],
         ownHand: [],
+        blockedTileIds: [],
+        avatarUrls: ["", "", "", ""],
+        disconnectedSince: new Map(),
+        playerIndex: 0,
         turn: { currentTurn: 0, turnDeadline: null, consecutiveNullRounds: 0, roundNumber: 0, lastHandWinner: null },
         status: "waiting",
       },
@@ -45,10 +49,10 @@ describe("useGameStore", () => {
     return {
       matchId: "ws-match",
       players: [
-        { id: "p0", handSize: 10, isConnected: true },
-        { id: "p1", handSize: 8, isConnected: true },
-        { id: "p2", handSize: 7, isConnected: false },
-        { id: "p3", handSize: 9, isConnected: true },
+        { id: "p0", handSize: 10, isConnected: true, blockedTileIds: [] },
+        { id: "p1", handSize: 8, isConnected: true, blockedTileIds: [] },
+        { id: "p2", handSize: 7, isConnected: false, blockedTileIds: [] },
+        { id: "p3", handSize: 9, isConnected: true, blockedTileIds: [] },
       ],
       board: { leftEnd: null, rightEnd: null, tiles: [] },
       currentTurn: 1,
@@ -60,6 +64,7 @@ describe("useGameStore", () => {
       turnDeadline: Date.now() + 45_000,
       consecutiveNullRounds: 1,
       lastHandWinner: 2,
+      avatarUrls: ["", "", "", ""],
       ...overrides,
     };
   }

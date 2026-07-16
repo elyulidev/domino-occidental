@@ -20,10 +20,10 @@ function makeSanitized(overrides?: Partial<SanitizedMatchState>): SanitizedMatch
   return {
     matchId: "test-match",
     players: [
-      { id: PLAYER_ID, handSize: 10, isConnected: true },
-      { id: "player-1", handSize: 10, isConnected: true },
-      { id: "player-2", handSize: 10, isConnected: true },
-      { id: "player-3", handSize: 10, isConnected: true },
+      { id: PLAYER_ID, handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "player-1", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "player-2", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "player-3", handSize: 10, isConnected: true, blockedTileIds: [] },
     ],
     board: { leftEnd: null, rightEnd: null, tiles: [] },
     currentTurn: 0,
@@ -35,6 +35,7 @@ function makeSanitized(overrides?: Partial<SanitizedMatchState>): SanitizedMatch
     turnDeadline: Date.now() + 45_000,
     consecutiveNullRounds: 0,
     lastHandWinner: null,
+    avatarUrls: ["", "", "", ""],
     ...overrides,
   };
 }

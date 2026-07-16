@@ -55,6 +55,7 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
         turnDeadline: null,
         consecutiveNullRounds: 0,
         lastHandWinner: null,
+        avatarUrls: ["", "", "", ""],
       },
       [],
       0,

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import type { UserChannelManager } from "../../ws/user-channel";
 import {
   createMatchmakingQueue,
+  fetchPlayerProfiles,
   processMatchmaking,
   startCleanupScheduler,
 } from "../matchmaking";
@@ -399,5 +400,33 @@ describe("startCleanupScheduler", () => {
     cancel();
     // If cancel didn't work, this test would hang — but it doesn't
     expect(queue.getQueueSize()).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchPlayerProfiles
+// ---------------------------------------------------------------------------
+
+describe("fetchPlayerProfiles", () => {
+  it("returns fallback profiles with empty avatarUrl when DB is unavailable", async () => {
+    // fetchPlayerProfiles falls back gracefully when getDb() returns null
+    const profiles = await fetchPlayerProfiles(["u1", "u2"]);
+    expect(profiles.size).toBe(2);
+    const p1 = profiles.get("u1");
+    expect(p1).toBeDefined();
+    expect(p1?.name).toContain("Player");
+    expect(p1?.avatarUrl).toBe("");
+    const p2 = profiles.get("u2");
+    expect(p2).toBeDefined();
+    expect(p2?.avatarUrl).toBe("");
+  });
+
+  it("returns Map<string, PlayerProfile> shape (not Map<string, string>)", async () => {
+    const profiles = await fetchPlayerProfiles(["u1"]);
+    const entry = profiles.get("u1");
+    expect(entry).toBeDefined();
+    // Must be an object with name and avatarUrl, not a plain string
+    expect(typeof entry?.name).toBe("string");
+    expect(typeof entry?.avatarUrl).toBe("string");
   });
 });

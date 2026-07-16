@@ -390,50 +390,82 @@ function getEloRange(waitTimeMs: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Player name resolution
+// Player profile resolution
 // ---------------------------------------------------------------------------
 
+/** Player profile with display name and avatar URL. */
+export interface PlayerProfile {
+  name: string;
+  avatarUrl: string;
+}
+
 /**
- * Fetches display names for a list of user IDs from the profiles table.
- * Returns a Map<userId, displayName>. Falls back to a generic name on failure.
+ * Fetches display names and avatar URLs for a list of user IDs from the profiles table.
+ * Returns a Map<userId, PlayerProfile>. Falls back to a generic name on failure.
  *
  * Uses Drizzle query builder with the profiles schema.
  */
-export async function fetchPlayerNames(
+export async function fetchPlayerProfiles(
   userIds: string[],
-): Promise<Map<string, string>> {
-  const names = new Map<string, string>();
+): Promise<Map<string, PlayerProfile>> {
+  const profiles = new Map<string, PlayerProfile>();
   try {
     const db = await getDb();
     if (!db) {
-      for (const id of userIds) names.set(id, `Player ${id.slice(0, 4)}`);
-      return names;
+      for (const id of userIds) {
+        profiles.set(id, { name: `Player ${id.slice(0, 4)}`, avatarUrl: "" });
+      }
+      return profiles;
     }
 
-    const { profiles } = await import("../db/schema");
+    const { profiles: profilesTable } = await import("../db/schema");
     const result = await db
-      .select({ id: profiles.id, username: profiles.username })
-      .from(profiles)
-      .where(inArray(profiles.id, userIds));
+      .select({
+        id: profilesTable.id,
+        username: profilesTable.username,
+        avatarUrl: profilesTable.avatar_url,
+      })
+      .from(profilesTable)
+      .where(inArray(profilesTable.id, userIds));
 
     for (const row of result) {
-      names.set(row.id, row.username);
+      profiles.set(row.id, {
+        name: row.username,
+        avatarUrl: row.avatarUrl ?? "",
+      });
     }
 
-    // Fill in any missing names with fallback
+    // Fill in any missing profiles with fallback
     for (const id of userIds) {
-      if (!names.has(id)) {
-        names.set(id, `Player ${id.slice(0, 4)}`);
+      if (!profiles.has(id)) {
+        profiles.set(id, { name: `Player ${id.slice(0, 4)}`, avatarUrl: "" });
       }
     }
   } catch (err) {
     console.warn(
-      "[matchmaking] fetchPlayerNames failed:",
+      "[matchmaking] fetchPlayerProfiles failed:",
       (err as Error)?.message,
     );
     for (const id of userIds) {
-      if (!names.has(id)) names.set(id, `Player ${id.slice(0, 4)}`);
+      if (!profiles.has(id)) {
+        profiles.set(id, { name: `Player ${id.slice(0, 4)}`, avatarUrl: "" });
+      }
     }
+  }
+  return profiles;
+}
+
+/**
+ * Backward-compatible wrapper: fetches display names only.
+ * @deprecated Use fetchPlayerProfiles instead.
+ */
+export async function fetchPlayerNames(
+  userIds: string[],
+): Promise<Map<string, string>> {
+  const profiles = await fetchPlayerProfiles(userIds);
+  const names = new Map<string, string>();
+  for (const [id, profile] of profiles) {
+    names.set(id, profile.name);
   }
   return names;
 }

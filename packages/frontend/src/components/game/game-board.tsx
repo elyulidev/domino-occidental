@@ -5,6 +5,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/stores/game-store";
 import { DominoTile, isDoubleTile } from "./domino-tile";
 import { calculateGridLayout } from "./grid-layout-engine";
+import { PlayerAvatar } from "./player-avatar";
+import {
+  animateTileFromAvatar,
+  calculateAvatarOrigin,
+  calculateTileTarget,
+  prefersReducedMotion as reducedMotionCheck,
+} from "./tile-animation";
 import {
   calculatePanDelta,
   calculatePinchZoom,
@@ -65,8 +72,13 @@ export function GameBoard() {
   const leftEnd = useGameStore((s) => s.game.board.leftEnd);
   const rightEnd = useGameStore((s) => s.game.board.rightEnd);
   const players = useGameStore((s) => s.game.players);
+  const avatarUrls = useGameStore((s) => s.game.avatarUrls);
+  const playerIndex = useGameStore((s) => s.game.playerIndex);
+  const currentTurn = useGameStore((s) => s.game.turn.currentTurn);
+  const disconnectedSince = useGameStore((s) => s.game.disconnectedSince);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const prevTileCountRef = useRef(boardTiles.length);
   const [containerWidth, setContainerWidth] = useState(600);
 
   // Pan/Zoom state (local to GameBoard, not in Zustand)
@@ -274,6 +286,62 @@ export function GameBoard() {
     prevTileCount.current = boardTiles.length;
   }, [boardTiles.length]);
 
+  // Tile play animation: detect new tile and animate from avatar to grid position
+  useEffect(() => {
+    const prevCount = prevTileCountRef.current;
+    const newCount = boardTiles.length;
+    if (newCount <= prevCount) {
+      prevTileCountRef.current = newCount;
+      return;
+    }
+
+    // New tile(s) added — animate the most recent one
+    const newTile = boardTiles[newCount - 1];
+    if (!newTile) {
+      prevTileCountRef.current = newCount;
+      return;
+    }
+
+    const pIdx = playerIdToIndex(newTile.playerId);
+    const containerEl = containerRef.current;
+    if (!containerEl) {
+      prevTileCountRef.current = newCount;
+      return;
+    }
+    const avatarEl = containerEl.querySelector(
+      `[data-seat="${pIdx}"]`,
+    ) as HTMLElement | null;
+    if (!avatarEl || reducedMotionCheck()) {
+      prevTileCountRef.current = newCount;
+      return;
+    }
+
+    // Find the tile's position from the layout
+    const layout = calculateGridLayout(boardTiles, containerWidth);
+    const tilePos = layout.positions[newCount - 1];
+    if (!tilePos) {
+      prevTileCountRef.current = newCount;
+      return;
+    }
+
+    const avatarRect = avatarEl.getBoundingClientRect();
+    const containerRect = containerEl.getBoundingClientRect();
+    const origin = calculateAvatarOrigin(avatarRect, containerRect, pan, zoom);
+    const target = calculateTileTarget(tilePos.x, tilePos.y);
+
+    // Find the tile DOM element and animate it
+    const tileElements = containerEl.querySelectorAll("[data-tile-id]");
+    const tileEl = Array.from(tileElements).find(
+      (el) => el.getAttribute("data-tile-id") === newTile.tile.id,
+    ) as HTMLElement | undefined;
+
+    if (tileEl) {
+      animateTileFromAvatar(tileEl, origin, target, 400);
+    }
+
+    prevTileCountRef.current = newCount;
+  }, [boardTiles, containerWidth, pan, zoom]);
+
   if (boardTiles.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
@@ -340,6 +408,23 @@ export function GameBoard() {
           })}
         </div>
 
+        {/* Player avatars — positioned around the board perimeter */}
+        {[0, 1, 2, 3].map((playerIdx) => {
+          const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
+          return (
+            <PlayerAvatar
+              key={players[playerIdx]?.id ?? playerIdx}
+              avatarUrl={avatarUrls[playerIdx] ?? ""}
+              playerName={players[playerIdx]?.name ?? `P${playerIdx + 1}`}
+              isActive={currentTurn === playerIdx}
+              isConnected={players[playerIdx]?.isConnected ?? true}
+              disconnectedSince={disconnectedSince.get(players[playerIdx]?.id ?? "") ?? null}
+              seatIndex={seatIndex}
+              data-seat={playerIdx}
+            />
+          );
+        })}
+
         {/* Zoom controls overlay */}
         <div className="absolute bottom-2 right-2 z-10 flex gap-1">
           <button
@@ -399,6 +484,7 @@ function BoardTile({
         transform: "translate(-50%, -50%)",
       }}
       title={playerName}
+      data-tile-id={tile.id}
     >
       <DominoTile
         tile={displayTile}

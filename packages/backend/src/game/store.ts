@@ -2,8 +2,14 @@ import type { MatchState } from "@domino/shared";
 
 const store = new Map<string, MatchState>();
 
-/** Map of matchId → (playerId → display name) for online matches. */
-const playerNamesStore = new Map<string, Map<string, string>>();
+/** Player profile with display name and avatar URL. */
+export interface PlayerProfile {
+  name: string;
+  avatarUrl: string;
+}
+
+/** Map of matchId → (playerId → PlayerProfile) for online matches. */
+const playerProfilesStore = new Map<string, Map<string, PlayerProfile>>();
 
 /** Store a new match (overwrites existing). */
 export function createGame(matchId: string, state: MatchState): void {
@@ -24,7 +30,7 @@ export function updateGame(matchId: string, state: MatchState): void {
 
 /** Remove a match. Returns true if it existed. */
 export function removeGame(matchId: string): boolean {
-  playerNamesStore.delete(matchId);
+  playerProfilesStore.delete(matchId);
   return store.delete(matchId);
 }
 
@@ -51,7 +57,7 @@ export function cleanup(maxAgeMs: number): number {
     );
     if (now - mostRecent > maxAgeMs) {
       store.delete(matchId);
-      playerNamesStore.delete(matchId);
+      playerProfilesStore.delete(matchId);
       removed++;
     }
   }
@@ -64,26 +70,51 @@ export function getAllActive(): [string, MatchState][] {
 }
 
 // ---------------------------------------------------------------------------
-// Player names
+// Player profiles
 // ---------------------------------------------------------------------------
 
-/** Store player display names for a match. */
+/** Store player profiles (name + avatar) for a match. */
+export function setPlayerProfiles(
+  matchId: string,
+  profiles: Map<string, PlayerProfile>,
+): void {
+  playerProfilesStore.set(matchId, profiles);
+}
+
+/** Get all player profiles for a match. */
+export function getPlayerProfiles(
+  matchId: string,
+): Map<string, PlayerProfile> | undefined {
+  return playerProfilesStore.get(matchId);
+}
+
+/** Backward-compatible alias: store player display names (legacy). */
 export function setPlayerNames(matchId: string, names: Map<string, string>): void {
-  playerNamesStore.set(matchId, names);
+  const profiles = new Map<string, PlayerProfile>();
+  for (const [id, name] of names) {
+    profiles.set(id, { name, avatarUrl: "" });
+  }
+  playerProfilesStore.set(matchId, profiles);
 }
 
 /** Get the display name for a player in a match, or undefined. */
 export function getPlayerName(matchId: string, playerId: string): string | undefined {
-  return playerNamesStore.get(matchId)?.get(playerId);
+  return playerProfilesStore.get(matchId)?.get(playerId)?.name;
 }
 
-/** Get all player names for a match. */
+/** Get all player names for a match (backward-compatible). */
 export function getPlayerNames(matchId: string): Map<string, string> | undefined {
-  return playerNamesStore.get(matchId);
+  const profiles = playerProfilesStore.get(matchId);
+  if (!profiles) return undefined;
+  const names = new Map<string, string>();
+  for (const [id, profile] of profiles) {
+    names.set(id, profile.name);
+  }
+  return names;
 }
 
 /** TEST-ONLY: Clear the store between tests. */
 export function resetStore(): void {
   store.clear();
-  playerNamesStore.clear();
+  playerProfilesStore.clear();
 }
