@@ -103,6 +103,7 @@ function syncGameState(state: StoreState, match: MatchState): Partial<StoreState
       scores: match.scores.scores,
       players: match.players.map((p) => ({
         id: p.id,
+        name: p.name,
         handSize: p.hand.length,
         isConnected: p.isConnected,
       })),
