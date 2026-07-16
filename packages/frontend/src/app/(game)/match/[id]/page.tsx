@@ -105,8 +105,8 @@ function MatchContent() {
 				<div className='relative min-h-0'>
 					<PlayerHand />
 
-					{/* Leave match button — bottom left, floating over hand */}
-					<div className='absolute bottom-2 left-2 z-20'>
+					{/* Leave match button — bottom right, floating over hand */}
+					<div className='absolute bottom-2 right-2 z-20'>
 						<button
 							type='button'
 							onClick={handleLeaveMatch}
