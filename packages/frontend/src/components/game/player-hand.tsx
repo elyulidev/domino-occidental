@@ -41,12 +41,14 @@ export function PlayerHand() {
   const currentTurn = useGameStore((s) => s.game.turn.currentTurn);
   const playerIndex = useGameStore((s) => s.game.playerIndex);
   const blockedTileIds = useGameStore((s) => s.game.blockedTileIds);
+  const players = useGameStore((s) => s.game.players);
   const selectTile = useGameStore((s) => s.selectTile);
   const clearSelection = useGameStore((s) => s.clearSelection);
   const playTile = useGameStore((s) => s.playTile);
   const pass = useGameStore((s) => s.pass);
 
   const isMyTurn = currentTurn === playerIndex;
+  const currentTurnName = players[currentTurn]?.name ?? `P${currentTurn + 1}`;
   const hasPlayableTile = ownHand.some((tile) => isTilePlayable(tile, board));
 
   const selectedTile = selectedTileId
@@ -88,7 +90,7 @@ export function PlayerHand() {
             : "Select a tile → choose side"}
         </p>
         {!isMyTurn && (
-          <p className="text-xs text-domino-400 italic">Waiting for your turn…</p>
+          <p className="text-xs text-domino-400 italic">Ésperando por {currentTurnName}…</p>
         )}
       </div>
 

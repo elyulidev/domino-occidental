@@ -111,11 +111,13 @@ const matchmakerInterval = setInterval(() => {
 		if (match) {
 			const namedPlayers = match.players.map((p) => ({
 				...p,
-				name: profiles.get(p.id)?.name ?? undefined,
+				name: profiles.get(p.id)?.name ?? p.name,
 			})) as typeof match.players;
 			match.players = namedPlayers;
 			updateGame(matchId, match);
 		}
+	}).catch((err) => {
+		console.warn("[matchmaker] fetchPlayerProfiles failed for match", matchId, ":", (err as Error)?.message);
 	});
 
 	// Start 30s connection timeout

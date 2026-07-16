@@ -11,6 +11,7 @@ import { sanitizeState } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
 import { persistMatch } from "../db/matches";
 import { handleMessage as defaultHandleMessage } from "../game/handler";
+import { getPlayerProfiles } from "../game/store";
 import { broadcastEvents as defaultBroadcastEvents, sendState as defaultSendState } from "./broadcaster";
 import type { TimerManager } from "./timer-manager";
 
@@ -193,6 +194,24 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
     // Broadcast the started match state to all 4 players
     const updatedMatch = deps.store.getGame(matchId);
     if (updatedMatch) {
+      // Apply player names from profiles store if any are missing
+      // (resolves race condition where async fetchPlayerProfiles hasn't completed yet)
+      const profiles = getPlayerProfiles(matchId);
+      if (profiles) {
+        let needsUpdate = false;
+        const namedPlayers = updatedMatch.players.map((p) => {
+          if (!p.name && profiles.has(p.id)) {
+            needsUpdate = true;
+            return { ...p, name: profiles.get(p.id)!.name } as (typeof updatedMatch.players)[number];
+          }
+          return p;
+        });
+        if (needsUpdate) {
+          updatedMatch.players = namedPlayers;
+          deps.store.updateGame(matchId, updatedMatch);
+        }
+      }
+
       const state = sanitizeState(updatedMatch);
       for (const p of updatedMatch.players) {
         sendFn(p.id, {
@@ -238,6 +257,22 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             // Update isConnected in the store on every join
             const match = deps.store.getGame(matchId);
             if (match) {
+              // Apply player names from profiles store if any are missing
+              const profiles = getPlayerProfiles(matchId);
+              if (profiles) {
+                let needsUpdate = false;
+                const namedPlayers = match.players.map((p) => {
+                  if (!p.name && profiles.has(p.id)) {
+                    needsUpdate = true;
+                    return { ...p, name: profiles.get(p.id)!.name } as (typeof match.players)[number];
+                  }
+                  return p;
+                });
+                if (needsUpdate) {
+                  match.players = namedPlayers;
+                }
+              }
+
               const newPlayers = match.players.map((p) =>
                 p.id === playerId
                   ? { ...p, isConnected: true, lastActionAt: new Date() }

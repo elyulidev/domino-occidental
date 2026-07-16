@@ -423,7 +423,7 @@ export async function fetchPlayerProfiles(
       .select({
         id: profilesTable.id,
         username: profilesTable.username,
-        avatarUrl: profilesTable.avatar_url,
+        avatarUrl: profilesTable.avatarUrl,
       })
       .from(profilesTable)
       .where(inArray(profilesTable.id, userIds));
