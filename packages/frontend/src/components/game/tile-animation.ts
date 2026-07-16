@@ -87,9 +87,16 @@ export function animateTileFromAvatar(
     {
       duration,
       easing: "ease-out",
-      fill: "forwards",
     },
   );
+
+  // Commit the final frame styles to the element, then cancel the animation
+  // so React reclaims control of inline styles (left/top) after animation ends.
+  // Without this, fill:forwards would override React's position updates.
+  animation.onfinish = () => {
+    animation.commitStyles();
+    animation.cancel();
+  };
 
   return animation;
 }
