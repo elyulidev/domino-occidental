@@ -3,8 +3,8 @@
 -- Rollback: DROP TABLE IF EXISTS public.match_moves;
 --
 -- Regla de integridad: si es pass, no hay tile. Si es play, tile obligatorio.
--- Las partidas activas viven en memoria del servidor; match_id es UUID sin FK
--- porque la tabla matches se creará cuando se persistan partidas completadas.
+-- Las partidas activas viven en memoria del servidor. FK a matches(id) se agrega
+-- en la migración 20260716_matches.sql una vez creada la tabla matches.
 
 create table if not exists public.match_moves (
   id              uuid primary key default gen_random_uuid(),

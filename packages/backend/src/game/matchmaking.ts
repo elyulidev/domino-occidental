@@ -11,9 +11,9 @@
  * @see AGENTS.md §6 for matchmaking rules
  */
 
-import { inArray } from "drizzle-orm";
 import type { GameStore, UserChannelManager } from "@domino/shared";
 import { createDeck, deal, initializeMatch, shuffle, startHand } from "@domino/shared/src/game";
+import { inArray } from "drizzle-orm";
 import { getDb, getRawSql } from "../db/client";
 import { createGame } from "./store";
 
@@ -319,8 +319,8 @@ export function processMatchmaking(
   const deck = shuffle(createDeck());
   const { hands, pool } = deal(deck);
 
-  // Create match ID
-  const matchId = `match-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  // Create match ID — use UUID for FK compatibility with match_moves and matches tables
+  const matchId = crypto.randomUUID();
 
   // Initialize match state
   const { match } = initializeMatch(matchId, hands, pool);

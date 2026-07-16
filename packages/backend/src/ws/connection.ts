@@ -9,6 +9,7 @@ import type {
 } from "@domino/shared";
 import { sanitizeState } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
+import { persistMatch } from "../db/matches";
 import { handleMessage as defaultHandleMessage } from "../game/handler";
 import { broadcastEvents as defaultBroadcastEvents, sendState as defaultSendState } from "./broadcaster";
 import type { TimerManager } from "./timer-manager";
@@ -429,6 +430,11 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                   yourHand: p.hand,
                 });
               }
+            }
+
+            // Persist terminal matches (finished/abandoned) — fire-and-forget
+            if (match && result.events.some((e) => e.type === "match_ended" || e.type === "match_abandoned")) {
+              void persistMatch(match, result.events);
             }
           }
           // If no events but there is state (e.g. initial join), send state directly

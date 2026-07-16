@@ -7,6 +7,7 @@ import type {
   SendFn,
 } from "@domino/shared";
 import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS, sanitizeState } from "@domino/shared";
+import { persistMatch } from "../db/matches";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -172,6 +173,12 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
               });
             }
           }
+
+          // Persist terminal matches (finished/abandoned) — fire-and-forget
+          if (result.events.some((e) => e.type === "match_ended" || e.type === "match_abandoned")) {
+            const finalMatch = store.getGame(matchId) ?? result.match;
+            void persistMatch(finalMatch, result.events);
+          }
         }
       }, 2000) as unknown as number;
 
@@ -199,6 +206,12 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
           const timers = matchTimers.get(matchId);
           const playerIds = timers?.playerIds ?? match.players.map((p) => p.id);
           broadcastEvents(result.events, matchId, playerId, sendFn, playerIds, sanitizeState(result.match));
+
+          // Persist abandoned matches — fire-and-forget
+          if (result.events.some((e) => e.type === "match_abandoned")) {
+            const finalMatch = store.getGame(matchId) ?? result.match;
+            void persistMatch(finalMatch, result.events);
+          }
         }
         // Clean up the record after timeout fires
         disconnectRecords.delete(key);
