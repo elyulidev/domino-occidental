@@ -89,17 +89,6 @@ function MatchContent() {
 	// Ready — render game board
 	return (
 		<div className='relative min-h-screen bg-domino-950 text-domino-50'>
-			{/* Leave match button — top right */}
-			<div className='absolute top-2 right-2 z-20'>
-				<button
-					type='button'
-					onClick={handleLeaveMatch}
-					className='rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300'
-				>
-					Leave Match
-				</button>
-			</div>
-
 			{/* Grid: 2 rows × 2 columns */}
 			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 h-screen max-h-screen'>
 				{/* Row 1: Board (spans both columns) */}
@@ -107,14 +96,25 @@ function MatchContent() {
 					<GameBoard />
 				</div>
 
-			{/* Row 2, Col 1: ScorePanel */}
-			<div className='hidden lg:block h-full'>
-				<ScorePanel />
-			</div>
+				{/* Row 2, Col 1: ScorePanel */}
+				<div className='hidden lg:block h-full'>
+					<ScorePanel />
+				</div>
 
 				{/* Row 2, Col 2: PlayerHand */}
-				<div className='min-h-0'>
+				<div className='relative min-h-0'>
 					<PlayerHand />
+
+					{/* Leave match button — bottom left, floating over hand */}
+					<div className='absolute bottom-2 left-2 z-20'>
+						<button
+							type='button'
+							onClick={handleLeaveMatch}
+							className='rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300'
+						>
+							Leave Match
+						</button>
+					</div>
 				</div>
 			</div>
 
