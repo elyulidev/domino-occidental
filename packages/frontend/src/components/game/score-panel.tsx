@@ -47,7 +47,7 @@ export function ScorePanel() {
   const p3Name = players[3]?.name ?? "P3";
 
   return (
-    <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
+    <div className="h-full rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5 flex flex-col justify-between">
       <div className="flex items-center justify-between">
         {/* Pair 0 (P0 + P2) */}
         <div className="flex flex-col items-center">

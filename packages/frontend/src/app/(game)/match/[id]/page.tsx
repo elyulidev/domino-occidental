@@ -107,10 +107,10 @@ function MatchContent() {
 					<GameBoard />
 				</div>
 
-				{/* Row 2, Col 1: ScorePanel */}
-				<div className='hidden lg:block'>
-					<ScorePanel />
-				</div>
+			{/* Row 2, Col 1: ScorePanel */}
+			<div className='hidden lg:block h-full'>
+				<ScorePanel />
+			</div>
 
 				{/* Row 2, Col 2: PlayerHand */}
 				<div className='min-h-0'>
