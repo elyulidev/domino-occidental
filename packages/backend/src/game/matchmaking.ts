@@ -11,9 +11,10 @@
  * @see AGENTS.md §6 for matchmaking rules
  */
 
+import { inArray } from "drizzle-orm";
 import type { GameStore, UserChannelManager } from "@domino/shared";
 import { createDeck, deal, initializeMatch, shuffle, startHand } from "@domino/shared/src/game";
-import { getDb } from "../db/client";
+import { getDb, getRawSql } from "../db/client";
 import { createGame } from "./store";
 
 // ---------------------------------------------------------------------------
@@ -265,21 +266,17 @@ export function createMatchmakingQueue() {
  *
  * Partners are checked by priority order (1 → 2 → 3) as defined in the
  * pairs table.
+ *
+ * Uses raw SQL via postgres.js because there's no Drizzle schema for `pairs`.
  */
 export async function resolvePartner(
   userId: string,
 ): Promise<{ partnerId: string; pairId: string } | null> {
   try {
-    const db = await getDb();
-    if (!db) return null;
+    const sql = await getRawSql();
+    if (!sql) return null;
 
-    // Raw SQL since we don't have a Drizzle schema for pairs yet.
-    // The pairs table has: id, user_a, user_b, status, priority, elo_pareja
-    const result = await db.execute<{
-      id: string;
-      user_a: string;
-      user_b: string;
-    }>`
+    const result = await sql<{ id: string; user_a: string; user_b: string }[]>`
       SELECT id, user_a, user_b
       FROM pairs
       WHERE status = 'active'
@@ -390,4 +387,53 @@ function getEloRange(waitTimeMs: number): number {
   }
   // Beyond 60s: accept anyone (range 600)
   return 600;
+}
+
+// ---------------------------------------------------------------------------
+// Player name resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches display names for a list of user IDs from the profiles table.
+ * Returns a Map<userId, displayName>. Falls back to a generic name on failure.
+ *
+ * Uses Drizzle query builder with the profiles schema.
+ */
+export async function fetchPlayerNames(
+  userIds: string[],
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  try {
+    const db = await getDb();
+    if (!db) {
+      for (const id of userIds) names.set(id, `Player ${id.slice(0, 4)}`);
+      return names;
+    }
+
+    const { profiles } = await import("../db/schema");
+    const result = await db
+      .select({ id: profiles.id, username: profiles.username })
+      .from(profiles)
+      .where(inArray(profiles.id, userIds));
+
+    for (const row of result) {
+      names.set(row.id, row.username);
+    }
+
+    // Fill in any missing names with fallback
+    for (const id of userIds) {
+      if (!names.has(id)) {
+        names.set(id, `Player ${id.slice(0, 4)}`);
+      }
+    }
+  } catch (err) {
+    console.warn(
+      "[matchmaking] fetchPlayerNames failed:",
+      (err as Error)?.message,
+    );
+    for (const id of userIds) {
+      if (!names.has(id)) names.set(id, `Player ${id.slice(0, 4)}`);
+    }
+  }
+  return names;
 }

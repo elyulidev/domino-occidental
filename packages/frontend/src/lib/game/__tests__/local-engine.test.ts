@@ -69,14 +69,15 @@ describe("LocalGameEngine", () => {
     engine.destroy();
   });
 
-  it("processBotTurns resolves all bot turns back to human", () => {
+  it("processBotTurns is a no-op after bot logic removal", () => {
     const engine = createTestEngine();
     engine.playTile(engine.hand[0].id, "left");
-    const currentTurn = engine.state.turn.currentTurn;
-    expect(currentTurn).not.toBe(0); // it's a bot's turn
+    const turnBefore = engine.state.turn.currentTurn;
+    expect(turnBefore).not.toBe(0);
 
+    // processBotTurns no longer resolves bot turns — it's a no-op
     const finalState = engine.processBotTurns();
-    expect(finalState.turn.currentTurn).toBe(0);
+    expect(finalState.turn.currentTurn).toBe(turnBefore);
     engine.destroy();
   });
 
@@ -85,20 +86,6 @@ describe("LocalGameEngine", () => {
     // No human action yet — human's turn
     const state = engine.processBotTurns();
     expect(state.turn.currentTurn).toBe(0);
-    engine.destroy();
-  });
-
-  it("processBotTurns updates board and hand state after bot moves", () => {
-    const engine = createTestEngine();
-    const tile = engine.hand[0];
-    engine.playTile(tile.id, "left");
-    const beforeCount = engine.state.board.tiles.length;
-
-    engine.processBotTurns();
-    // Bots should have played or passed, potentially adding to board
-    expect(engine.state.turn.currentTurn).toBe(0);
-    // At minimum, human's tile is still on the board
-    expect(engine.state.board.tiles.length).toBeGreaterThanOrEqual(beforeCount);
     engine.destroy();
   });
 

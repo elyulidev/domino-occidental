@@ -159,7 +159,7 @@ export const useGameStore = create<StoreState>((set, get) => ({
         scores: sanitized.scores,
         players: sanitized.players.map((p, i) => ({
           id: p.id,
-          name: existingPlayers[i]?.name,
+          name: p.name ?? existingPlayers[i]?.name,
           handSize: p.handSize,
           isConnected: p.isConnected,
         })),
@@ -210,11 +210,6 @@ export const useGameStore = create<StoreState>((set, get) => ({
         ...syncGameState(get(), result.match),
         ui: { selectedTileId: null, error: null },
       });
-      // Resolve bot turns
-      engine.processBotTurns();
-      set({
-        ...syncGameState(get(), engine.state),
-      });
     }
   },
 
@@ -232,11 +227,6 @@ export const useGameStore = create<StoreState>((set, get) => ({
       set({
         ...syncGameState(get(), result.match),
         ui: { selectedTileId: null, error: null },
-      });
-      // Resolve bot turns
-      engine.processBotTurns();
-      set({
-        ...syncGameState(get(), engine.state),
       });
     }
   },

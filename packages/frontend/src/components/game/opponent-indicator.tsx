@@ -23,7 +23,7 @@ export interface OpponentInfo {
 }
 
 export function computeOpponents(
-	players: Array<{ id: string; handSize: number; isConnected: boolean }>,
+	players: Array<{ id: string; name?: string; handSize: number; isConnected: boolean }>,
 	_boardTileCount: number,
 	playerIndex: number = 0,
 ): OpponentInfo[] {
@@ -33,7 +33,7 @@ export function computeOpponents(
 		const player = players[i] ?? { handSize: 10, isConnected: true };
 		const pairLabel = i % 2 === 0 ? "Pair 0" : "Pair 1";
 		return {
-			label: player.id ? player.id.toUpperCase() : `P${i + 1}`,
+			label: player.name ?? (player.id ? player.id.toUpperCase() : `P${i + 1}`),
 			index: i,
 			handSize: player.handSize,
 			isConnected: player.isConnected,

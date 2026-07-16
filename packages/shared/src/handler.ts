@@ -32,6 +32,7 @@ export interface SanitizedMatchState {
   matchId: string;
   players: Array<{
     id: string;
+    name?: string;
     handSize: number;
     isConnected: boolean;
     blockedTileIds: string[];
@@ -72,6 +73,7 @@ export function sanitizeState(match: MatchState): SanitizedMatchState {
     matchId: match.matchId,
     players: match.players.map((p) => ({
       id: p.id,
+      name: p.name,
       handSize: p.hand.length,
       isConnected: p.isConnected,
       blockedTileIds: p.blockedTileIds,

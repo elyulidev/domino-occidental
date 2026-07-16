@@ -1,14 +1,14 @@
 import type { GameEvent, MatchState, Side, Tile } from "@domino/shared";
 import { passTurn, playTile as sharedPlayTile } from "@domino/shared/src/game";
-import { chooseBotMove } from "./bot";
 import type { GameEngine } from "./types";
 
 /**
- * Local game engine that wraps shared game functions and adds bot auto-play.
+ * Local game engine that wraps shared game functions.
  *
- * The human player is always playerIndex 0. After each human action,
- * the store calls processBotTurns() to resolve all pending bot turns
- * synchronously, keeping the store as the single source of truth for state.
+ * The human player is always playerIndex 0. This engine runs in-process
+ * without a server — used for local/development play only.
+ *
+ * NOTE: Bot auto-play has been removed. Only real player actions are supported.
  */
 export class LocalGameEngine implements GameEngine {
   private _state: MatchState;
@@ -49,27 +49,10 @@ export class LocalGameEngine implements GameEngine {
   }
 
   /**
-   * Resolve all pending bot turns synchronously.
-   * Returns the final MatchState after all bots have played.
-   * Stops when it's the human's turn or the match ends.
+   * No-op — bot turns have been removed.
+   * Only real player actions are supported.
    */
   processBotTurns(): MatchState {
-    while (this._state.status === "in_progress") {
-      const currentTurn = this._state.turn.currentTurn;
-      if (currentTurn === this._playerIndex) break; // human's turn
-
-      const botPlayer = this._state.players[currentTurn];
-      const move = chooseBotMove(botPlayer.hand, this._state.board);
-
-      if (move) {
-        const result = sharedPlayTile(this._state, botPlayer.id, move.tileId, move.side);
-        this._state = result.match;
-      } else {
-        const result = passTurn(this._state, botPlayer.id);
-        this._state = result.match;
-      }
-    }
-
     return this._state;
   }
 

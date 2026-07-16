@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LeaderboardEntry, ProfileResponse } from "@/lib/api/types";
 import { createClient } from "@/lib/supabase/server";
 import { QuickMatchButton } from "./_components/quick-match-button";
+import { QueueStatusBadge } from "./_components/queue-status-badge";
 
 export const metadata = {
   title: "Lobby — Dominó Occidental",
@@ -73,15 +74,7 @@ function QuickMatchCard() {
               Encontrá una pareja al instante. Sistema de emparejamiento por
               ELO para partidas equilibradas.
             </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-domino-700/50 px-3 py-1 text-xs text-domino-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                124 jugadores en cola
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-domino-700/50 px-3 py-1 text-xs text-domino-300">
-                ⏱ ~15 segundos
-              </span>
-            </div>
+            <QueueStatusBadge />
           </div>
           <QuickMatchButton />
         </div>

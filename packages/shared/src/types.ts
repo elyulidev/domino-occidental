@@ -22,8 +22,10 @@ export interface Tile {
  * All fields are managed via pure functions in `player.ts`.
  */
 export interface PlayerState {
-  /** Player identifier (e.g. "p1" through "p4") */
+  /** Player identifier (e.g. "p1" through "p4" or a UUID for online matches) */
   id: string;
+  /** Display name (username) resolved from profiles table */
+  name?: string;
   /** Current hand of domino tiles */
   hand: Tile[];
   /** Number of consecutive passes (resets when a tile is played) */

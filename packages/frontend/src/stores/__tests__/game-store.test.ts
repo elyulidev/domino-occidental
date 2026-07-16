@@ -153,14 +153,14 @@ describe("useGameStore", () => {
     expect(useGameStore.getState().ui.error).toBe("No tile selected");
   });
 
-  it("pass clears selection and resolves bot turns back to human", () => {
+  it("pass clears selection and advances turn", () => {
     const { match } = setupStore();
     useGameStore.getState().initEngine(match);
     useGameStore.getState().pass();
     const state = useGameStore.getState();
     expect(state.ui.selectedTileId).toBeNull();
-    // processBotTurns() resolved all bot turns — should be back at human
-    expect(state.game.turn.currentTurn).toBe(0);
+    // Turn advanced away from human (bot logic removed — turn no longer auto-resolves)
+    expect(state.game.turn.currentTurn).not.toBe(0);
   });
 
   it("reset clears all state", () => {

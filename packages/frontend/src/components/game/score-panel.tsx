@@ -34,10 +34,17 @@ export function ScorePanel() {
   const scores = useGameStore((s) => s.game.scores);
   const roundNumber = useGameStore((s) => s.game.turn.roundNumber);
   const lastHandWinner = useGameStore((s) => s.game.turn.lastHandWinner);
+  const players = useGameStore((s) => s.game.players);
 
   const pair0Score = scores[0];
   const pair1Score = scores[1];
   const leading = resolveLeadingPair(scores);
+
+  // Pair labels: P0+P2 = Pair 0, P1+P3 = Pair 1
+  const p0Name = players[0]?.name ?? "P0";
+  const p1Name = players[1]?.name ?? "P1";
+  const p2Name = players[2]?.name ?? "P2";
+  const p3Name = players[3]?.name ?? "P3";
 
   return (
     <div className="rounded-2xl border border-domino-700/50 bg-domino-900/60 p-5">
@@ -52,7 +59,7 @@ export function ScorePanel() {
           >
             {formatScore(pair0Score)}
           </span>
-          <span className="text-[10px] text-domino-400">P0 + P2</span>
+          <span className="text-[10px] text-domino-400">{p0Name} + {p2Name}</span>
         </div>
 
         {/* Center info */}
@@ -85,7 +92,7 @@ export function ScorePanel() {
           >
             {formatScore(pair1Score)}
           </span>
-          <span className="text-[10px] text-domino-400">P1 + P3</span>
+          <span className="text-[10px] text-domino-400">{p1Name} + {p3Name}</span>
         </div>
       </div>
     </div>

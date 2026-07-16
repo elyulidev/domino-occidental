@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { resolveMatchMode, resolvePageView } from "../page-helpers";
+import { resolvePageView } from "../page-helpers";
 
 // ---------------------------------------------------------------------------
 // Tests for page-helpers
@@ -24,25 +24,6 @@ describe("resolvePageView", () => {
 
   it("returns 'ready' when status is 'finished'", () => {
     expect(resolvePageView("finished")).toBe("ready");
-  });
-});
-
-describe("resolveMatchMode", () => {
-  it("returns 'online' when mode is 'online'", () => {
-    expect(resolveMatchMode("online")).toBe("online");
-  });
-
-  it("returns 'local' when mode is null", () => {
-    expect(resolveMatchMode(null)).toBe("local");
-  });
-
-  it("returns 'local' when mode is undefined", () => {
-    expect(resolveMatchMode(undefined)).toBe("local");
-  });
-
-  it("returns 'local' for any other mode value", () => {
-    expect(resolveMatchMode("local")).toBe("local");
-    expect(resolveMatchMode("something")).toBe("local");
   });
 });
 

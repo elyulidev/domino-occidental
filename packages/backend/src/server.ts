@@ -12,11 +12,12 @@ import { authErrorHandler, authGuard } from "./auth/guard";
 import { checkAbandonment, disconnectPlayer } from "./game/connection";
 import {
 	createMatchmakingQueue,
+	fetchPlayerNames,
 	MATCH_FOUND_TIMEOUT_MS,
 	processMatchmaking,
 	startCleanupScheduler,
 } from "./game/matchmaking";
-import { createGame, getGame, removeGame, updateGame } from "./game/store";
+import { createGame, getGame, removeGame, setPlayerNames, updateGame } from "./game/store";
 import { matchmakingRoutes } from "./routes/matchmaking";
 
 import { broadcastEvents } from "./ws/broadcaster";
@@ -100,6 +101,22 @@ const matchmakerInterval = setInterval(() => {
 	if (!matchCreated) return;
 
 	const { matchId, playerIds } = matchCreated;
+
+	// Fetch player display names (async, non-blocking — names will be available
+	// before the match transitions from "waiting" to "in_progress")
+	fetchPlayerNames(playerIds).then((names) => {
+		setPlayerNames(matchId, names);
+		// Apply names to the stored match state so sanitizeState includes them
+		const match = getGame(matchId);
+		if (match) {
+			const namedPlayers = match.players.map((p) => ({
+				...p,
+				name: names.get(p.id) ?? undefined,
+			})) as typeof match.players;
+			match.players = namedPlayers;
+			updateGame(matchId, match);
+		}
+	});
 
 	// Start 30s connection timeout
 	const timeout = setTimeout(() => {

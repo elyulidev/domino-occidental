@@ -76,8 +76,9 @@ export function useMatchmaking(): UseMatchmakingReturn {
             setStatus("matched");
             cleanupResources();
 
-            // Redirect to match
-            window.location.href = `/match/${payload.matchId}`;
+            // Redirect to match — pass this user's UUID so the match page
+            // knows which player slot this tab controls (P0/P1/P2/P3).
+            window.location.href = `/match/${payload.matchId}?playerId=${userId}`;
           } else if (msg.type === "queue_position_update") {
             setQueuePosition(msg.position);
             setQueueCount(msg.queueCount);

@@ -48,10 +48,13 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
   const turnDeadline = useGameStore((s) => s.game.turn.turnDeadline);
   const playerIndex = useGameStore((s) => s.game.playerIndex);
   const isRemote = useGameStore((s) => s.engine?.remote ?? false);
+  const players = useGameStore((s) => s.game.players);
 
   const [remaining, setRemaining] = useState(() =>
     getTimeRemaining(turnDeadline),
   );
+
+  const currentPlayerName = players[currentTurn]?.name ?? `Player ${currentTurn + 1}`;
 
   // Tick every second while deadline is active
   useEffect(() => {
@@ -74,7 +77,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
         {/* Compact: slim bar + label only */}
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[10px] text-domino-400">
-            {humanTurn ? "Your turn" : `P${currentTurn + 1}'s turn`}
+            {humanTurn ? "Your turn" : `${currentPlayerName}'s turn`}
           </span>
           {humanTurn && (
             <span className="font-mono text-[10px] font-bold text-domino-50">
@@ -111,7 +114,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
       {/* Turn label */}
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs text-domino-400">
-          {humanTurn ? "Your turn" : `Player ${currentTurn + 1}'s turn`}
+          {humanTurn ? "Your turn" : `${currentPlayerName}'s turn`}
         </span>
         {humanTurn && (
           <span className="font-mono text-sm font-bold text-domino-50">
@@ -134,7 +137,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
       {!humanTurn && (
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-domino-400">
-            {isRemote ? `Waiting for Player ${currentTurn + 1}…` : "Bots thinking"}
+            {isRemote ? `Waiting for ${currentPlayerName}…` : "Waiting…"}
           </span>
           <span className="flex gap-0.5">
             <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-domino-400 [animation-delay:0ms]" />

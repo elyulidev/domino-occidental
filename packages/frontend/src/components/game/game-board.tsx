@@ -64,6 +64,7 @@ export function GameBoard() {
   const boardTiles = useGameStore((s) => s.game.board.tiles);
   const leftEnd = useGameStore((s) => s.game.board.leftEnd);
   const rightEnd = useGameStore((s) => s.game.board.rightEnd);
+  const players = useGameStore((s) => s.game.players);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
@@ -333,6 +334,7 @@ export function GameBoard() {
                 placed={placed}
                 position={pos}
                 isFirst={isFirst}
+                players={players}
               />
             );
           })}
@@ -371,13 +373,16 @@ function BoardTile({
   placed,
   position,
   isFirst: _isFirst,
+  players,
 }: {
   placed: PlacedTile;
   position: import("./grid-layout-engine").TilePosition;
   isFirst: boolean;
+  players?: Array<{ id: string; name?: string }>;
 }) {
   const { tile, playerId } = placed;
   const pIdx = playerIdToIndex(playerId);
+  const playerName = players?.[pIdx]?.name ?? `Player ${pIdx + 1}`;
 
   // Use the layout engine's flipped value so the canonical connecting value
   // (tile.bottom) appears on the inward side of the serpentine arm.
@@ -393,7 +398,7 @@ function BoardTile({
         top: `${position.y}px`,
         transform: "translate(-50%, -50%)",
       }}
-      title={`Player ${pIdx + 1}`}
+      title={playerName}
     >
       <DominoTile
         tile={displayTile}

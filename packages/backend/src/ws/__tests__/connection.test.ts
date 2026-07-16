@@ -861,7 +861,7 @@ describe("wsPlugin timerManager integration", () => {
       store: makeStore(match),
       disconnectPlayer: vi.fn(() => ({ match, events: [] })),
       reconnectPlayer: vi.fn(() => ({ match, events: [] })),
-      verifyToken: vi.fn(({ userId }: { userId: string }) => ({ userId })),
+      verifyToken: vi.fn((token: string) => ({ userId: token })),
       timerManager: {
         cancelDisconnect: vi.fn(),
         registerDisconnect: vi.fn(),
@@ -872,34 +872,27 @@ describe("wsPlugin timerManager integration", () => {
       },
     });
 
-    // Register all 4 players
-    const wsType = createMockWs("u1") as unknown as Parameters<
-      ConnectionManager["register"]
-    >[2];
-    plugin.manager.register("match-1", "u1", wsType);
-    plugin.manager.register(
-      "match-1",
-      "u2",
-      createMockWs("u2") as unknown as Parameters<
-        ConnectionManager["register"]
-      >[2],
-    );
-    plugin.manager.register(
-      "match-1",
-      "u3",
-      createMockWs("u3") as unknown as Parameters<
-        ConnectionManager["register"]
-      >[2],
-    );
-    plugin.manager.register(
-      "match-1",
-      "u4",
-      createMockWs("u4") as unknown as Parameters<
-        ConnectionManager["register"]
-      >[2],
-    );
+    const handlers = getHandler(plugin, "open");
 
-    // Simulate: startMatch was already called (e.g. from previous 4th connect)
+    // Connect all 4 players via the open handler
+    for (let i = 1; i <= 4; i++) {
+      const ws = {
+        send: vi.fn(),
+        subscribe: vi.fn(),
+        publish: vi.fn(),
+        data: { params: { matchId: "match-1" }, matchId: "match-1", query: { token: `u${i}` } },
+        close: vi.fn(),
+        remoteAddress: "127.0.0.1",
+      };
+      handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
+    }
+
+    // startMatch was called on the 4th connect
+    expect(mockStartMatch).toHaveBeenCalledTimes(1);
+
+    // Reset mock to track the reconnect call
+    mockStartMatch.mockClear();
+
     // Now u1 reconnects — should NOT call startMatch again
     const ws1New = {
       send: vi.fn(),
@@ -909,7 +902,6 @@ describe("wsPlugin timerManager integration", () => {
       close: vi.fn(),
       remoteAddress: "127.0.0.1",
     };
-    const handlers = getHandler(plugin, "open");
     handlers.open(ws1New as unknown as Parameters<typeof handlers.open>[0]);
 
     // startMatch should NOT be called again since match already started

@@ -13,7 +13,7 @@ import { TurnTimer } from "@/components/game/turn-timer";
 import type { WsStatus } from "@/hooks/use-websocket";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useGameStore } from "@/stores/game-store";
-import { resolveMatchMode, resolvePageView } from "./page-helpers";
+import { resolvePageView } from "./page-helpers";
 
 // ---------------------------------------------------------------------------
 // Page (Suspense boundary for useSearchParams)
@@ -38,44 +38,50 @@ function MatchContent() {
 
 	const rawPlayerId = searchParams.get("playerId");
 	const playerId = rawPlayerId ?? "p0";
-	const mode = resolveMatchMode(searchParams.get("mode"), rawPlayerId);
 
-	const initEngine = useGameStore((s) => s.initEngine);
 	const reset = useGameStore((s) => s.reset);
 	const status = useGameStore((s) => s.game.status);
-	const _scores = useGameStore((s) => s.game.scores);
-	const _roundNumber = useGameStore((s) => s.game.turn.roundNumber);
 
-	// Always call hooks (rules of hooks), but disable WS in local mode
-	const wsHook = useWebSocket(params.id ?? "", playerId, mode !== "online");
+	// Always call hooks (rules of hooks)
+	const wsHook = useWebSocket(params.id ?? "", playerId, false);
 
-	// Online mode: the useWebSocket hook wires the engine and store internally
-	// via setEngine + applyWsUpdate on first game_events message.
-
-	// Local mode: initialize engine on mount, clean up on unmount
+	// Cleanup on unmount
 	useEffect(() => {
-		if (mode !== "local" || !params.id) return;
-
-		const matchState = createDealtMatch(params.id);
-		initEngine(matchState);
-
 		return () => {
 			reset();
 		};
-	}, [params.id, mode, initEngine, reset]);
+	}, [reset]);
 
 	const handleBackToLobby = useCallback(() => {
 		reset();
 		router.push("/lobby");
 	}, [reset, router]);
 
+	const handleLeaveMatch = useCallback(() => {
+		// Close WebSocket connection
+		if (wsHook.engine) {
+			wsHook.engine.destroy();
+		}
+		// Notify server of forfeit (best-effort, non-blocking)
+		if (params.id) {
+			fetch(`/api/v1/matches/${params.id}/forfeit`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+			}).catch(() => {
+				// Ignore errors — server will detect disconnection anyway
+			});
+		}
+		reset();
+		router.push("/lobby");
+	}, [wsHook.engine, params.id, reset, router]);
+
 	const view = resolvePageView(status);
 
 	// Loading state
 	if (view === "loading") {
-		return (
-			<LoadingScreen wsStatus={wsHook.status} mode={mode} playerId={playerId} />
-		);
+	return (
+		<LoadingScreen wsStatus={wsHook.status} playerId={playerId} />
+	);
 	}
 
 	// Abandoned state
@@ -97,7 +103,7 @@ function MatchContent() {
 					{["p1", "p2", "p3"].map((id) => (
 						<Link
 							key={id}
-							href={`/match/${params.id}?playerId=${id}${mode === "local" ? "&mode=local" : ""}`}
+							href={`/match/${params.id}?playerId=${id}`}
 							target='_blank'
 							rel='noopener noreferrer'
 							className='rounded bg-domino-800/60 px-1.5 py-0.5 font-mono text-gold-400 transition-colors hover:bg-domino-700 hover:text-gold-300'
@@ -106,6 +112,17 @@ function MatchContent() {
 						</Link>
 					))}
 				</span>
+			</div>
+
+			{/* Leave match button — top right */}
+			<div className='absolute top-1 right-1 z-10'>
+				<button
+					type='button'
+					onClick={handleLeaveMatch}
+					className='pointer-events-auto rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300'
+				>
+					Leave Match
+				</button>
 			</div>
 
 			<div className='grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 p-4 h-screen max-h-screen'>
@@ -147,11 +164,9 @@ function MatchContent() {
 
 function LoadingScreen({
 	wsStatus,
-	mode,
 	playerId,
 }: {
 	wsStatus?: WsStatus;
-	mode?: string;
 	playerId?: string;
 }) {
 	return (
@@ -186,7 +201,6 @@ function LoadingScreen({
 							WS: —
 						</span>
 					)}
-					<span className='text-domino-500'>Mode: {mode ?? "—"}</span>
 					<span className='text-domino-500'>Player: {playerId ?? "—"}</span>
 				</div>
 
@@ -228,33 +242,4 @@ function AbandonedScreen({ onBack }: { onBack: () => void }) {
 			</div>
 		</div>
 	);
-}
-
-// ---------------------------------------------------------------------------
-// Local match state builder (temporary — replaced by server fetch later)
-// Generates a proper shuffled deal from a real double-9 deck.
-// ---------------------------------------------------------------------------
-
-import type { MatchState } from "@domino/shared";
-import {
-	createDeck,
-	deal,
-	initializeMatch,
-	shuffle,
-	startHand,
-} from "@domino/shared/src/game";
-
-function createDealtMatch(matchId: string): MatchState {
-	const deck = shuffle(createDeck()); // 55 tiles aleatorios
-	const { hands, pool } = deal(deck); // 4×10 + 15 pool
-	const { match } = initializeMatch(matchId, hands, pool);
-	const { match: withHand } = startHand(match);
-	// Mark all players as connected for local play (no WS to auto-set isConnected)
-	return {
-		...withHand,
-		players: withHand.players.map((p) => ({
-			...p,
-			isConnected: true,
-		})) as typeof withHand.players,
-	};
 }

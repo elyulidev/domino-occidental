@@ -167,6 +167,43 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
   const sendFn: SendFn = (playerId, event) =>
     sendToPlayer(manager, playerId, event);
 
+  /**
+   * Called when all 4 players have connected to a match.
+   * Transitions status from "waiting" → "in_progress", starts timers,
+   * and broadcasts the updated state to all players.
+   */
+  function onAllFourConnected(matchId: string): void {
+    if (startedMatches.has(matchId)) return;
+    const playerIds = manager.getPlayerIdsForMatch(matchId);
+    if (playerIds.length < 4) return;
+
+    startedMatches.add(matchId);
+
+    // Transition match status from "waiting" to "in_progress"
+    const match = deps.store.getGame(matchId);
+    if (match && match.status === "waiting") {
+      match.status = "in_progress";
+      deps.store.updateGame(matchId, match);
+    }
+
+    // Start turn/heartbeat timers
+    deps.timerManager?.startMatch(matchId, playerIds);
+
+    // Broadcast the started match state to all 4 players
+    const updatedMatch = deps.store.getGame(matchId);
+    if (updatedMatch) {
+      const state = sanitizeState(updatedMatch);
+      for (const p of updatedMatch.players) {
+        sendFn(p.id, {
+          type: "game_events",
+          events: [{ type: "round_started", firstPlayer: updatedMatch.turn.currentTurn }],
+          state,
+          yourHand: p.hand,
+        });
+      }
+    }
+  }
+
   return {
     manager,
     ws: {
@@ -252,14 +289,8 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             // Cancel abandonment timer on reconnect
             deps.timerManager?.cancelDisconnect(matchId, playerId);
 
-            // All-4-connected detection: start match timers once
-            if (!startedMatches.has(matchId)) {
-              const playerIds = manager.getPlayerIdsForMatch(matchId);
-              if (playerIds.length === 4) {
-                startedMatches.add(matchId);
-                deps.timerManager?.startMatch(matchId, playerIds);
-              }
-            }
+            // All-4-connected detection: start match, transition status, broadcast
+            onAllFourConnected(matchId);
           } else {
             // No auth configured — use playerId from upstream (dev/testing)
             const playerId = ws.data.params.playerId as string;
@@ -324,14 +355,8 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             // Cancel abandonment timer on reconnect
             deps.timerManager?.cancelDisconnect(matchId, playerId);
 
-            // All-4-connected detection: start match timers once
-            if (!startedMatches.has(matchId)) {
-              const playerIds = manager.getPlayerIdsForMatch(matchId);
-              if (playerIds.length === 4) {
-                startedMatches.add(matchId);
-                deps.timerManager?.startMatch(matchId, playerIds);
-              }
-            }
+            // All-4-connected detection: start match, transition status, broadcast
+            onAllFourConnected(matchId);
           }
 
         },
