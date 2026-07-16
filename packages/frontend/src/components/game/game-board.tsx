@@ -317,8 +317,11 @@ export function GameBoard() {
     }
 
     // Find the tile's position from the layout
-    const layout = calculateGridLayout(boardTiles, containerWidth);
-    const tilePos = layout.positions[newCount - 1];
+    const { display, centerIdx } = buildDisplayOrder(boardTiles);
+    const layout = calculateGridLayout(display, centerIdx, containerWidth);
+    // Find the new tile's index in display order (not play order)
+    const displayIdx = display.findIndex((d) => d.tile.id === newTile.tile.id);
+    const tilePos = displayIdx >= 0 ? layout.positions[displayIdx] : undefined;
     if (!tilePos) {
       prevTileCountRef.current = newCount;
       return;
