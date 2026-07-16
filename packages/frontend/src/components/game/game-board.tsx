@@ -414,6 +414,7 @@ export function GameBoard() {
         {/* Player avatars — positioned around the board perimeter */}
         {[0, 1, 2, 3].map((playerIdx) => {
           const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
+          const pairLabel = playerIdx % 2 === 0 ? "Pair 0" : "Pair 1";
           return (
             <PlayerAvatar
               key={players[playerIdx]?.id ?? playerIdx}
@@ -423,6 +424,8 @@ export function GameBoard() {
               isConnected={players[playerIdx]?.isConnected ?? true}
               disconnectedSince={disconnectedSince.get(players[playerIdx]?.id ?? "") ?? null}
               seatIndex={seatIndex}
+              handSize={players[playerIdx]?.handSize}
+              pairLabel={pairLabel}
               data-seat={playerIdx}
             />
           );

@@ -6,7 +6,6 @@ import { Suspense, useCallback, useEffect } from "react";
 import { GameBoard } from "@/components/game/game-board";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { HandOverModal } from "@/components/game/hand-over-modal";
-import { OpponentIndicator } from "@/components/game/opponent-indicator";
 import { PlayerHand } from "@/components/game/player-hand";
 import { ScorePanel } from "@/components/game/score-panel";
 import { TurnTimer } from "@/components/game/turn-timer";
@@ -126,21 +125,14 @@ function MatchContent() {
 			</div>
 
 			<div className='grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 p-4 h-screen max-h-screen'>
-				{/* Left: Sidebar (ScorePanel + TurnTimer + Opponents) */}
+				{/* Left: Sidebar (ScorePanel + TurnTimer) */}
 				<div className='hidden lg:flex lg:flex-col lg:gap-3 lg:overflow-y-auto'>
 					<ScorePanel />
 					<TurnTimer compact />
-					<div className='border-t border-domino-700/50' />
-					<OpponentIndicator direction='vertical' />
 				</div>
 
 				{/* Center: Game Area */}
 				<div className='flex flex-col gap-4 min-h-0'>
-					{/* Opponents — mobile only */}
-					<div className='flex lg:hidden justify-center gap-4'>
-						<OpponentIndicator />
-					</div>
-
 					{/* Board */}
 					<div className='flex-1 min-h-0'>
 						<GameBoard />

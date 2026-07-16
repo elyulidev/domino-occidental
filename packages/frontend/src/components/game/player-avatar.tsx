@@ -65,6 +65,8 @@ export interface PlayerAvatarProps {
   isConnected: boolean;
   disconnectedSince: number | null;
   seatIndex: number;
+  handSize?: number;
+  pairLabel?: string;
   "data-seat"?: number;
   avatarRef?: React.RefObject<HTMLDivElement | null>;
 }
@@ -76,6 +78,8 @@ export function PlayerAvatar({
   isConnected,
   disconnectedSince,
   seatIndex,
+  handSize,
+  pairLabel,
   "data-seat": dataSeat,
   avatarRef,
 }: PlayerAvatarProps) {
@@ -93,12 +97,14 @@ export function PlayerAvatar({
   const grayed = isGrayedOut(isConnected, disconnectedSince, now);
   const style = seatStyle(seatIndex);
 
+  // Tooltip position: avoid overlapping the board center
+  const tooltipSide = seatIndex <= 1 ? "left" : "right";
+
   return (
     <div
       ref={ref}
-      className="absolute z-10 flex items-center justify-center"
+      className="absolute z-10 flex items-center justify-center group"
       style={style}
-      title={playerName}
       data-seat={dataSeat}
     >
       <div
@@ -134,6 +140,50 @@ export function PlayerAvatar({
             />
           </svg>
         )}
+      </div>
+
+      {/* Hover tooltip */}
+      <div
+        className={[
+          "absolute z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150",
+          "bg-domino-900/95 border border-domino-700/60 rounded-lg px-3 py-2 min-w-[120px]",
+          "backdrop-blur-sm shadow-lg",
+          // Position tooltip based on seat
+          tooltipSide === "left"
+            ? "left-full ml-2 top-1/2 -translate-y-1/2"
+            : "right-full mr-2 top-1/2 -translate-y-1/2",
+        ].join(" ")}
+      >
+        <div className="flex flex-col gap-1">
+          {/* Player name */}
+          <span className="text-xs font-semibold text-domino-50 truncate">
+            {playerName}
+          </span>
+
+          {/* Hand size */}
+          {handSize !== undefined && (
+            <span className="text-[11px] text-domino-400">
+              {handSize} {handSize === 1 ? "tile" : "tiles"}
+            </span>
+          )}
+
+          {/* Connection status */}
+          <span className="flex items-center gap-1.5">
+            <span
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                isConnected ? "bg-green-500" : "bg-red-500"
+              }`}
+            />
+            <span className="text-[10px] text-domino-400">
+              {isConnected ? "Online" : "Offline"}
+            </span>
+          </span>
+
+          {/* Pair label */}
+          {pairLabel && (
+            <span className="text-[10px] text-domino-500">{pairLabel}</span>
+          )}
+        </div>
       </div>
     </div>
   );
