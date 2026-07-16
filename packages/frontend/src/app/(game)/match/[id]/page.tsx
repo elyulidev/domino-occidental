@@ -101,7 +101,7 @@ function MatchContent() {
 			</div>
 
 			{/* Grid: 2 rows × 2 columns */}
-			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[200px_1fr] gap-2 p-2 h-screen max-h-screen'>
+			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 h-screen max-h-screen'>
 				{/* Row 1: Board (spans both columns) */}
 				<div className='lg:col-span-2 min-h-0'>
 					<GameBoard />
