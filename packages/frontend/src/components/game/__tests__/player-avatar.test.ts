@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { isGrayedOut, seatPositionClass, seatStyle } from "../player-avatar";
+import { isGrayedOut, seatPositionClass, seatStyle, tooltipPositionClass } from "../player-avatar";
 
 // ---------------------------------------------------------------------------
 // seatPositionClass
@@ -10,16 +10,16 @@ describe("seatPositionClass", () => {
     expect(seatPositionClass(0)).toBe("bottom");
   });
 
-  it("returns 'left' for seat 1", () => {
-    expect(seatPositionClass(1)).toBe("left");
+  it("returns 'right' for seat 1 (counter-clockwise)", () => {
+    expect(seatPositionClass(1)).toBe("right");
   });
 
   it("returns 'top' for seat 2", () => {
     expect(seatPositionClass(2)).toBe("top");
   });
 
-  it("returns 'right' for seat 3", () => {
-    expect(seatPositionClass(3)).toBe("right");
+  it("returns 'left' for seat 3 (counter-clockwise)", () => {
+    expect(seatPositionClass(3)).toBe("left");
   });
 
   it("returns 'bottom' for unknown seat index", () => {
@@ -39,9 +39,9 @@ describe("seatStyle", () => {
     expect(style.transform).toBe("translateX(-50%)");
   });
 
-  it("seat 1: left center with translateY", () => {
+  it("seat 1: right center with translateY (counter-clockwise)", () => {
     const style = seatStyle(1);
-    expect(style.left).toBe("8px");
+    expect(style.right).toBe("8px");
     expect(style.top).toBe("50%");
     expect(style.transform).toBe("translateY(-50%)");
   });
@@ -53,11 +53,37 @@ describe("seatStyle", () => {
     expect(style.transform).toBe("translateX(-50%)");
   });
 
-  it("seat 3: right center with translateY", () => {
+  it("seat 3: left center with translateY (counter-clockwise)", () => {
     const style = seatStyle(3);
-    expect(style.right).toBe("8px");
+    expect(style.left).toBe("8px");
     expect(style.top).toBe("50%");
     expect(style.transform).toBe("translateY(-50%)");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// tooltipPositionClass
+// ---------------------------------------------------------------------------
+
+describe("tooltipPositionClass", () => {
+  it("seat 0: positions tooltip above (bottom-full)", () => {
+    expect(tooltipPositionClass(0)).toContain("bottom-full");
+  });
+
+  it("seat 1: positions tooltip to the left toward center (right-full)", () => {
+    expect(tooltipPositionClass(1)).toContain("right-full");
+  });
+
+  it("seat 2: positions tooltip below (top-full)", () => {
+    expect(tooltipPositionClass(2)).toContain("top-full");
+  });
+
+  it("seat 3: positions tooltip to the right toward center (left-full)", () => {
+    expect(tooltipPositionClass(3)).toContain("left-full");
+  });
+
+  it("unknown seat: defaults to above (bottom-full)", () => {
+    expect(tooltipPositionClass(99)).toContain("bottom-full");
   });
 });
 

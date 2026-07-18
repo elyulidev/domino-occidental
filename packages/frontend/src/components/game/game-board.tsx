@@ -78,6 +78,7 @@ export function GameBoard() {
   const disconnectedSince = useGameStore((s) => s.game.disconnectedSince);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const boardWrapperRef = useRef<HTMLDivElement>(null);
   const prevTileCountRef = useRef(boardTiles.length);
   const [containerWidth, setContainerWidth] = useState(600);
 
@@ -286,7 +287,9 @@ export function GameBoard() {
     prevTileCount.current = boardTiles.length;
   }, [boardTiles.length]);
 
-  // Tile play animation: detect new tile and animate from avatar to grid position
+  // Tile play animation: detect new tile and animate from origin to grid position
+  // - Local player (me): origin = hand area (bottom of screen)
+  // - Remote player: origin = their avatar position on the board perimeter
   useEffect(() => {
     const prevCount = prevTileCountRef.current;
     const newCount = boardTiles.length;
@@ -308,10 +311,7 @@ export function GameBoard() {
       prevTileCountRef.current = newCount;
       return;
     }
-    const avatarEl = containerEl.querySelector(
-      `[data-seat="${pIdx}"]`,
-    ) as HTMLElement | null;
-    if (!avatarEl || reducedMotionCheck()) {
+    if (reducedMotionCheck()) {
       prevTileCountRef.current = newCount;
       return;
     }
@@ -327,10 +327,35 @@ export function GameBoard() {
       return;
     }
 
-    const avatarRect = avatarEl.getBoundingClientRect();
     const containerRect = containerEl.getBoundingClientRect();
-    const origin = calculateAvatarOrigin(avatarRect, containerRect, pan, zoom);
     const target = calculateTileTarget(tilePos.x, tilePos.y);
+
+    // Determine animation origin based on who played
+    const isLocalPlay = pIdx === playerIndex;
+    let originEl: HTMLElement | null = null;
+
+    if (isLocalPlay) {
+      // Local player: animate from the hand area (bottom of screen)
+      originEl = containerEl.closest("[data-hand-area]") as HTMLElement | null
+        ?? document.querySelector("[data-hand-area]") as HTMLElement | null;
+    } else {
+      // Remote player: animate from their avatar on the board perimeter
+      // data-seat uses relative position (0=bottom, 1=right, 2=top, 3=left)
+      const relativeSeat = (pIdx - playerIndex + 4) % 4;
+      // Avatars live in a sibling layer (boardWrapperRef), not inside the
+      // overflow-hidden board surface (containerRef), so query from there.
+      originEl = boardWrapperRef.current?.querySelector(
+        `[data-seat="${relativeSeat}"]`,
+      ) as HTMLElement | null;
+    }
+
+    if (!originEl) {
+      prevTileCountRef.current = newCount;
+      return;
+    }
+
+    const originRect = originEl.getBoundingClientRect();
+    const origin = calculateAvatarOrigin(originRect, containerRect, pan, zoom);
 
     // Find the tile DOM element and animate it
     const tileElements = containerEl.querySelectorAll("[data-tile-id]");
@@ -339,11 +364,11 @@ export function GameBoard() {
     ) as HTMLElement | undefined;
 
     if (tileEl) {
-      animateTileFromAvatar(tileEl, origin, target, 400);
+      animateTileFromAvatar(tileEl, origin, target, 800);
     }
 
     prevTileCountRef.current = newCount;
-  }, [boardTiles, containerWidth, pan, zoom]);
+  }, [boardTiles, containerWidth, pan, zoom, playerIndex]);
 
   if (boardTiles.length === 0) {
     return (
@@ -369,7 +394,7 @@ export function GameBoard() {
                 seatIndex={seatIndex}
                 handSize={players[playerIdx]?.handSize}
                 pairLabel={pairLabel}
-                data-seat={playerIdx}
+              data-seat={seatIndex}
               />
             );
           })}
@@ -394,85 +419,91 @@ export function GameBoard() {
         </span>
       </div>
 
-      {/* Serpentine board — absolute positioned tiles (fills remaining space) */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: game board maneja pan/zoom nativos del canvas */}
-      <div
-        ref={containerRef}
-        className="relative min-h-0 flex-1 overflow-hidden"
-        style={{ touchAction: "none" }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
-        onDoubleClick={handleDoubleClick}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+      {/* Board area — two layers: pannable surface + avatar overlay */}
+      <div ref={boardWrapperRef} className="relative min-h-0 flex-1">
+        {/* Pannable/zoomable board surface (overflow hidden clips tiles) */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: game board maneja pan/zoom nativos del canvas */}
         <div
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: "0 0",
-            width: 0,
-            height: 0,
-          }}
+          ref={containerRef}
+          className="absolute inset-0 overflow-hidden"
+          style={{ touchAction: "none" }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+          onDoubleClick={handleDoubleClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
-          {display.map((placed, i) => {
-            const pos = positions[i];
-            if (!pos) return null;
-            const isFirst = placed.tile.id === boardTiles[0]?.tile.id;
+          <div
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "0 0",
+              width: 0,
+              height: 0,
+            }}
+          >
+            {display.map((placed, i) => {
+              const pos = positions[i];
+              if (!pos) return null;
+              const isFirst = placed.tile.id === boardTiles[0]?.tile.id;
+              return (
+                <BoardTile
+                  key={placed.tile.id}
+                  placed={placed}
+                  position={pos}
+                  isFirst={isFirst}
+                  players={players}
+                />
+              );
+            })}
+          </div>
+
+          {/* Zoom controls overlay */}
+          <div className="absolute bottom-2 right-2 z-10 flex gap-1">
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="rounded bg-domino-800/80 px-2 py-1 text-xs text-domino-200 hover:bg-domino-700"
+            >
+              −
+            </button>
+            <span className="flex items-center px-2 text-[10px] text-domino-400">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="rounded bg-domino-800/80 px-2 py-1 text-xs text-domino-200 hover:bg-domino-700"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {/* Avatar overlay — separate layer so tooltips aren't clipped by overflow-hidden */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          {[0, 1, 2, 3].map((playerIdx) => {
+            const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
+            const pairLabel = playerIdx % 2 === 0 ? "Pair 0" : "Pair 1";
             return (
-              <BoardTile
-                key={placed.tile.id}
-                placed={placed}
-                position={pos}
-                isFirst={isFirst}
-                players={players}
+              <PlayerAvatar
+                key={players[playerIdx]?.id ?? playerIdx}
+                avatarUrl={avatarUrls[playerIdx] ?? ""}
+                playerName={players[playerIdx]?.name ?? `P${playerIdx + 1}`}
+                isActive={currentTurn === playerIdx}
+                isConnected={players[playerIdx]?.isConnected ?? true}
+                disconnectedSince={disconnectedSince.get(players[playerIdx]?.id ?? "") ?? null}
+                seatIndex={seatIndex}
+                handSize={players[playerIdx]?.handSize}
+                pairLabel={pairLabel}
+                data-seat={playerIdx}
+                className="pointer-events-auto"
               />
             );
           })}
-        </div>
-
-        {/* Player avatars — positioned around the board perimeter */}
-        {[0, 1, 2, 3].map((playerIdx) => {
-          const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
-          const pairLabel = playerIdx % 2 === 0 ? "Pair 0" : "Pair 1";
-          return (
-            <PlayerAvatar
-              key={players[playerIdx]?.id ?? playerIdx}
-              avatarUrl={avatarUrls[playerIdx] ?? ""}
-              playerName={players[playerIdx]?.name ?? `P${playerIdx + 1}`}
-              isActive={currentTurn === playerIdx}
-              isConnected={players[playerIdx]?.isConnected ?? true}
-              disconnectedSince={disconnectedSince.get(players[playerIdx]?.id ?? "") ?? null}
-              seatIndex={seatIndex}
-              handSize={players[playerIdx]?.handSize}
-              pairLabel={pairLabel}
-              data-seat={playerIdx}
-            />
-          );
-        })}
-
-        {/* Zoom controls overlay */}
-        <div className="absolute bottom-2 right-2 z-10 flex gap-1">
-          <button
-            type="button"
-            onClick={handleZoomOut}
-            className="rounded bg-domino-800/80 px-2 py-1 text-xs text-domino-200 hover:bg-domino-700"
-          >
-            −
-          </button>
-          <span className="flex items-center px-2 text-[10px] text-domino-400">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={handleZoomIn}
-            className="rounded bg-domino-800/80 px-2 py-1 text-xs text-domino-200 hover:bg-domino-700"
-          >
-            +
-          </button>
         </div>
       </div>
     </div>
