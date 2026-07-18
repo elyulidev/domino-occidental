@@ -218,7 +218,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
           return p;
         });
         if (needsUpdate) {
-          updatedMatch.players = namedPlayers;
+          updatedMatch.players = namedPlayers as MatchState["players"];
           deps.store.updateGame(matchId, updatedMatch);
         }
       }
@@ -239,7 +239,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
     manager,
     ws: {
         open(ws: ElysiaWS) {
-          const matchId = ws.data.params.matchId as string;
+          const matchId = ((ws.data as Record<string, unknown>).params as Record<string, string>)?.matchId as string;
           console.log(`[ws] Player connecting to match ${matchId}`);
           (ws.data as Record<string, unknown>).matchId = matchId;
 
@@ -282,7 +282,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                   return p;
                 });
                 if (needsUpdate) {
-                  match.players = namedPlayers;
+                  match.players = namedPlayers as MatchState["players"];
                 }
               }
 
@@ -342,7 +342,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             onAllFourConnected(matchId);
           } else {
             // No auth configured — use playerId from upstream (dev/testing)
-            const playerId = ws.data.params.playerId as string;
+            const playerId = ((ws.data as Record<string, unknown>).params as Record<string, string>)?.playerId as string;
             console.log(`[ws] Registering player ${playerId} for match ${matchId}`);
             (ws.data as Record<string, unknown>).playerId = playerId;
             manager.register(matchId, playerId, ws);
@@ -412,8 +412,8 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
         },
 
         message(ws: ElysiaWS, rawData: string | Buffer | Record<string, unknown>) {
-          const matchId = ws.data.matchId as string;
-          const playerId = ws.data.playerId as string;
+          const matchId = (ws.data as Record<string, unknown>).matchId as string;
+          const playerId = (ws.data as Record<string, unknown>).playerId as string;
 
           // --- Rate Limiting ---
           if (deps.rateLimiter && !deps.rateLimiter.tryConsume(playerId)) {
@@ -497,8 +497,8 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
         },
 
         close(ws: ElysiaWS) {
-          const playerId = ws.data.playerId as string;
-          const matchId = ws.data.matchId as string;
+          const playerId = (ws.data as Record<string, unknown>).playerId as string;
+          const matchId = (ws.data as Record<string, unknown>).matchId as string;
 
           manager.unregister(playerId);
 
