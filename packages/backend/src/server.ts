@@ -17,7 +17,7 @@ import {
 	processMatchmaking,
 	startCleanupScheduler,
 } from "./game/matchmaking";
-import { createGame, getGame, getPlayerProfiles, removeGame, setPlayerProfiles, updateGame } from "./game/store";
+import { createGame, getGame, removeGame, setPlayerProfiles, updateGame } from "./game/store";
 import { matchmakingRoutes } from "./routes/matchmaking";
 
 import { broadcastEvents } from "./ws/broadcaster";
@@ -101,6 +101,7 @@ const matchmakerInterval = setInterval(() => {
 	if (!matchCreated) return;
 
 	const { matchId, playerIds } = matchCreated;
+	console.log(`[matchmaker] Match created: ${matchId} for players: ${playerIds.join(', ')}`);
 
 	// Fetch player profiles (async, non-blocking — profiles will be available
 	// before the match transitions from "waiting" to "in_progress")
