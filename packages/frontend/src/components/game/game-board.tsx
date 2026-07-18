@@ -346,13 +346,6 @@ export function GameBoard() {
       // Remote player: animate from their avatar on the board perimeter
       // data-seat uses relative position (0=bottom, 1=right, 2=top, 3=left)
       const relativeSeat = (pIdx - playerIndex + 4) % 4;
-      console.log("ANIM DEBUG", {
-  playerIdWhoPlayed: newTile.playerId,
-  pIdx,
-  playerIndex,
-  relativeSeat,
-  found: boardWrapperRef.current?.querySelector(`[data-seat="${relativeSeat}"]`),
-});
       // Avatars live in a sibling layer (boardWrapperRef), not inside the
       // overflow-hidden board surface (containerRef), so query from there.
       originEl = boardWrapperRef.current?.querySelector(
