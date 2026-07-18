@@ -458,6 +458,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
 
           // Broadcast events to ALL recipients with sanitized state included
           if (result.events.length > 0) {
+            console.log(`[ws] ${result.events.length} event(s) from player ${playerId}: ${result.events.map(e => e.type).join(',')} hasState=${!!result.sanitizedState}`);
             const match = deps.store.getGame(matchId);
             const playerIds = match?.players.map((p) => p.id);
             broadcastEvents(

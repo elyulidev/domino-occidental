@@ -39,6 +39,8 @@ export function broadcastEvents(
         ? [actingPlayerId]
         : (playerIds ?? ["1", "2", "3", "4"]);
 
+    console.log(`[broadcaster] event=${event.type} recipients=${recipients.join(',')} match=${_matchId} hasState=${state !== undefined}`);
+
     for (const playerId of recipients) {
       try {
         const envelope: WsServerMessage = {

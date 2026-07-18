@@ -96,6 +96,7 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
     ws.onmessage = (ev: MessageEvent) => {
       try {
         const msg: WsServerMessage = JSON.parse(ev.data);
+        console.log("[ws] received:", msg.type, msg.events?.map(e => e.type).join(','), "hasState:", !!msg.state);
 
         if (msg.type === "game_events") {
           // Capture hand-scored data for the hand-over modal.
@@ -109,6 +110,19 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
               points: handScored.points,
               scores: handScored.scores,
             });
+          }
+
+          // Capture match_abandoned event for leave-match flow
+          const abandoned = msg.events?.find(
+            (e): e is { type: "match_abandoned"; disconnectedPlayerId: string; reason: "abandonment" | "forfeit" } =>
+              e.type === "match_abandoned",
+          );
+          if (abandoned) {
+            console.log("[ws] match_abandoned received:", abandoned.disconnectedPlayerId, "by", playerId);
+            // Store the player who caused abandonment (for overlay display)
+            useGameStore.setState((s) => ({
+              game: { ...s.game, matchAbandonedBy: abandoned.disconnectedPlayerId },
+            }));
           }
 
           const sanitized = msg.state;
