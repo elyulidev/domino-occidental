@@ -28,6 +28,8 @@ interface GameState {
   avatarUrls: [string, string, string, string];
   /** Map of playerId → disconnect timestamp (Date.now() or null). */
   disconnectedSince: Map<string, number | null>;
+  /** Player who caused the match to be abandoned (forfeit). null if not abandoned. */
+  matchAbandonedBy: string | null;
   /** Index (0-3) of the player THIS client controls. Used for turn checking. */
   playerIndex: number;
   turn: {
@@ -75,6 +77,7 @@ const defaultGameState: GameState = {
   blockedTileIds: [],
   avatarUrls: ["", "", "", ""],
   disconnectedSince: new Map(),
+  matchAbandonedBy: null,
   playerIndex: 0,
   turn: {
     currentTurn: 0,
@@ -111,6 +114,7 @@ function syncGameState(state: StoreState, match: MatchState): Partial<StoreState
       blockedTileIds: match.players[playerIdx]?.blockedTileIds ?? [],
       avatarUrls: state.game?.avatarUrls ?? ["", "", "", ""],
       disconnectedSince: state.game?.disconnectedSince ?? new Map(),
+      matchAbandonedBy: state.game?.matchAbandonedBy ?? null,
       playerIndex: playerIdx,
       turn: {
         currentTurn: match.turn.currentTurn,
@@ -136,18 +140,23 @@ export const useGameStore = create<StoreState>((set, get) => ({
 
   initEngine: (match: MatchState) => {
     const engine = new LocalGameEngine(match, 0);
+    // biome-ignore lint/style/noNonNullAssertion: syncGameState always returns game
+    const gameState = { ...syncGameState({ engine } as unknown as StoreState, match).game!, matchAbandonedBy: null };
     set({
       engine,
-      ...syncGameState({ engine } as unknown as StoreState, match),
+      game: gameState,
       ui: { ...defaultUIState },
       handOver: null,
     });
   },
 
   setEngine: (engine: GameEngine) => {
+    const synced = syncGameState({ engine } as unknown as StoreState, engine.state);
+    // biome-ignore lint/style/noNonNullAssertion: syncGameState always returns game
+    const gameState = { ...synced.game!, matchAbandonedBy: null };
     set({
       engine,
-      ...syncGameState({ engine } as unknown as StoreState, engine.state),
+      game: gameState,
       ui: { ...defaultUIState },
       handOver: null,
     });
@@ -192,6 +201,7 @@ export const useGameStore = create<StoreState>((set, get) => ({
         blockedTileIds: sanitized.players[playerIdx]?.blockedTileIds ?? [],
         avatarUrls: sanitized.avatarUrls,
         disconnectedSince: newDisconnectedSince,
+        matchAbandonedBy: store.game.matchAbandonedBy,
         playerIndex: playerIdx,
         turn: {
           currentTurn: sanitized.currentTurn as 0 | 1 | 2 | 3,

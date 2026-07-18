@@ -32,6 +32,7 @@ describe("useGameStore", () => {
         blockedTileIds: [],
         avatarUrls: ["", "", "", ""],
         disconnectedSince: new Map(),
+        matchAbandonedBy: null,
         playerIndex: 0,
         turn: { currentTurn: 0, turnDeadline: null, consecutiveNullRounds: 0, roundNumber: 0, lastHandWinner: null },
         status: "waiting",

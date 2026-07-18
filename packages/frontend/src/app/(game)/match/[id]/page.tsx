@@ -1,10 +1,11 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { GameBoard } from "@/components/game/game-board";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { HandOverModal } from "@/components/game/hand-over-modal";
+import { LeaveMatchConfirmModal } from "@/components/game/leave-match-confirm-modal";
 import { PlayerHand } from "@/components/game/player-hand";
 import { ScorePanel } from "@/components/game/score-panel";
 import type { WsStatus } from "@/hooks/use-websocket";
@@ -38,16 +39,39 @@ function MatchContent() {
 
 	const reset = useGameStore((s) => s.reset);
 	const status = useGameStore((s) => s.game.status);
+	const matchAbandonedBy = useGameStore((s) => s.game.matchAbandonedBy);
+	const players = useGameStore((s) => s.game.players);
 
 	// Always call hooks (rules of hooks)
 	const wsHook = useWebSocket(params.id ?? "", playerId, false);
 
+	// Leave-match modal state
+	const [showLeaveModal, setShowLeaveModal] = useState(false);
+	const leaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 	// Cleanup on unmount
 	useEffect(() => {
 		return () => {
+			if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
 			reset();
 		};
 	}, [reset]);
+
+	// Navigate to lobby when match is abandoned by any player
+	useEffect(() => {
+		if (status === "abandoned") {
+			// Clear any pending leave timeout
+			if (leaveTimeoutRef.current) {
+				clearTimeout(leaveTimeoutRef.current);
+				leaveTimeoutRef.current = null;
+			}
+			const timer = setTimeout(() => {
+				reset();
+				router.push("/lobby");
+			}, 2000);
+			return () => clearTimeout(timer);
+		}
+	}, [status, reset, router]);
 
 	const handleBackToLobby = useCallback(() => {
 		reset();
@@ -55,22 +79,27 @@ function MatchContent() {
 	}, [reset, router]);
 
 	const handleLeaveMatch = useCallback(() => {
-		// Close WebSocket connection
-		if (wsHook.engine) {
-			wsHook.engine.destroy();
-		}
-		// Notify server of forfeit (best-effort, non-blocking)
-		if (params.id) {
-			fetch(`/api/v1/matches/${params.id}/forfeit`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-			}).catch(() => {
-				// Ignore errors — server will detect disconnection anyway
-			});
-		}
-		reset();
-		router.push("/lobby");
-	}, [wsHook.engine, params.id, reset, router]);
+		setShowLeaveModal(true);
+	}, []);
+
+	const handleConfirmLeave = useCallback(() => {
+		setShowLeaveModal(false);
+		// Send leave message to server via WebSocket
+		wsHook.send({ type: "leave" });
+		// Timeout fallback: if no match_abandoned event within 5s, navigate to lobby
+		leaveTimeoutRef.current = setTimeout(() => {
+			const currentStatus = useGameStore.getState().game.status;
+			if (currentStatus !== "abandoned") {
+				reset();
+				router.push("/lobby");
+			}
+		}, 5_000);
+	}, [wsHook, reset, router]);
+
+	// Resolve the player name who left for the AbandonedScreen
+	const abandonedPlayerName = matchAbandonedBy
+		? players.find((p) => p.id === matchAbandonedBy)?.name
+		: undefined;
 
 	const view = resolvePageView(status);
 
@@ -83,7 +112,7 @@ function MatchContent() {
 
 	// Abandoned state
 	if (view === "abandoned") {
-		return <AbandonedScreen onBack={handleBackToLobby} />;
+		return <AbandonedScreen onBack={handleBackToLobby} abandonedByPlayerName={abandonedPlayerName} />;
 	}
 
 	// Ready — render game board
@@ -121,6 +150,11 @@ function MatchContent() {
 			{/* Overlays */}
 			<GameStatusOverlay />
 			<HandOverModal />
+			<LeaveMatchConfirmModal
+				isOpen={showLeaveModal}
+				onClose={() => setShowLeaveModal(false)}
+				onConfirm={handleConfirmLeave}
+			/>
 		</div>
 	);
 }
@@ -189,7 +223,18 @@ function LoadingScreen({
 	);
 }
 
-function AbandonedScreen({ onBack }: { onBack: () => void }) {
+function AbandonedScreen({
+	onBack,
+	abandonedByPlayerName,
+}: {
+	onBack: () => void;
+	abandonedByPlayerName?: string;
+}) {
+	// TODO: All players must have username (not email) for proper display
+	const message = abandonedByPlayerName
+		? `${abandonedByPlayerName} left the match`
+		: "A player left the match";
+
 	return (
 		<div className='min-h-screen bg-domino-950 flex items-center justify-center'>
 			<div className='bg-domino-900/60 border border-domino-700/50 rounded-2xl p-8 text-center max-w-md'>
@@ -197,7 +242,7 @@ function AbandonedScreen({ onBack }: { onBack: () => void }) {
 					Match Abandoned
 				</h2>
 				<p className='text-domino-300 mb-6'>
-					This match has been abandoned. ELO penalty has been applied.
+					{message}. ELO penalty has been applied.
 				</p>
 				<button
 					type='button'

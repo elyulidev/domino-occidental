@@ -32,7 +32,30 @@ describe("game-status-overlay helpers", () => {
     it("shows abandoned message when status is abandoned", () => {
       const result = buildMatchResultMessage("abandoned", [0, 0]);
       expect(result.title).toBe("Match Abandoned");
-      expect(result.subtitle).toContain("disconnected");
+      expect(result.subtitle).toContain("left the match");
+    });
+
+    it("shows leaver name when matchAbandonedBy and players provided", () => {
+      const players = [
+        { id: "p0", name: "Alice", handSize: 5, isConnected: true },
+        { id: "p1", name: "Bob", handSize: 3, isConnected: false },
+      ];
+      const result = buildMatchResultMessage("abandoned", [0, 0], "p1", players);
+      expect(result.title).toBe("Match Abandoned");
+      expect(result.subtitle).toBe("Bob left the match");
+    });
+
+    it("falls back to generic message when matchAbandonedBy has no matching player", () => {
+      const players = [
+        { id: "p0", name: "Alice", handSize: 5, isConnected: true },
+      ];
+      const result = buildMatchResultMessage("abandoned", [0, 0], "p99", players);
+      expect(result.subtitle).toBe("A player left the match");
+    });
+
+    it("falls back to generic message when matchAbandonedBy is null", () => {
+      const result = buildMatchResultMessage("abandoned", [0, 0], null);
+      expect(result.subtitle).toBe("A player left the match");
     });
 
     it("shows Pair 1 wins when pair 1 score exceeds target", () => {

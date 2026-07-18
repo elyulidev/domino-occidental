@@ -25,11 +25,19 @@ export function resolveOverlayMode(
 export function buildMatchResultMessage(
   status: GameStatus,
   scores: [number, number],
+  matchAbandonedBy?: string | null,
+  players?: Array<{ id: string; name?: string; handSize: number; isConnected: boolean }>,
 ): { title: string; subtitle: string } {
   if (status === "abandoned") {
+    // TODO: All players must have username (not email) for proper display
+    const leaverName = matchAbandonedBy
+      ? players?.find((p) => p.id === matchAbandonedBy)?.name
+      : undefined;
     return {
       title: "Match Abandoned",
-      subtitle: "A player disconnected and did not reconnect in time.",
+      subtitle: leaverName
+        ? `${leaverName} left the match`
+        : "A player left the match",
     };
   }
 
@@ -56,6 +64,8 @@ export function GameStatusOverlay() {
   const router = useRouter();
   const status = useGameStore((s) => s.game.status);
   const scores = useGameStore((s) => s.game.scores);
+  const matchAbandonedBy = useGameStore((s) => s.game.matchAbandonedBy);
+  const players = useGameStore((s) => s.game.players);
   const reset = useGameStore((s) => s.reset);
 
   const mode = resolveOverlayMode(status);
@@ -67,7 +77,7 @@ export function GameStatusOverlay() {
 
   if (mode === "none") return null;
 
-  const { title, subtitle } = buildMatchResultMessage(status, scores);
+  const { title, subtitle } = buildMatchResultMessage(status, scores, matchAbandonedBy, players);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
