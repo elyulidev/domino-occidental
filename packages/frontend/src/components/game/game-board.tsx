@@ -1,17 +1,10 @@
 "use client";
 
 import type { PlacedTile, Tile } from "@domino/shared";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "@/stores/game-store";
 import { DominoTile, isDoubleTile } from "./domino-tile";
 import { calculateGridLayout } from "./grid-layout-engine";
-import { PlayerAvatar } from "./player-avatar";
-import {
-  animateTileFromAvatar,
-  calculateAvatarOrigin,
-  calculateTileTarget,
-  prefersReducedMotion as reducedMotionCheck,
-} from "./tile-animation";
 import {
   calculatePanDelta,
   calculatePinchZoom,
@@ -23,6 +16,13 @@ import {
   MIN_ZOOM,
   ZOOM_STEP,
 } from "./pan-zoom-utils";
+import { PlayerAvatar } from "./player-avatar";
+import {
+  animateTileFromAvatar,
+  calculateAvatarOrigin,
+  calculateTileTarget,
+  prefersReducedMotion as reducedMotionCheck,
+} from "./tile-animation";
 
 // Re-export types from grid-layout-engine (same interface as layout-engine)
 export type { LayoutResult, TilePosition } from "./grid-layout-engine";
@@ -290,7 +290,8 @@ export function GameBoard() {
   // Tile play animation: detect new tile and animate from origin to grid position
   // - Local player (me): origin = hand area (bottom of screen)
   // - Remote player: origin = their avatar position on the board perimeter
-  useEffect(() => {
+  // useLayoutEffect runs BEFORE paint, preventing flash-of-final-position
+  useLayoutEffect(() => {
     const prevCount = prevTileCountRef.current;
     const newCount = boardTiles.length;
     if (newCount <= prevCount) {
@@ -499,7 +500,7 @@ export function GameBoard() {
                 seatIndex={seatIndex}
                 handSize={players[playerIdx]?.handSize}
                 pairLabel={pairLabel}
-                data-seat={playerIdx}
+                data-seat={seatIndex}
                 className="pointer-events-auto"
               />
             );

@@ -102,7 +102,7 @@ function MatchContent() {
 				</div>
 
 				{/* Row 2, Col 2: PlayerHand */}
-				<div className='relative min-h-0'>
+				<div className='relative min-h-0' data-hand-area>
 					<PlayerHand />
 
 					{/* Leave match button — bottom right, floating over hand */}

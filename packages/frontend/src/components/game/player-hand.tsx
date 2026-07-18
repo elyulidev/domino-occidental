@@ -4,6 +4,7 @@ import type { BoardState, Tile } from "@domino/shared";
 import { useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
 import { DominoTile } from "./domino-tile";
+import { TurnTimer } from "./turn-timer";
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
@@ -93,6 +94,9 @@ export function PlayerHand() {
           <p className="text-xs text-domino-400 italic">Ésperando por {currentTurnName}…</p>
         )}
       </div>
+
+      {/* Turn timer — only visible to the player whose turn it is */}
+      {isMyTurn && <div className="mb-3"><TurnTimer compact /></div>}
 
       {/* Tile grid */}
       <div className="flex flex-wrap gap-2">

@@ -2,8 +2,8 @@
  * Tile animation system using Web Animations API.
  *
  * Detects new tiles via board.tiles.length comparison, calculates
- * animation coordinates from avatar origin to tile target, and
- * executes 400ms WAAPI animations.
+ * animation coordinates from origin (hand for local player, avatar for remote)
+ * to tile target, and executes 800ms WAAPI animations.
  */
 
 // ---------------------------------------------------------------------------
@@ -65,23 +65,24 @@ export function animateTileFromAvatar(
   element: HTMLElement,
   origin: { x: number; y: number },
   target: { x: number; y: number },
-  duration = 400,
+  duration = 800,
 ): Animation | null {
   if (prefersReducedMotion()) return null;
+
+  // Compute the offset from origin to target. React controls left/top (final
+  // position), so we animate ONLY via transform to avoid style conflicts.
+  const dx = origin.x - target.x;
+  const dy = origin.y - target.y;
 
   const animation = element.animate(
     [
       {
-        left: `${origin.x}px`,
-        top: `${origin.y}px`,
+        transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(0.8)`,
         opacity: 0,
-        scale: 0.8,
       },
       {
-        left: `${target.x}px`,
-        top: `${target.y}px`,
+        transform: `translate(-50%, -50%) scale(1)`,
         opacity: 1,
-        scale: 1,
       },
     ],
     {
@@ -90,13 +91,8 @@ export function animateTileFromAvatar(
     },
   );
 
-  // Commit the final frame styles to the element, then cancel the animation
-  // so React reclaims control of inline styles (left/top) after animation ends.
-  // Without this, fill:forwards would override React's position updates.
-  animation.onfinish = () => {
-    animation.commitStyles();
-    animation.cancel();
-  };
-
+  // No commitStyles/cancel — React owns left/top after animation ends.
+  // The animation runs once, disappears, and React's inline styles take over
+  // cleanly on the next render without residual style conflicts.
   return animation;
 }
