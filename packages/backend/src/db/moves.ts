@@ -5,6 +5,10 @@
  * (e.g. local dev without Supabase), moves are logged to console instead.
  *
  * The game loop is NEVER blocked by DB writes — recordMatchMove is fire-and-forget.
+ *
+ * IMPORTANT: match_moves has a FK to matches. The match row doesn't exist in
+ * the DB until persistMatch() creates it. So we buffer moves in memory and
+ * flush them after the match row is created.
  */
 
 import { getDb } from "./client";
@@ -39,6 +43,12 @@ export interface MoveRecord {
 const moveCounters = new Map<string, number>();
 
 /**
+ * Buffered moves per match — accumulated during gameplay, flushed after
+ * the match row is created in the DB by persistMatch().
+ */
+const bufferedMoves = new Map<string, MoveRecord[]>();
+
+/**
  * Get the next move number for a match, then increment.
  */
 function nextMoveNumber(matchId: string): number {
@@ -59,26 +69,11 @@ export async function recordMatchMove(move: MoveRecord): Promise<void> {
   const moveNumber = nextMoveNumber(move.matchId);
 
   if (db) {
-    // Fire-and-forget: don't await — game loop is never blocked
-    void db
-      .insert(matchMoves)
-      .values({
-        matchId: move.matchId,
-        roundNumber: move.roundNumber,
-        playerIndex: move.playerIndex,
-        moveNumber: moveNumber,
-        isPass: move.isPass,
-        actionSource: move.actionSource,
-        tileId: move.tileId ?? undefined,
-        tileTop: move.tileTop ?? undefined,
-        tileBottom: move.tileBottom ?? undefined,
-        side: move.side ?? undefined,
-        boardLeftEnd: move.boardLeftEnd,
-        boardRightEnd: move.boardRightEnd,
-      })
-      .catch((err: unknown) => {
-        console.error("[db/moves] failed to record match move:", err);
-      });
+    // Buffer the move — will be flushed after the match row is created in the DB.
+    // match_moves has FK to matches, so we can't insert until persistMatch() runs.
+    const moves = bufferedMoves.get(move.matchId) ?? [];
+    moves.push({ ...move, moveNumber });
+    bufferedMoves.set(move.matchId, moves);
   } else {
     // Dev fallback: log to console
     console.log(
@@ -90,9 +85,49 @@ export async function recordMatchMove(move: MoveRecord): Promise<void> {
   }
 }
 
+export async function flushMatchMoves(matchId: string): Promise<void> {
+  const db = await getDb();
+  const moves = bufferedMoves.get(matchId);
+  if (!moves || moves.length === 0) {
+    bufferedMoves.delete(matchId);
+    moveCounters.delete(matchId);
+    return;
+  }
+
+  if (db) {
+    try {
+      await db.insert(matchMoves).values(
+        moves.map((m) => ({
+          matchId: m.matchId,
+          roundNumber: m.roundNumber,
+          playerIndex: m.playerIndex,
+          moveNumber: m.moveNumber,
+          isPass: m.isPass,
+          actionSource: m.actionSource,
+          tileId: m.tileId ?? undefined,
+          tileTop: m.tileTop ?? undefined,
+          tileBottom: m.tileBottom ?? undefined,
+          side: m.side ?? undefined,
+          boardLeftEnd: m.boardLeftEnd,
+          boardRightEnd: m.boardRightEnd,
+        })),
+      );
+      console.log(`[db/moves] flushed ${moves.length} moves for match ${matchId.slice(0, 8)}`);
+    } catch (err: unknown) {
+      console.error(`[db/moves] failed to flush ${moves.length} moves for match ${matchId.slice(0, 8)}:`, err);
+    }
+  } else {
+    console.log(`[db/moves] skipped flush (${moves.length} moves) — no DB connection`);
+  }
+
+  bufferedMoves.delete(matchId);
+  moveCounters.delete(matchId);
+}
+
 /**
  * Reset move counters (TEST-ONLY).
  */
 export function resetMoveCounters(): void {
   moveCounters.clear();
+  bufferedMoves.clear();
 }

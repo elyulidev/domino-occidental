@@ -11,6 +11,7 @@
 import type { GameEvent, MatchState } from "@domino/shared";
 import { getDb } from "./client";
 import { matches } from "./schema";
+import { flushMatchMoves } from "./moves";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,6 +100,11 @@ export async function persistMatch(
   const db = await getDb();
 
   if (db) {
+    console.log(
+      `[db/matches] persisting ${record.status} match=${record.matchId.slice(0, 8)} ` +
+      `scores=[${record.scores.join(",")}] rounds=${record.roundCount}` +
+      (record.forfeitBy ? ` forfeit_by=${record.forfeitBy.slice(0, 8)}` : ""),
+    );
     // Fire-and-forget: don't await — game loop is never blocked
     void db
       .insert(matches)
@@ -114,8 +120,13 @@ export async function persistMatch(
         startedAt: record.startedAt,
         endedAt: record.endedAt,
       })
+      .then(() => {
+        console.log(`[db/matches] match ${record.matchId.slice(0, 8)} persisted OK — flushing moves`);
+        // Match row created — now flush buffered moves (FK satisfied)
+        void flushMatchMoves(record.matchId);
+      })
       .catch((err: unknown) => {
-        console.error("[db/matches] failed to persist match:", err);
+        console.error("[db/matches] FAILED to persist match:", err);
       });
   } else {
     // Dev fallback: log to console
