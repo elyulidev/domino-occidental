@@ -2,7 +2,8 @@
 
 import type { Tile } from "@domino/shared";
 import { useGameStore } from "@/stores/game-store";
-import { DominoTile } from "./domino-tile";
+import { DominoTile } from "./domino-tile-2";
+
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)

@@ -3,7 +3,7 @@
 import type { BoardState, Tile } from "@domino/shared";
 import { useCallback } from "react";
 import { useGameStore } from "@/stores/game-store";
-import { DominoTile } from "./domino-tile";
+import { DominoTile } from "./domino-tile-2";
 import { TurnTimer } from "./turn-timer";
 
 // ---------------------------------------------------------------------------

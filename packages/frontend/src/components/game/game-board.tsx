@@ -3,7 +3,7 @@
 import type { PlacedTile, Tile } from "@domino/shared";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "@/stores/game-store";
-import { DominoTile, isDoubleTile } from "./domino-tile";
+import { DominoTile } from "./domino-tile-2";
 import { calculateGridLayout } from "./grid-layout-engine";
 import {
   calculatePanDelta,
@@ -27,7 +27,7 @@ import {
 // Re-export types from grid-layout-engine (same interface as layout-engine)
 export type { LayoutResult, TilePosition } from "./grid-layout-engine";
 // Re-export for tests
-export { isDoubleTile };
+
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
