@@ -45,9 +45,12 @@ export function playerColorClass(playerIndex: number): string {
 }
 
 /** Map a player id (e.g. "p0", "p1") to its index. */
-export function playerIdToIndex(playerId: string): number {
-  const match = playerId.match(/\d+$/);
-  return match ? Number.parseInt(match[0], 10) : 0;
+export function playerIdToIndex(
+  playerId: string,
+  players: Array<{ id: string }>,
+): number {
+  const idx = players.findIndex((p) => p.id === playerId);
+  return idx >= 0 ? idx : 0;
 }
 
 /** Build a display-order array: left-tiles-reversed → center → right-tiles. */
@@ -306,7 +309,7 @@ export function GameBoard() {
       return;
     }
 
-    const pIdx = playerIdToIndex(newTile.playerId);
+    const pIdx = playerIdToIndex(newTile.playerId,players);
     const containerEl = containerRef.current;
     if (!containerEl) {
       prevTileCountRef.current = newCount;
@@ -343,6 +346,13 @@ export function GameBoard() {
       // Remote player: animate from their avatar on the board perimeter
       // data-seat uses relative position (0=bottom, 1=right, 2=top, 3=left)
       const relativeSeat = (pIdx - playerIndex + 4) % 4;
+      console.log("ANIM DEBUG", {
+  playerIdWhoPlayed: newTile.playerId,
+  pIdx,
+  playerIndex,
+  relativeSeat,
+  found: boardWrapperRef.current?.querySelector(`[data-seat="${relativeSeat}"]`),
+});
       // Avatars live in a sibling layer (boardWrapperRef), not inside the
       // overflow-hidden board surface (containerRef), so query from there.
       originEl = boardWrapperRef.current?.querySelector(
@@ -369,7 +379,7 @@ export function GameBoard() {
     }
 
     prevTileCountRef.current = newCount;
-  }, [boardTiles, containerWidth, pan, zoom, playerIndex]);
+  }, [boardTiles, containerWidth, pan, zoom, playerIndex,players]);
 
   if (boardTiles.length === 0) {
     return (
@@ -527,7 +537,7 @@ function BoardTile({
   players?: Array<{ id: string; name?: string }>;
 }) {
   const { tile, playerId } = placed;
-  const pIdx = playerIdToIndex(playerId);
+  const pIdx = playerIdToIndex(playerId, players || []);
   const playerName = players?.[pIdx]?.name ?? `Player ${pIdx + 1}`;
 
   // Use the layout engine's flipped value so the canonical connecting value
