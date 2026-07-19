@@ -1,0 +1,13 @@
+node_modules
+.git
+*.log
+.env
+.env.local
+.env.*.local
+.vercel
+.next
+dist
+build
+__tests__
+*.test.*
+biome.json
