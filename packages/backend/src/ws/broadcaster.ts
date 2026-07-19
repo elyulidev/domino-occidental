@@ -17,8 +17,8 @@ import type {
  * - `game_error` events → only `actingPlayerId` (private)
  * - All other 11 event types → all 4 players (or `playerIds` override)
  *
- * Each event is wrapped in a `WsServerMessage` envelope per recipient.
- * Optional `state` is attached to every envelope when provided.
+ * Groups all events per recipient into a single message with one state
+ * snapshot, instead of sending N separate messages (one per event).
  *
  * Errors thrown by `sendFn` are caught and logged per-recipient;
  * remaining recipients still receive their events.
@@ -33,32 +33,46 @@ export function broadcastEvents(
 ): void {
   if (events.length === 0) return;
 
+  const allPlayers = playerIds ?? ["1", "2", "3", "4"];
+
+  // Group events by recipient
+  const eventsByPlayer = new Map<string, GameEvent[]>();
+  for (const playerId of allPlayers) {
+    eventsByPlayer.set(playerId, []);
+  }
+
   for (const event of events) {
     const recipients =
       event.type === "game_error"
         ? [actingPlayerId]
-        : (playerIds ?? ["1", "2", "3", "4"]);
-
-    console.log(`[broadcaster] event=${event.type} recipients=${recipients.join(',')} match=${_matchId} hasState=${state !== undefined}`);
+        : allPlayers;
 
     for (const playerId of recipients) {
-      try {
-        const envelope: WsServerMessage = {
-          type: "game_events",
-          events: [event],
-        };
+      eventsByPlayer.get(playerId)?.push(event);
+    }
+  }
 
-        if (state !== undefined) {
-          envelope.state = state;
-        }
+  console.log(`[broadcaster] ${events.length} events → ${allPlayers.length} players match=${_matchId} hasState=${state !== undefined}`);
 
-        sendFn(playerId, envelope);
-      } catch (err) {
-        console.error(
-          `[broadcaster] sendFn failed for player ${playerId} (match=${_matchId}):`,
-          err,
-        );
+  // Send one message per recipient with all their events
+  for (const [playerId, playerEvents] of eventsByPlayer) {
+    if (playerEvents.length === 0) continue;
+    try {
+      const envelope: WsServerMessage = {
+        type: "game_events",
+        events: playerEvents,
+      };
+
+      if (state !== undefined) {
+        envelope.state = state;
       }
+
+      sendFn(playerId, envelope);
+    } catch (err) {
+      console.error(
+        `[broadcaster] sendFn failed for player ${playerId} (match=${_matchId}):`,
+        err,
+      );
     }
   }
 }
