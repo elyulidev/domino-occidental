@@ -99,8 +99,8 @@ export const PLAYER_COUNT = 4;
  * Module 7: Connection management constants.
  */
 export const HEARTBEAT_MS = 5_000;
-export const RECONNECT_WINDOW_MS = 30_000;
-export const ABANDONMENT_THRESHOLD_MS = 60_000;
+export const RECONNECT_WINDOW_MS = 10_000;
+export const ABANDONMENT_THRESHOLD_MS = 15_000;
 
 /**
  * Immutable state for turn ordering, timeout enforcement, and round tracking.
@@ -289,6 +289,7 @@ export type GameEvent =
   | {
       type: "match_abandoned";
       disconnectedPlayerId: string;
+      disconnectedPlayerName?: string;
       reason: "abandonment" | "forfeit";
     }
   | { type: "game_error"; code: string; message: string };

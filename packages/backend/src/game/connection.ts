@@ -265,12 +265,14 @@ export function checkAbandonment(
   // Check abandonment threshold first
   if (elapsed >= ABANDONMENT_THRESHOLD_MS) {
     const newMatch: MatchState = { ...match, status: "abandoned" };
+    const player = match.players.find((p) => p.id === disconnectRecord.playerId);
     return {
       match: newMatch,
       events: [
         {
           type: "match_abandoned",
           disconnectedPlayerId: disconnectRecord.playerId,
+          disconnectedPlayerName: player?.name,
           reason: "abandonment",
         },
       ],
@@ -352,6 +354,7 @@ export function forfeitMatch(
       {
         type: "match_abandoned",
         disconnectedPlayerId: playerId,
+        disconnectedPlayerName: player.name,
         reason: "forfeit",
       },
     ],

@@ -51,12 +51,12 @@ describe("constants", () => {
     expect(HEARTBEAT_MS).toBe(5_000);
   });
 
-  it("RECONNECT_WINDOW_MS is 30_000", () => {
-    expect(RECONNECT_WINDOW_MS).toBe(30_000);
+  it("RECONNECT_WINDOW_MS is 10_000", () => {
+    expect(RECONNECT_WINDOW_MS).toBe(10_000);
   });
 
-  it("ABANDONMENT_THRESHOLD_MS is 60_000", () => {
-    expect(ABANDONMENT_THRESHOLD_MS).toBe(60_000);
+  it("ABANDONMENT_THRESHOLD_MS is 15_000", () => {
+    expect(ABANDONMENT_THRESHOLD_MS).toBe(15_000);
   });
 });
 
@@ -167,19 +167,19 @@ describe("reconnectPlayer", () => {
 describe("checkReconnectWindow", () => {
   it("within window returns windowExpired: false", () => {
     const disconnectedAt = new Date(1000);
-    const now = new Date(1000 + 20_000); // 20s elapsed, window is 30s
+    const now = new Date(1000 + 5_000); // 5s elapsed, window is 10s
     const result = checkReconnectWindow(
       { disconnectedAt, playerId: "p0" },
       now,
     );
 
     expect(result.windowExpired).toBe(false);
-    expect(result.secondsLeft).toBe(10);
+    expect(result.secondsLeft).toBe(5);
   });
 
   it("past window returns windowExpired: true", () => {
     const disconnectedAt = new Date(1000);
-    const now = new Date(1000 + 31_000); // 31s elapsed, window is 30s
+    const now = new Date(1000 + 11_000); // 11s elapsed, window is 10s
     const result = checkReconnectWindow(
       { disconnectedAt, playerId: "p0" },
       now,
@@ -191,7 +191,7 @@ describe("checkReconnectWindow", () => {
 
   it("boundary test: exactly at RECONNECT_WINDOW_MS", () => {
     const disconnectedAt = new Date(1000);
-    const now = new Date(1000 + RECONNECT_WINDOW_MS); // exactly 30s
+    const now = new Date(1000 + RECONNECT_WINDOW_MS); // exactly 10s
     const result = checkReconnectWindow(
       { disconnectedAt, playerId: "p0" },
       now,
@@ -365,7 +365,7 @@ describe("checkAbandonment", () => {
   it("no-op when elapsed is less than RECONNECT_WINDOW_MS", () => {
     const match = createTestMatch();
     const disconnectedAt = new Date(1000);
-    const now = new Date(1000 + 10_000); // 10s — well within window
+    const now = new Date(1000 + 5_000); // 5s — within 10s window
     const result = checkAbandonment(
       match,
       { disconnectedAt, playerId: "p0" },
@@ -379,8 +379,8 @@ describe("checkAbandonment", () => {
   it("emits reconnection_window_expiring when past reconnect window but below abandonment threshold", () => {
     const match = createTestMatch();
     const disconnectedAt = new Date(1000);
-    // elapsed = 35s → past 30s window, below 60s threshold
-    const now = new Date(1000 + 35_000);
+    // elapsed = 12s → past 10s window, below 15s threshold
+    const now = new Date(1000 + 12_000);
     const result = checkAbandonment(
       match,
       { disconnectedAt, playerId: "p0" },
@@ -391,15 +391,15 @@ describe("checkAbandonment", () => {
     expect(result.events[0]).toEqual({
       type: "reconnection_window_expiring",
       playerId: "p0",
-      secondsLeft: 25, // (60_000 - 35_000) / 1000 = 25
+      secondsLeft: 3, // (15_000 - 12_000) / 1000 = 3
     });
   });
 
   it("emits reconnection_window_expiring with 0 seconds at boundary just before abandonment", () => {
     const match = createTestMatch();
     const disconnectedAt = new Date(1000);
-    // elapsed = 59_999 → just below threshold
-    const now = new Date(1000 + 59_999);
+    // elapsed = 14_999 → just below threshold
+    const now = new Date(1000 + 14_999);
     const result = checkAbandonment(
       match,
       { disconnectedAt, playerId: "p0" },
@@ -417,7 +417,7 @@ describe("checkAbandonment", () => {
   it("abandons match when elapsed >= ABANDONMENT_THRESHOLD_MS", () => {
     const match = createTestMatch();
     const disconnectedAt = new Date(1000);
-    const now = new Date(1000 + 65_000); // 65s — past threshold
+    const now = new Date(1000 + 20_000); // 20s — past threshold
     const result = checkAbandonment(
       match,
       { disconnectedAt, playerId: "p0" },
@@ -429,6 +429,7 @@ describe("checkAbandonment", () => {
     expect(result.events[0]).toEqual({
       type: "match_abandoned",
       disconnectedPlayerId: "p0",
+      disconnectedPlayerName: undefined,
       reason: "abandonment",
     });
   });
@@ -447,6 +448,7 @@ describe("checkAbandonment", () => {
     expect(result.events[0]).toEqual({
       type: "match_abandoned",
       disconnectedPlayerId: "p0",
+      disconnectedPlayerName: undefined,
       reason: "abandonment",
     });
   });
@@ -454,7 +456,7 @@ describe("checkAbandonment", () => {
   it("does not mutate the original match on abandonment", () => {
     const match = createTestMatch();
     const disconnectedAt = new Date(1000);
-    const now = new Date(1000 + 65_000);
+    const now = new Date(1000 + 20_000);
     const originalStatus = match.status;
 
     checkAbandonment(match, { disconnectedAt, playerId: "p0" }, now);
@@ -507,6 +509,7 @@ describe("forfeitMatch", () => {
     expect(result.events[0]).toEqual({
       type: "match_abandoned",
       disconnectedPlayerId: "p2",
+      disconnectedPlayerName: undefined,
       reason: "forfeit",
     });
   });
@@ -583,7 +586,7 @@ describe("integration: connection lifecycle", () => {
     expect(disconnected.match.players[0].isConnected).toBe(false);
 
     // 3. Check abandonment before threshold → expiring warning
-    const warningTime = new Date(1000 + 35_000);
+    const warningTime = new Date(1000 + 12_000); // 12s → past 10s window, below 15s threshold
     const warning = checkAbandonment(
       disconnected.match,
       { disconnectedAt: disconnectTime, playerId: "p0" },
@@ -594,7 +597,7 @@ describe("integration: connection lifecycle", () => {
     expect(warning.match.status).toBe("in_progress"); // still active
 
     // 4. Check abandonment past threshold → abandoned
-    const abandonTime = new Date(1000 + 65_000);
+    const abandonTime = new Date(1000 + 20_000); // 20s → past 15s threshold
     const abandoned = checkAbandonment(
       disconnected.match,
       { disconnectedAt: disconnectTime, playerId: "p0" },
@@ -604,6 +607,7 @@ describe("integration: connection lifecycle", () => {
     expect(abandoned.events[0]).toEqual({
       type: "match_abandoned",
       disconnectedPlayerId: "p0",
+      disconnectedPlayerName: undefined,
       reason: "abandonment",
     });
   });
@@ -618,6 +622,7 @@ describe("integration: connection lifecycle", () => {
       {
         type: "match_abandoned",
         disconnectedPlayerId: "p3",
+        disconnectedPlayerName: undefined,
         reason: "forfeit",
       },
     ]);
