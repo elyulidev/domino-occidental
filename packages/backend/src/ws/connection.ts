@@ -533,11 +533,14 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                   void persistMatch(result.match, result.events);
                 }
               }
+
+              // Schedule abandonment timer only for active matches
+              // (skip if already finished/abandoned — e.g. after a leave/forfeit)
+              if (match.status === "in_progress") {
+                deps.timerManager?.registerDisconnect(matchId, playerId, new Date());
+              }
             }
           }
-
-          // Schedule abandonment timer on disconnect
-          deps.timerManager?.registerDisconnect(matchId, playerId, new Date());
         },
     },
   };
