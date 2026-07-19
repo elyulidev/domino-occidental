@@ -376,10 +376,10 @@ export function GameBoard() {
 
   if (boardTiles.length === 0) {
     return (
-      <div className="flex h-full flex-col rounded-2xl border border-domino-700/50 bg-domino-900/60 p-4">
+      <div className="flex h-full flex-col rounded-2xl border border-black/30 bg-felt p-4">
         {/* Empty state with avatars */}
         <div className="flex h-full items-center justify-center relative">
-          <p className="text-sm text-domino-400 italic">
+          <p className="text-sm text-white/60 italic">
             Waiting for first move…
           </p>
 
@@ -411,15 +411,15 @@ export function GameBoard() {
   const { positions } = calculateGridLayout(display, centerIdx, containerWidth);
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-domino-700/50 bg-domino-900/60 p-4">
+    <div className="flex h-full flex-col rounded-2xl border border-black/30 bg-felt p-4">
       {/* End labels */}
-      <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-xs text-domino-400">
+      <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-xs text-white/70">
         <span>
-          ◀ Left: <span className="font-mono text-domino-200">{leftEnd ?? "—"}</span>
+          ◀ Left: <span className="font-mono text-white">{leftEnd ?? "—"}</span>
         </span>
-        <span className="text-[10px] text-domino-500">{boardTiles.length} tiles</span>
+        <span className="text-[10px] text-white/50">{boardTiles.length} tiles</span>
         <span>
-          Right: <span className="font-mono text-domino-200">{rightEnd ?? "—"}</span> ▶
+          Right: <span className="font-mono text-white">{rightEnd ?? "—"}</span> ▶
         </span>
       </div>
 
@@ -470,17 +470,17 @@ export function GameBoard() {
             <button
               type="button"
               onClick={handleZoomOut}
-              className="rounded bg-domino-800/80 px-2 py-1 text-xs text-domino-200 hover:bg-domino-700"
+              className="rounded bg-black/40 px-2 py-1 text-xs text-white hover:bg-black/60"
             >
               −
             </button>
-            <span className="flex items-center px-2 text-[10px] text-domino-400">
+            <span className="flex items-center px-2 text-[10px] text-white/60">
               {Math.round(zoom * 100)}%
             </span>
             <button
               type="button"
               onClick={handleZoomIn}
-              className="rounded bg-domino-800/80 px-2 py-1 text-xs text-domino-200 hover:bg-domino-700"
+              className="rounded bg-black/40 px-2 py-1 text-xs text-white hover:bg-black/60"
             >
               +
             </button>
