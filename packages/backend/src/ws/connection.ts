@@ -526,6 +526,12 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                   playerIds,
                   sanitizeState(result.match),
                 );
+
+                // Persist terminal matches — fire-and-forget
+                if (result.events.some((e) => e.type === "match_ended" || e.type === "match_abandoned")) {
+                  startedMatches.delete(matchId);
+                  void persistMatch(result.match, result.events);
+                }
               }
             }
           }
