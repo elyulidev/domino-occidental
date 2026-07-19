@@ -181,6 +181,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
       console.log(`[ws] match ${matchId} already started, skipping`);
       return;
     }
+
     const playerIds = manager.getPlayerIdsForMatch(matchId);
     console.log(`[ws] match ${matchId} has ${playerIds.length} players connected: ${playerIds.join(', ')}`);
     if (playerIds.length < 4) {
@@ -188,6 +189,10 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
       return;
     }
 
+    // Claim the match before any async work to prevent double-start.
+    // Bun is single-threaded and this function is synchronous, so the
+    // has()→add() window is safe — but we claim early as a defense-in-depth
+    // pattern in case store/broadcast ever become async.
     startedMatches.add(matchId);
 
     // Transition match status from "waiting" to "in_progress"
