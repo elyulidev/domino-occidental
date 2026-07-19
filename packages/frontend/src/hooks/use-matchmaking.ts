@@ -14,6 +14,7 @@ export interface UseMatchmakingReturn {
   joinQueue: () => Promise<void>;
   leaveQueue: () => Promise<void>;
   status: MatchmakingStatus;
+  isJoining: boolean;
   queuePosition: number | null;
   waitTimeMs: number;
   queueCount: number;
@@ -38,6 +39,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
   const [queueCount, setQueueCount] = useState(0);
   const [matchId, setMatchId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const waitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -120,7 +122,9 @@ export function useMatchmaking(): UseMatchmakingReturn {
 
   // --- Join queue ---
   const joinQueue = useCallback(async () => {
+    if (statusRef.current === "queued" || statusRef.current === "matched") return;
     setError(null);
+    setIsJoining(true);
 
     const {
       data: { session },
@@ -128,6 +132,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
 
     if (!session?.access_token) {
       setError("Not authenticated");
+      setIsJoining(false);
       return;
     }
 
@@ -145,12 +150,14 @@ export function useMatchmaking(): UseMatchmakingReturn {
         } else {
           setError("Failed to join queue");
         }
+        setIsJoining(false);
         return;
       }
 
       const data = await res.json();
 
       setStatus("queued");
+      setIsJoining(false);
       setQueuePosition(data.position ?? null);
       setQueueCount(data.queueCount ?? 0);
 
@@ -158,6 +165,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
       connectWs(session.user.id, session.access_token);
     } catch {
       setError("Failed to join queue — is the server running?");
+      setIsJoining(false);
     }
   }, [supabase, startWaitCounter, connectWs]);
 
@@ -210,6 +218,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
     joinQueue,
     leaveQueue,
     status,
+    isJoining,
     queuePosition,
     waitTimeMs,
     queueCount,
