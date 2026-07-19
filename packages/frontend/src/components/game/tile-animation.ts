@@ -65,7 +65,7 @@ export function animateTileFromAvatar(
   element: HTMLElement,
   origin: { x: number; y: number },
   target: { x: number; y: number },
-  duration = 800,
+  duration = 1000,
 ): Animation | null {
   if (prefersReducedMotion()) return null;
 
