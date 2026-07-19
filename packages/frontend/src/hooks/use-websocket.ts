@@ -76,6 +76,9 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
   useEffect(() => {
     if (disabled || !matchId) return;
 
+    // Reset engine initialization flag for the new match
+    engineInitializedRef.current = false;
+
     const url = `${WS_BASE_URL}/ws/game/${matchId}/${playerId}`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
@@ -90,10 +93,14 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
     setStatus("connecting");
 
     ws.onopen = () => {
+      // Guard: only set connected if this WS is still the current one
+      if (wsRef.current !== ws) return;
       setStatus("connected");
     };
 
     ws.onmessage = (ev: MessageEvent) => {
+      // Guard: ignore messages from a stale WS (old match's connection)
+      if (wsRef.current !== ws) return;
       try {
         const msg: WsServerMessage = JSON.parse(ev.data);
         console.log("[ws] received:", msg.type, msg.events?.map(e => e.type).join(','), "hasState:", !!msg.state);
@@ -114,11 +121,11 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
 
           // Capture match_abandoned event for leave-match flow
           const abandoned = msg.events?.find(
-            (e): e is { type: "match_abandoned"; disconnectedPlayerId: string; reason: "abandonment" | "forfeit" } =>
+            (e): e is { type: "match_abandoned"; disconnectedPlayerId: string; disconnectedPlayerName?: string; reason: "abandonment" | "forfeit" } =>
               e.type === "match_abandoned",
           );
           if (abandoned) {
-            console.log("[ws] match_abandoned received:", abandoned.disconnectedPlayerId, "by", playerId);
+            console.log("[ws] match_abandoned received:", abandoned.disconnectedPlayerId, abandoned.disconnectedPlayerName ?? "", "by", playerId);
             // Store the player who caused abandonment (for overlay display)
             useGameStore.setState((s) => ({
               game: { ...s.game, matchAbandonedBy: abandoned.disconnectedPlayerId },
@@ -157,6 +164,10 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
     };
 
     ws.onclose = () => {
+      // Guard: only update status if this WS is still the current one.
+      // Without this guard, a stale old-match onclose can overwrite the
+      // new connection's status after a navigate (e.g. abandon → lobby → new match).
+      if (wsRef.current !== ws) return;
       setStatus("disconnected");
       wsRef.current = null;
     };
@@ -167,7 +178,10 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
 
     return () => {
       ws.close();
-      wsRef.current = null;
+      // Only clear wsRef if it still points to this WS (avoids clearing a newer connection)
+      if (wsRef.current === ws) {
+        wsRef.current = null;
+      }
     };
   }, [matchId, playerId, disabled]);
 
