@@ -107,6 +107,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
   const disconnectTimers = new Map<string, number>();
   const disconnectRecords = new Map<string, DisconnectRecord>();
   const heartbeatFailures = new Map<string, number>();
+  const pausedMatches = new Set<string>();
 
   function clearDisconnectTimer(key: string): void {
     const timerId = disconnectTimers.get(key);
@@ -172,6 +173,10 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
       }
 
       const turnCheckerInterval = intervalFn(() => {
+        // Skip turn check if paused — the current player is disconnected
+        // and we're waiting for them to reconnect or for abandonment to fire.
+        if (pausedMatches.has(matchId)) return;
+
         const match = store.getGame(matchId);
         if (!match) return;
         const result = checkTimeout(match, nowFn());
@@ -222,6 +227,17 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
       const key = `${matchId}:${playerId}`;
       disconnectRecords.set(key, { disconnectedAt, playerId });
 
+      // Pause the turn timer if the disconnected player is currently on turn.
+      // This gives them the full abandonment window (60s) to reconnect before
+      // a forced pass eats their turn.
+      const match = store.getGame(matchId);
+      if (match) {
+        const currentPlayerId = match.players[match.turn.currentTurn]?.id;
+        if (currentPlayerId === playerId) {
+          pausedMatches.add(matchId);
+        }
+      }
+
       const timerId = timeoutFn(() => {
         const match = store.getGame(matchId);
         if (!match) return;
@@ -255,6 +271,19 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
       const key = `${matchId}:${playerId}`;
       clearDisconnectTimer(key);
       disconnectRecords.delete(key);
+
+      // Unpause the turn timer — player reconnected in time
+      pausedMatches.delete(matchId);
+
+      // Refresh the turn deadline so the reconnected player gets a fresh 45s
+      const match = store.getGame(matchId);
+      if (match) {
+        const currentPlayerId = match.players[match.turn.currentTurn]?.id;
+        if (currentPlayerId === playerId && match.turn.turnDeadline !== null) {
+          match.turn.turnDeadline = nowFn() + 45_000;
+          store.updateGame(matchId, match);
+        }
+      }
     },
 
     getDisconnectRecord(
@@ -294,6 +323,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
           heartbeatFailures.delete(playerId);
         }
       }
+      pausedMatches.delete(matchId);
     },
 
     stop(): void {
@@ -313,6 +343,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
       disconnectTimers.clear();
       disconnectRecords.clear();
       heartbeatFailures.clear();
+      pausedMatches.clear();
     },
   };
 }
