@@ -3,7 +3,7 @@
 import type { PlacedTile, Tile } from "@domino/shared";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGameStore } from "@/stores/game-store";
-import { DominoTile } from "./domino-tile-2";
+import { DominoTile } from "./domino-tile";
 import { calculateGridLayout } from "./grid-layout-engine";
 import {
   calculatePanDelta,
