@@ -41,6 +41,7 @@ function MatchContent() {
 	const status = useGameStore((s) => s.game.status);
 	const matchAbandonedBy = useGameStore((s) => s.game.matchAbandonedBy);
 	const players = useGameStore((s) => s.game.players);
+	const isMatchOver = status === "finished" || status === "abandoned" || matchAbandonedBy !== null;
 
 	// Always call hooks (rules of hooks)
 	const wsHook = useWebSocket(params.id ?? "", playerId, false);
@@ -79,11 +80,14 @@ function MatchContent() {
 	}, [reset, router]);
 
 	const handleLeaveMatch = useCallback(() => {
+		if (isMatchOver) return;
 		setShowLeaveModal(true);
-	}, []);
+	}, [isMatchOver]);
 
 	const handleConfirmLeave = useCallback(() => {
 		setShowLeaveModal(false);
+		// Guard: don't send leave if match is already over
+		if (isMatchOver) return;
 		// Send leave message to server via WebSocket
 		wsHook.send({ type: "leave" });
 		// Timeout fallback: if no match_abandoned event within 5s, navigate to lobby
@@ -94,7 +98,7 @@ function MatchContent() {
 				router.push("/lobby");
 			}
 		}, 5_000);
-	}, [wsHook, reset, router]);
+	}, [wsHook, reset, router, isMatchOver]);
 
 	// Resolve the player name who left for the AbandonedScreen
 	const abandonedPlayerName = matchAbandonedBy
@@ -139,7 +143,8 @@ function MatchContent() {
 						<button
 							type='button'
 							onClick={handleLeaveMatch}
-							className='rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300'
+							disabled={isMatchOver}
+							className='rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-500/10 disabled:hover:text-red-400'
 						>
 							Leave Match
 						</button>
