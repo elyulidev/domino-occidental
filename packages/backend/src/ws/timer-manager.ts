@@ -105,6 +105,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
   const matchTimers = new Map<string, MatchTimers>();
   const disconnectTimers = new Map<string, number>();
   const disconnectRecords = new Map<string, DisconnectRecord>();
+  const heartbeatFailures = new Map<string, number>();
 
   function clearDisconnectTimer(key: string): void {
     const timerId = disconnectTimers.get(key);
@@ -122,14 +123,40 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
         const id = intervalFn(() => {
           if (deps.getConnectionReadyState) {
             const readyState = deps.getConnectionReadyState(playerId);
-            if (readyState !== 1) {
+
+            // CLOSED (3) → disconnect immediately (definitive)
+            if (readyState === 3) {
+              heartbeatFailures.delete(playerId);
               const match = store.getGame(matchId);
               if (match) {
-                const result = disconnectPlayer(
-                  match,
-                  playerId,
-                  new Date(nowFn()),
-                );
+                const result = disconnectPlayer(match, playerId, new Date(nowFn()));
+                if (result.events.length > 0) {
+                  if (result.match !== match) {
+                    store.updateGame(matchId, result.match);
+                  }
+                  broadcastEvents(result.events, matchId, playerId, sendFn, playerIds, sanitizeState(result.match));
+                }
+              }
+              return;
+            }
+
+            // OPEN (1) → reset failure counter
+            if (readyState === 1) {
+              heartbeatFailures.delete(playerId);
+              return;
+            }
+
+            // CLOSING (2) or other → increment failure counter
+            const prev = heartbeatFailures.get(playerId) ?? 0;
+            const failures = prev + 1;
+            heartbeatFailures.set(playerId, failures);
+
+            // Disconnect after 3 consecutive failures (15s with 5s interval)
+            if (failures >= 3) {
+              heartbeatFailures.delete(playerId);
+              const match = store.getGame(matchId);
+              if (match) {
+                const result = disconnectPlayer(match, playerId, new Date(nowFn()));
                 if (result.events.length > 0) {
                   if (result.match !== match) {
                     store.updateGame(matchId, result.match);
@@ -257,6 +284,13 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
         clearDisconnectTimer(key);
         disconnectRecords.delete(key);
       }
+
+      // Clear heartbeat failure counters for this match's players
+      if (timers) {
+        for (const playerId of timers.playerIds) {
+          heartbeatFailures.delete(playerId);
+        }
+      }
     },
 
     stop(): void {
@@ -275,6 +309,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
       }
       disconnectTimers.clear();
       disconnectRecords.clear();
+      heartbeatFailures.clear();
     },
   };
 }
