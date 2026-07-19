@@ -52,24 +52,44 @@ export function matchmakingWsHandler(deps: MatchmakingWsDeps) {
       }
 
       // Verify JWT — lightweight, no DB call
-      tokenVerifier(token).then((result) => {
-        if (!result) {
-          ws.close(4001, "Invalid or expired token");
-          return;
-        }
+      tokenVerifier(token)
+        .then((result) => {
+          // If the connection closed while we were verifying, abort registration
+          if ((ws.data as Record<string, unknown>).__closed) return;
 
-        const userId = result.sub;
+          // Defense-in-depth: check the socket is still open
+          try {
+            if (ws.readyState !== 1) return;
+          } catch {
+            return; // socket already destroyed
+          }
 
-        // Register in user channel for push notifications
-        // UserWsConnection only needs send() and close() — ElysiaWS satisfies both
-        deps.userChannelManager.register(userId, ws as unknown as UserWsConnection);
+          if (!result) {
+            ws.close(4001, "Invalid or expired token");
+            return;
+          }
 
-        // Store userId on ws.data for close handler
-        (ws.data as Record<string, unknown>).userId = userId;
+          const userId = result.sub;
 
-        // Send initial acknowledgement
-        ws.send(JSON.stringify({ type: "connected", userId }));
-      });
+          // Register in user channel for push notifications
+          deps.userChannelManager.register(userId, ws as unknown as UserWsConnection);
+
+          // Store userId on ws.data for close handler
+          (ws.data as Record<string, unknown>).userId = userId;
+
+          // Send initial acknowledgement
+          ws.send(JSON.stringify({ type: "connected", userId }));
+        })
+        .catch((err) => {
+          console.error("[matchmaking-ws] Token verification failed:", err);
+          try {
+            if (ws.readyState === 1) {
+              ws.close(4001, "Authentication error");
+            }
+          } catch {
+            // socket already destroyed, nothing to do
+          }
+        });
     },
 
     message(_ws: ElysiaWS, rawData: string | Buffer | Record<string, unknown>) {
@@ -93,6 +113,9 @@ export function matchmakingWsHandler(deps: MatchmakingWsDeps) {
     },
 
     close(ws: ElysiaWS) {
+      // Mark as closed so the async .then() won't register an orphan connection
+      (ws.data as Record<string, unknown>).__closed = true;
+
       const userId = (ws.data as Record<string, unknown>).userId as
         | string
         | undefined;
