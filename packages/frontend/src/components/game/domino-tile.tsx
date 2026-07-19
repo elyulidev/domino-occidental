@@ -28,6 +28,12 @@ const PIP_POSITIONS: Record<number, number[]> = {
   9: [0, 1, 2, 3, 4, 5, 6, 7, 8],
 };
 
+/** Horizontal overrides for values whose standard layout doesn't fit landscape halves. */
+const PIP_POSITIONS_H: Record<number, number[]> = {
+  6: [0, 1, 2, 6, 7, 8],  // 2 rows × 3 instead of 2 cols × 3
+  7: [0, 1, 2, 4, 6, 7, 8], // 2 rows × 3 + center
+};
+
 /** Pip color per face value — mirrors classic color-coded double-9 sets. */
 const PIP_COLOR: Record<number, string> = {
   0: "#78716c",
@@ -67,8 +73,9 @@ function Pip({ left, top, color }: { left: number; top: number; color: string })
   );
 }
 
-function PipFace({ value, className }: { value: number; className: string }) {
-  const positions = PIP_POSITIONS[value] ?? [];
+function PipFace({ value, className, orientation = "vertical" }: { value: number; className: string; orientation?: "vertical" | "horizontal" }) {
+  const posMap = orientation === "horizontal" ? (PIP_POSITIONS_H[value] ?? PIP_POSITIONS[value]) : PIP_POSITIONS[value];
+  const positions = posMap ?? [];
   const color = PIP_COLOR[value] ?? "#78716c";
 
   return (
@@ -160,7 +167,7 @@ export function DominoTile({
     <div className={`relative flex h-full w-full ${s.halfDir} overflow-hidden rounded-[5px] bg-white`}>
       {/* Top half */}
       <div className={`flex items-center justify-center ${s.half} bg-white`}>
-        <PipFace value={tile.top} className={s.pipArea} />
+        <PipFace value={tile.top} className={s.pipArea} orientation={orientation} />
       </div>
 
       {/* Divider */}
@@ -168,7 +175,7 @@ export function DominoTile({
 
       {/* Bottom half */}
       <div className={`flex items-center justify-center ${s.half} bg-white`}>
-        <PipFace value={tile.bottom} className={s.pipArea} />
+        <PipFace value={tile.bottom} className={s.pipArea} orientation={orientation} />
       </div>
 
       {/* Double indicator */}
@@ -190,7 +197,7 @@ export function DominoTile({
     <div className={`relative flex h-full w-full ${s.halfDir} overflow-hidden rounded-[5px] bg-white`}>
       {/* Left half (top value) */}
       <div className={`flex items-center justify-center ${s.half} bg-white`}>
-        <PipFace value={tile.top} className={s.pipArea} />
+        <PipFace value={tile.top} className={s.pipArea} orientation={orientation} />
       </div>
 
       {/* Divider */}
@@ -198,7 +205,7 @@ export function DominoTile({
 
       {/* Right half (bottom value) */}
       <div className={`flex items-center justify-center ${s.half} bg-white`}>
-        <PipFace value={tile.bottom} className={s.pipArea} />
+        <PipFace value={tile.bottom} className={s.pipArea} orientation={orientation} />
       </div>
 
       {/* Double indicator */}
