@@ -14,6 +14,7 @@ import { persistMatch } from "../db/matches";
 import { handleMessage as defaultHandleMessage } from "../game/handler";
 import { getPlayerProfiles } from "../game/store";
 import { broadcastEvents as defaultBroadcastEvents, sendState as defaultSendState } from "./broadcaster";
+import { startedMatches } from "./started-matches";
 import type { TimerManager } from "./timer-manager";
 
 // ---------------------------------------------------------------------------
@@ -165,7 +166,6 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
   const sendState = defaultSendState;
   const disconnectPlayerFn = deps.disconnectPlayer;
   const reconnectPlayerFn = deps.reconnectPlayer;
-  const startedMatches = new Set<string>();
 
   const sendFn: SendFn = (playerId, event) =>
     sendToPlayer(manager, playerId, event);
@@ -484,6 +484,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
 
             // Persist terminal matches (finished/abandoned) — fire-and-forget
             if (match && result.events.some((e) => e.type === "match_ended" || e.type === "match_abandoned")) {
+              startedMatches.delete(matchId);
               void persistMatch(match, result.events);
             }
           }
