@@ -32,7 +32,7 @@ export function computeOpponents(
 	const indices = [0, 1, 2, 3].filter((i) => i !== playerIndex);
 	return indices.map((i) => {
 		const player = players[i] ?? { handSize: 10, isConnected: true };
-		const pairLabel = i % 2 === 0 ? "Pair 0" : "Pair 1";
+		const pairLabel = i % 2 === 0 ? "Pareja 0" : "Pareja 1";
 		return {
 			label: player.name ?? (player.id ? player.id.toUpperCase() : `P${i + 1}`),
 			index: i,
@@ -128,14 +128,14 @@ export function OpponentIndicator({
 								{opp.label}
 							</span>
 							<span className='mt-0.5 text-[11px] text-domino-400'>
-								{opp.handSize} tiles
+								{opp.handSize} fichas
 							</span>
 							<span className='mt-1.5 flex items-center gap-1.5'>
 								<span
 									className={`inline-block h-1.5 w-1.5 rounded-full ${connectionDotClass(opp.isConnected)}`}
 								/>
 								<span className='text-[10px] text-domino-400'>
-									{opp.isConnected ? "Online" : "Offline"}
+									{opp.isConnected ? "En línea" : "Sin conexión"}
 								</span>
 							</span>
 						</div>

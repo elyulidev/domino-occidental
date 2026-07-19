@@ -146,7 +146,7 @@ function MatchContent() {
 							disabled={isMatchOver}
 							className='rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-500/10 disabled:hover:text-red-400'
 						>
-							Leave Match
+							Abandonar Partida
 						</button>
 					</div>
 				</div>
@@ -179,7 +179,7 @@ function LoadingScreen({
 		<div className='min-h-screen bg-domino-950 flex items-center justify-center'>
 			<div className='text-center max-w-sm'>
 				<div className='animate-spin w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full mx-auto mb-4' />
-				<p className='text-domino-300 text-lg mb-2'>Starting game...</p>
+				<p className='text-domino-300 text-lg mb-2'>Iniciando partida...</p>
 
 				{/* Diagnostic info */}
 				<div className='mt-6 space-y-1 text-xs font-mono flex flex-col items-center'>
@@ -207,20 +207,20 @@ function LoadingScreen({
 							WS: —
 						</span>
 					)}
-					<span className='text-domino-500'>Player: {playerId ?? "—"}</span>
+					<span className='text-domino-500'>Jugador: {playerId ?? "—"}</span>
 				</div>
 
 				{wsStatus === "disconnected" && (
 					<p className='mt-4 text-xs text-red-400/80 max-w-xs mx-auto'>
-						WebSocket is disconnected. Make sure the backend is running on port
-						3001 and refresh the page.
+						WebSocket desconectado. Asegúrese de que el backend esté ejecutándose en el
+						puerto 3001 y recargue la página.
 					</p>
 				)}
 
 				{wsStatus === "connected" && (
 					<p className='mt-4 text-xs text-domino-400 max-w-xs mx-auto'>
-						WebSocket connected. Waiting for the game server to send the initial
-						state.
+						WebSocket conectado. Esperando que el servidor del juego envíe el estado
+						inicial.
 					</p>
 				)}
 			</div>
@@ -237,24 +237,24 @@ function AbandonedScreen({
 }) {
 	// TODO: All players must have username (not email) for proper display
 	const message = abandonedByPlayerName
-		? `${abandonedByPlayerName} left the match`
-		: "A player left the match";
+		? `${abandonedByPlayerName} abandonó la partida`
+		: "Un jugador abandonó la partida";
 
 	return (
 		<div className='min-h-screen bg-domino-950 flex items-center justify-center'>
 			<div className='bg-domino-900/60 border border-domino-700/50 rounded-2xl p-8 text-center max-w-md'>
 				<h2 className='text-2xl font-bold text-domino-50 mb-2'>
-					Match Abandoned
+					Partida Abandonada
 				</h2>
 				<p className='text-domino-300 mb-6'>
-					{message}. ELO penalty has been applied.
+					{message}. Se ha aplicado una penalización ELO.
 				</p>
 				<button
 					type='button'
 					onClick={onBack}
 					className='bg-gold-500 hover:bg-gold-600 text-domino-950 font-bold px-6 py-3 rounded-xl transition-colors'
 				>
-					Back to Lobby
+					Volver al Lobby
 				</button>
 			</div>
 		</div>

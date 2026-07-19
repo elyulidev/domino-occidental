@@ -134,7 +134,7 @@ export function PlayerAvatar({
       <div
         tabIndex={0}
         role="img"
-        aria-label={`${playerName}'s avatar`}
+        aria-label={`Avatar de ${playerName}`}
         className={[
           "relative flex items-center justify-center rounded-full",
           "w-10 h-10 sm:w-16 sm:h-16",
@@ -186,7 +186,7 @@ export function PlayerAvatar({
 
           {handSize !== undefined && (
             <span className="text-[10px] sm:text-[11px] text-domino-400">
-              {handSize} {handSize === 1 ? "tile" : "tiles"}
+              {handSize} {handSize === 1 ? "ficha" : "fichas"}
             </span>
           )}
 
@@ -197,7 +197,7 @@ export function PlayerAvatar({
               }`}
             />
             <span className="text-[9px] sm:text-[10px] text-domino-400">
-              {isConnected ? "Online" : "Offline"}
+              {isConnected ? "En línea" : "Sin conexión"}
             </span>
           </span>
 

@@ -54,7 +54,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
     getTimeRemaining(turnDeadline),
   );
 
-  const currentPlayerName = players[currentTurn]?.name ?? `Player ${currentTurn + 1}`;
+  const currentPlayerName = players[currentTurn]?.name ?? `Jugador ${currentTurn + 1}`;
 
   // Tick every second while deadline is active
   useEffect(() => {
@@ -77,7 +77,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
         {/* Compact: slim bar + label only */}
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[10px] text-domino-400">
-            {humanTurn ? "Your turn" : `${currentPlayerName}'s turn`}
+            {humanTurn ? "Tu turno" : `Turno de ${currentPlayerName}`}
           </span>
           {humanTurn && (
             <span className="font-mono text-[10px] font-bold text-domino-50">
@@ -96,7 +96,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
         {!humanTurn && (
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-domino-400">
-              {isRemote ? `Waiting…` : "Bots thinking"}
+              {isRemote ? `Esperando…` : "Pensando"}
             </span>
             <span className="flex gap-0.5">
               <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-domino-400 [animation-delay:0ms]" />
@@ -114,7 +114,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
       {/* Turn label */}
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs text-domino-400">
-          {humanTurn ? "Your turn" : `${currentPlayerName}'s turn`}
+          {humanTurn ? "Tu turno" : `Turno de ${currentPlayerName}`}
         </span>
         {humanTurn && (
           <span className="font-mono text-sm font-bold text-domino-50">
@@ -137,7 +137,7 @@ export function TurnTimer({ compact = false }: { compact?: boolean } = {}) {
       {!humanTurn && (
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-domino-400">
-            {isRemote ? `Waiting for ${currentPlayerName}…` : "Waiting…"}
+            {isRemote ? `Esperando a ${currentPlayerName}…` : "Esperando…"}
           </span>
           <span className="flex gap-0.5">
             <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-domino-400 [animation-delay:0ms]" />

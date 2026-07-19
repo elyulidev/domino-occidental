@@ -51,7 +51,7 @@ export function ScorePanel() {
       <div className="flex items-center justify-between">
         {/* Pair 0 (P0 + P2) */}
         <div className="flex flex-col items-center">
-          <span className="text-xs text-domino-400">Pair 0</span>
+          <span className="text-xs text-domino-400">Pareja 0</span>
           <span
             className={`text-2xl font-bold ${
               leading === 0 ? "text-gold-400" : "text-domino-50"
@@ -66,25 +66,25 @@ export function ScorePanel() {
         <div className="flex flex-col items-center gap-1">
           {/* Target badge */}
           <span className="rounded-full bg-domino-700/50 px-3 py-0.5 text-[10px] font-medium text-domino-300">
-            Target: {TARGET_SCORE}
+            Objetivo: {TARGET_SCORE}
           </span>
 
           {/* Round */}
           <span className="text-xs text-domino-400">
-            Round {roundNumber + 1}
+            Ronda {roundNumber + 1}
           </span>
 
           {/* Last hand winner indicator */}
           {lastHandWinner !== null && (
             <span className="text-xs font-semibold text-gold-400">
-              {playerToPair(lastHandWinner) === 0 ? "Pair 0" : "Pair 1"} won last
+              {playerToPair(lastHandWinner) === 0 ? "Pareja 0" : "Pareja 1"} ganó la última
             </span>
           )}
         </div>
 
         {/* Pair 1 (P1 + P3) */}
         <div className="flex flex-col items-center">
-          <span className="text-xs text-domino-400">Pair 1</span>
+          <span className="text-xs text-domino-400">Pareja 1</span>
           <span
             className={`text-2xl font-bold ${
               leading === 1 ? "text-gold-400" : "text-domino-50"

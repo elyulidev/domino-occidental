@@ -43,7 +43,7 @@ export function HandOverModal() {
   if (!handOver) return null;
 
   const { winningPair, points, scores } = handOver;
-  const winnerLabel = `Pair ${winningPair + 1}`;
+  const winnerLabel = `Pareja ${winningPair + 1}`;
   const isPair1 = winningPair === 0;
 
   return (
@@ -56,26 +56,26 @@ export function HandOverModal() {
 
         {/* Title: who won the hand */}
         <h2 className="text-xl font-bold text-domino-50">
-          {winnerLabel} takes the hand
+          {winnerLabel} gana la mano
         </h2>
         <p className="mt-1 text-sm text-domino-400">
-          +{points} point{points !== 1 ? "s" : ""}
+          +{points} punto{points !== 1 ? "s" : ""}
         </p>
 
         {/* Match scores */}
         <div className="mt-5 flex items-center justify-center gap-6">
           <div className={`text-center ${isPair1 ? "text-domino-300" : "text-gold-400"}`}>
-            <p className="text-xs uppercase tracking-wide text-domino-500">Pair 1</p>
+            <p className="text-xs uppercase tracking-wide text-domino-500">Pareja 1</p>
             <p className="text-2xl font-bold">{scores[0]}</p>
           </div>
 
           <div className="flex flex-col items-center gap-1">
-            <span className="text-xs text-domino-600">MATCH</span>
+            <span className="text-xs text-domino-600">PARTIDA</span>
             <span className="text-xs text-domino-500">vs</span>
           </div>
 
           <div className={`text-center ${isPair1 ? "text-gold-400" : "text-domino-300"}`}>
-            <p className="text-xs uppercase tracking-wide text-domino-500">Pair 2</p>
+            <p className="text-xs uppercase tracking-wide text-domino-500">Pareja 2</p>
             <p className="text-2xl font-bold">{scores[1]}</p>
           </div>
         </div>
@@ -89,7 +89,7 @@ export function HandOverModal() {
           onClick={() => setHandOver(null)}
           className="mt-3 text-xs text-domino-500 underline underline-offset-2 hover:text-domino-300 transition-colors"
         >
-          Dismiss
+          Cerrar
         </button>
       </div>
     </div>

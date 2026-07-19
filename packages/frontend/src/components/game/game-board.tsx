@@ -380,13 +380,13 @@ export function GameBoard() {
         {/* Empty state with avatars */}
         <div className="flex h-full items-center justify-center relative">
           <p className="text-sm text-white/60 italic">
-            Waiting for first move…
+            Esperando primera jugada…
           </p>
 
           {/* Player avatars — visible even when board is empty */}
           {[0, 1, 2, 3].map((playerIdx) => {
             const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
-            const pairLabel = playerIdx % 2 === 0 ? "Pair 0" : "Pair 1";
+            const pairLabel = playerIdx % 2 === 0 ? "Pareja 0" : "Pareja 1";
             return (
               <PlayerAvatar
                 key={players[playerIdx]?.id ?? playerIdx}
@@ -415,11 +415,11 @@ export function GameBoard() {
       {/* End labels */}
       <div className="mb-3 flex shrink-0 items-center justify-between px-1 text-xs text-white/70">
         <span>
-          ◀ Left: <span className="font-mono text-white">{leftEnd ?? "—"}</span>
+          ◀ Izq: <span className="font-mono text-white">{leftEnd ?? "—"}</span>
         </span>
-        <span className="text-[10px] text-white/50">{boardTiles.length} tiles</span>
+        <span className="text-[10px] text-white/50">{boardTiles.length} fichas</span>
         <span>
-          Right: <span className="font-mono text-white">{rightEnd ?? "—"}</span> ▶
+          Der: <span className="font-mono text-white">{rightEnd ?? "—"}</span> ▶
         </span>
       </div>
 
@@ -491,7 +491,7 @@ export function GameBoard() {
         <div className="absolute inset-0 z-10 pointer-events-none">
           {[0, 1, 2, 3].map((playerIdx) => {
             const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
-            const pairLabel = playerIdx % 2 === 0 ? "Pair 0" : "Pair 1";
+            const pairLabel = playerIdx % 2 === 0 ? "Pareja 0" : "Pareja 1";
             return (
               <PlayerAvatar
                 key={players[playerIdx]?.id ?? playerIdx}
@@ -531,7 +531,7 @@ function BoardTile({
 }) {
   const { tile, playerId } = placed;
   const pIdx = playerIdToIndex(playerId, players || []);
-  const playerName = players?.[pIdx]?.name ?? `Player ${pIdx + 1}`;
+  const playerName = players?.[pIdx]?.name ?? `Jugador ${pIdx + 1}`;
 
   // Use the layout engine's flipped value so the canonical connecting value
   // (tile.bottom) appears on the inward side of the serpentine arm.

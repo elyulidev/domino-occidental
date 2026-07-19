@@ -65,14 +65,14 @@ export function LeaveMatchConfirmModal({
 
         {/* Title */}
         <h2 id="leave-match-title" className="text-xl font-bold text-domino-50">
-          Leave Match?
+          ¿Abandonar Partida?
         </h2>
 
         {/* Body */}
         <p className="mt-2 text-sm text-domino-300">
           {playerName
-            ? `${playerName}, are you sure you want to leave? This will end the game for all players.`
-            : "Are you sure you want to leave? This will end the game for all players."}
+            ? `${playerName}, ¿estás seguro de que quieres abandonar? Esto finalizará la partida para todos los jugadores.`
+            : "¿Estás seguro de que quieres abandonar? Esto finalizará la partida para todos los jugadores."}
         </p>
 
         {/* Actions */}
@@ -82,14 +82,14 @@ export function LeaveMatchConfirmModal({
             onClick={onClose}
             className="rounded-xl border border-domino-600/50 bg-domino-800/50 px-4 py-2 text-sm font-medium text-domino-300 transition-colors hover:bg-domino-700/50 hover:text-domino-100"
           >
-            Cancel
+            Cancelar
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600 active:scale-[0.97]"
           >
-            Leave Match
+            Abandonar Partida
           </button>
         </div>
       </div>

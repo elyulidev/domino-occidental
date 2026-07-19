@@ -34,10 +34,10 @@ export function buildMatchResultMessage(
       ? players?.find((p) => p.id === matchAbandonedBy)?.name
       : undefined;
     return {
-      title: "Match Abandoned",
+      title: "Partida Abandonada",
       subtitle: leaverName
-        ? `${leaverName} left the match`
-        : "A player left the match",
+        ? `${leaverName} abandonó la partida`
+        : "Un jugador abandonó la partida",
     };
   }
 
@@ -45,14 +45,14 @@ export function buildMatchResultMessage(
   if (pair0 >= TARGET_SCORE || pair1 >= TARGET_SCORE) {
     const winner = pair0 > pair1 ? 0 : 1;
     return {
-      title: `Pair ${winner + 1} Wins!`,
-      subtitle: `Final score: ${pair0} – ${pair1}`,
+      title: `¡Pareja ${winner + 1} Gana!`,
+      subtitle: `Marcador final: ${pair0} – ${pair1}`,
     };
   }
 
   return {
-    title: "Match Complete",
-    subtitle: `Score: ${pair0} – ${pair1}`,
+    title: "Partida Completada",
+    subtitle: `Marcador: ${pair0} – ${pair1}`,
   };
 }
 
@@ -99,12 +99,12 @@ export function GameStatusOverlay() {
         {status === "finished" && (
           <div className="mt-4 flex items-center justify-center gap-6">
             <div className="text-center">
-              <p className="text-xs text-domino-400">Pair 0</p>
+              <p className="text-xs text-domino-400">Pareja 0</p>
               <p className="text-lg font-bold text-domino-50">{scores[0]}</p>
             </div>
             <span className="text-domino-500">vs</span>
             <div className="text-center">
-              <p className="text-xs text-domino-400">Pair 1</p>
+              <p className="text-xs text-domino-400">Pareja 1</p>
               <p className="text-lg font-bold text-domino-50">{scores[1]}</p>
             </div>
           </div>
@@ -116,7 +116,7 @@ export function GameStatusOverlay() {
           onClick={handleBackToLobby}
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-6 py-3 text-sm font-semibold text-black shadow-lg transition-all hover:from-gold-400 hover:to-gold-500 active:scale-[0.97]"
         >
-          Back to Lobby
+          Volver al Lobby
         </button>
       </div>
     </div>

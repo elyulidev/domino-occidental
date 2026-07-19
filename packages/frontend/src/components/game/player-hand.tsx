@@ -87,11 +87,11 @@ export function PlayerHand() {
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-domino-400">
           {selectedTile
-            ? "Choose a side to play"
-            : "Select a tile → choose side"}
+            ? "Elegí un lado para jugar"
+            : "Seleccioná una ficha → elegí el lado"}
         </p>
         {!isMyTurn && (
-          <p className="text-xs text-domino-400 italic">Ésperando por {currentTurnName}…</p>
+          <p className="text-xs text-domino-400 italic">Esperando a {currentTurnName}…</p>
         )}
       </div>
 
@@ -130,7 +130,7 @@ export function PlayerHand() {
               onClick={() => handlePlaySide("left")}
               className="rounded-lg border-2 border-stone-600 bg-gradient-to-b from-amber-50 to-stone-100 px-5 py-2 text-sm font-bold text-stone-800 shadow-md transition-all hover:border-gold-500 hover:shadow-lg active:scale-95"
             >
-              ← Left
+              ← Izquierda
             </button>
           )}
           {playableSides.includes("right") && (
@@ -139,7 +139,7 @@ export function PlayerHand() {
               onClick={() => handlePlaySide("right")}
               className="rounded-lg border-2 border-stone-600 bg-gradient-to-b from-amber-50 to-stone-100 px-5 py-2 text-sm font-bold text-stone-800 shadow-md transition-all hover:border-gold-500 hover:shadow-lg active:scale-95"
             >
-              Right →
+              Derecha →
             </button>
           )}
         </div>
@@ -153,17 +153,17 @@ export function PlayerHand() {
             onClick={handlePass}
             className="rounded-lg border border-stone-500 bg-stone-700 px-4 py-1.5 text-xs font-semibold text-stone-200 shadow transition-all hover:bg-stone-600 hover:text-white"
           >
-            Pass turn
+            Pasar turno
           </button>
           <span className="text-[10px] text-stone-400">
-            No playable tiles — forced pass
+            Sin fichas jugables — paso forzado
           </span>
         </div>
       )}
 
       {/* Empty hand */}
       {ownHand.length === 0 && (
-        <p className="text-center text-sm text-domino-400">No tiles in hand</p>
+        <p className="text-center text-sm text-domino-400">Sin fichas en mano</p>
       )}
     </div>
   );
