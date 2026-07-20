@@ -29,7 +29,7 @@ let cachedEcKey: CryptoKey | null = null;
 
 async function getEcKey(): Promise<CryptoKey> {
   if (!cachedEcKey) {
-    cachedEcKey = await importJWK(EC_PUBLIC_KEY, "ES256");
+    cachedEcKey = (await importJWK(EC_PUBLIC_KEY, "ES256")) as CryptoKey;
   }
   return cachedEcKey;
 }

@@ -22,6 +22,7 @@ function makeMatch(overrides?: Partial<MatchState>): MatchState {
     consecutivePasses: 0,
     isConnected: true,
     lastActionAt: now,
+    blockedTileIds: [],
   };
   return {
     matchId: "test-match",
@@ -143,6 +144,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p1",
@@ -150,6 +152,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p2",
@@ -157,6 +160,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p3",
@@ -164,6 +168,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
       ],
     });
@@ -185,6 +190,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p1",
@@ -192,6 +198,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: recentDate,
+          blockedTileIds: [],
         },
         {
           id: "p2",
@@ -199,6 +206,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p3",
@@ -206,6 +214,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
       ],
     });
@@ -226,6 +235,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p1",
@@ -233,6 +243,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p2",
@@ -240,6 +251,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p3",
@@ -247,6 +259,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
       ],
     });
@@ -259,6 +272,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p1",
@@ -266,6 +280,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p2",
@@ -273,6 +288,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p3",
@@ -280,6 +296,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
       ],
     });
@@ -305,6 +322,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p1",
@@ -312,6 +330,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p2",
@@ -319,6 +338,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
         {
           id: "p3",
@@ -326,6 +346,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: oldDate,
+          blockedTileIds: [],
         },
       ],
     });
@@ -338,6 +359,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: recentDate,
+          blockedTileIds: [],
         },
         {
           id: "p1",
@@ -345,6 +367,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: recentDate,
+          blockedTileIds: [],
         },
         {
           id: "p2",
@@ -352,6 +375,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: recentDate,
+          blockedTileIds: [],
         },
         {
           id: "p3",
@@ -359,6 +383,7 @@ describe("cleanup", () => {
           consecutivePasses: 0,
           isConnected: true,
           lastActionAt: recentDate,
+          blockedTileIds: [],
         },
       ],
     });

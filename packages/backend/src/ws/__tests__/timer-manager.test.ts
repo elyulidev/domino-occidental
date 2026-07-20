@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import type { ActionResult, MatchState } from "../../game/types";
 import { ABANDONMENT_THRESHOLD_MS } from "../../game/types";
-import type { SendFn } from "../broadcaster";
+import type { SendFn } from "@domino/shared";
 import type { TimerManager, TimerManagerDeps } from "../timer-manager";
 import { createTimerManager } from "../timer-manager";
 
@@ -48,6 +48,7 @@ function makeMatch(overrides?: Partial<MatchState>): MatchState {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p2",
@@ -55,6 +56,7 @@ function makeMatch(overrides?: Partial<MatchState>): MatchState {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p3",
@@ -62,6 +64,7 @@ function makeMatch(overrides?: Partial<MatchState>): MatchState {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p4",
@@ -69,6 +72,7 @@ function makeMatch(overrides?: Partial<MatchState>): MatchState {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
     ],
     board: { leftEnd: null, rightEnd: null, tiles: [] },

@@ -248,7 +248,7 @@ describe("startHand", () => {
       board: {
         leftEnd: 5,
         rightEnd: 3,
-        tiles: [{ tile: t(5, 3), side: "left" as const, playerId: "p0" }],
+        tiles: [{ tile: t(5, 3), side: "left" as const, playerId: "p0", slotIndex: 0, flipped: false }],
       },
     };
     const result = startHand(modifiedMatch);
@@ -292,7 +292,7 @@ describe("startHand", () => {
       type: "round_started";
       firstPlayer: number;
     };
-    expect(result.match.turn.currentTurn).toBe(firstPlayerEvent.firstPlayer);
+    expect(result.match.turn.currentTurn).toBe(firstPlayerEvent.firstPlayer as 0 | 1 | 2 | 3);
   });
 
   it("returns same match reference if no state needed changing (immutability check)", () => {
@@ -1151,14 +1151,14 @@ describe("Integration: full game cycles", () => {
     // Pair 0 at 190: scoring 9 more = 199, still not enough. Let's make losers heavier.
     const almostWonMatch = {
       ...started,
-      scores: { scores: [190, 50], isTiebreaker: false },
+      scores: { scores: [190, 50] as [number, number], isTiebreaker: false },
       players: [
         { ...started.players[0], hand: [] }, // P1: empty → wins
         { ...started.players[1], hand: [t(5, 5), t(4, 6)] }, // P2: 10+10=20
         { ...started.players[2], hand: [t(3, 7), t(2, 8)] }, // P3: 10+10=20
         { ...started.players[3], hand: [t(1, 9), t(0, 9)] }, // P4: 10+9=19
         // Losers total = 20+20+19 = 59 → new score = 190+59 = 249 ≥ 200 → match over
-      ],
+      ] as typeof started.players,
     };
 
     const result = handleHandEnd(almostWonMatch, 0, "empty_hand");

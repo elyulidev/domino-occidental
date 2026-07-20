@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "bun:test";
-import type { MessageResult, SanitizedMatchState, WsClientMessage, WsServerMessage } from "@domino/shared";
+import type { GameStore, MatchState, MessageResult, SanitizedMatchState, WsClientMessage, WsServerMessage } from "@domino/shared";
 import type { ConnectionManager, WsPlugin } from "../connection";
 import {
   createConnectionManager,
@@ -35,10 +35,10 @@ function makeSanitizedState(
   return {
     matchId: "test-match",
     players: [
-      { id: "1", handSize: 10, isConnected: true },
-      { id: "2", handSize: 10, isConnected: true },
-      { id: "3", handSize: 10, isConnected: true },
-      { id: "4", handSize: 10, isConnected: true },
+      { id: "1", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "2", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "3", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "4", handSize: 10, isConnected: true, blockedTileIds: [] },
     ],
     board: { leftEnd: null, rightEnd: null, tiles: [] },
     currentTurn: 0,
@@ -47,6 +47,10 @@ function makeSanitizedState(
     poolCount: 15,
     status: "in_progress",
     targetScore: 200,
+    turnDeadline: null,
+    consecutiveNullRounds: 0,
+    lastHandWinner: null,
+    avatarUrls: ["", "", "", ""],
     ...overrides,
   };
 }
@@ -58,7 +62,7 @@ function makeMessageResult(overrides?: Partial<MessageResult>): MessageResult {
   };
 }
 
-function makeMatch() {
+function makeMatch(): MatchState {
   const now = new Date();
   return {
     matchId: "match-1",
@@ -69,6 +73,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p2",
@@ -76,6 +81,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p3",
@@ -83,6 +89,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p4",
@@ -90,6 +97,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
     ],
     board: { leftEnd: null, rightEnd: null, tiles: [] },
@@ -139,7 +147,7 @@ describe("ConnectionMap", () => {
       ws as unknown as Parameters<ConnectionManager["register"]>[2],
     );
 
-    expect(manager.getConnection("p1")).toBe(ws);
+    expect(manager.getConnection("p1")).toBe(ws as any);
   });
 
   it("unregister removes connection", () => {
@@ -171,13 +179,13 @@ describe("ConnectionMap", () => {
       ws2 as unknown as Parameters<ConnectionManager["register"]>[2],
     );
 
-    expect(manager.getConnection("p1")).toBe(ws1);
-    expect(manager.getConnection("p2")).toBe(ws2);
+    expect(manager.getConnection("p1")).toBe(ws1 as any);
+    expect(manager.getConnection("p2")).toBe(ws2 as any);
 
     manager.unregister("p1");
 
     expect(manager.getConnection("p1")).toBeUndefined();
-    expect(manager.getConnection("p2")).toBe(ws2);
+    expect(manager.getConnection("p2")).toBe(ws2 as any);
   });
 
   it("re-register updates existing entry (reconnect)", () => {
@@ -195,7 +203,7 @@ describe("ConnectionMap", () => {
       wsNew as unknown as Parameters<ConnectionManager["register"]>[2],
     );
 
-    expect(manager.getConnection("p1")).toBe(wsNew);
+    expect(manager.getConnection("p1")).toBe(wsNew as any);
   });
 });
 
@@ -354,7 +362,7 @@ describe("wsPlugin open handler", () => {
     const handlers = getHandler(plugin, "open");
     handlers.open(ws as unknown as Parameters<typeof handlers.open>[0]);
 
-    expect(plugin.manager.getConnection("p1")).toBe(ws);
+    expect(plugin.manager.getConnection("p1")).toBe(ws as any);
     expect(mockReconnectPlayer).toHaveBeenCalledTimes(1);
   });
 
@@ -390,7 +398,7 @@ describe("wsPlugin open handler", () => {
     const mockReconnectPlayer = vi.fn(() => ({
       match,
       events: [{ type: "player_reconnected", playerId: "p1" }],
-    }));
+    })) as any;
     const mockBroadcastEvents = vi.fn();
 
     const plugin = createWsPlugin({

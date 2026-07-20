@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "bun:test";
-import type { SanitizedMatchState } from "../../game/handler";
+import type { SanitizedMatchState, WsServerMessage } from "@domino/shared";
 import type { GameEvent } from "../../game/types";
 
 // ---------------------------------------------------------------------------
@@ -15,10 +15,10 @@ function makeSanitizedState(
   return {
     matchId: MATCH_ID,
     players: [
-      { id: "1", handSize: 10, isConnected: true },
-      { id: "2", handSize: 10, isConnected: true },
-      { id: "3", handSize: 10, isConnected: true },
-      { id: "4", handSize: 10, isConnected: true },
+      { id: "1", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "2", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "3", handSize: 10, isConnected: true, blockedTileIds: [] },
+      { id: "4", handSize: 10, isConnected: true, blockedTileIds: [] },
     ],
     board: { leftEnd: null, rightEnd: null, tiles: [] },
     currentTurn: 0,
@@ -27,6 +27,10 @@ function makeSanitizedState(
     poolCount: 15,
     status: "in_progress",
     targetScore: 200,
+    turnDeadline: null,
+    consecutiveNullRounds: 0,
+    lastHandWinner: null,
+    avatarUrls: ["", "", "", ""],
     ...overrides,
   };
 }
@@ -103,7 +107,6 @@ function makeMatchAbandoned(playerId = "1"): GameEvent {
 // Import SUT — will fail until broadcaster.ts is created
 // ---------------------------------------------------------------------------
 
-import type { WsServerMessage } from "../broadcaster";
 import { broadcastEvents, sendState } from "../broadcaster";
 
 // ---------------------------------------------------------------------------

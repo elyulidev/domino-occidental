@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
-import type { UserChannelManager } from "../../ws/user-channel";
+import type { UserChannelManager } from "@domino/shared";
 import {
   createMatchmakingQueue,
   fetchPlayerProfiles,
@@ -26,20 +26,20 @@ describe("MatchmakingQueue", () => {
   // --- Basic queue operations ---
 
   it("enqueue adds player to queue", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
     expect(queue.getQueueSize()).toBe(1);
   });
 
   it("dequeue removes player from queue", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
     expect(queue.dequeue("u1")).toBe(true);
     expect(queue.getQueueSize()).toBe(0);
   });
 
   it("getQueueSize returns correct count", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1600, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1400, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1600, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1400, joinedAt: now, eloType: "individual" });
     expect(queue.getQueueSize()).toBe(3);
   });
 
@@ -48,7 +48,7 @@ describe("MatchmakingQueue", () => {
   });
 
   it("getWaitTime returns elapsed time since join", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
     dateNowSpy.mockReturnValue(now + 5000);
     expect(queue.getWaitTime("u1")).toBe(5000);
   });
@@ -56,10 +56,10 @@ describe("MatchmakingQueue", () => {
   // --- Matching algorithm ---
 
   it("finds match with 4 similar ELO players (within 200 range)", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now, eloType: "individual" });
 
     const match = queue.findMatch();
     expect(match).not.toBeNull();
@@ -73,20 +73,20 @@ describe("MatchmakingQueue", () => {
   });
 
   it("returns null with fewer than 4 players", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1500, joinedAt: now, eloType: "individual" });
 
     expect(queue.findMatch()).toBeNull();
   });
 
   it("finds match with wide ELO spread after time passes (relaxed window)", () => {
     // u1 joins at t=0 with ELO 1200
-    queue.enqueue({ userId: "u1", elo: 1200, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1200, joinedAt: now, eloType: "individual" });
     // Others join at t=0 with ELO 1500 (outside 200 window)
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1510, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1490, joinedAt: now });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1510, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1490, joinedAt: now, eloType: "individual" });
 
     // At t=0: range is 200, u1 (1200) vs others (1500) = 300 apart → no match
     expect(queue.findMatch()).toBeNull();
@@ -101,11 +101,11 @@ describe("MatchmakingQueue", () => {
 
   it("oldest player triggers window expansion", () => {
     // u1 joins at t=0 with ELO 1000
-    queue.enqueue({ userId: "u1", elo: 1000, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1000, joinedAt: now, eloType: "individual" });
     // Others join at t=0 with ELO 1500
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1510, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1490, joinedAt: now });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1510, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1490, joinedAt: now, eloType: "individual" });
 
     // At t=0: range is 200, u1 (1000) vs others (1500) = 500 apart → no match
     expect(queue.findMatch()).toBeNull();
@@ -119,10 +119,10 @@ describe("MatchmakingQueue", () => {
   });
 
   it("does NOT match players outside window", () => {
-    queue.enqueue({ userId: "u1", elo: 1000, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1000, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1500, joinedAt: now, eloType: "individual" });
 
     // At t=0: range is 200, u1 (1000) vs others (1500) = 500 apart
     // Even with FIFO, u1 is oldest but can't find 3 within range
@@ -132,8 +132,8 @@ describe("MatchmakingQueue", () => {
   // --- Cleanup ---
 
   it("cleanupStale removes players waiting >60s", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 61_000 });
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 61_000, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
 
     const removed = queue.cleanupStale();
     expect(removed).toContain("u1");
@@ -142,8 +142,8 @@ describe("MatchmakingQueue", () => {
   });
 
   it("cleanupStale returns removed userIds", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 70_000 });
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now - 80_000 });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 70_000, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now - 80_000, eloType: "individual" });
 
     const removed = queue.cleanupStale();
     expect(removed).toHaveLength(2);
@@ -152,8 +152,8 @@ describe("MatchmakingQueue", () => {
   });
 
   it("cleanupStale does not remove players waiting <60s", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 59_000 });
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 59_000, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
 
     const removed = queue.cleanupStale();
     expect(removed).toHaveLength(0);
@@ -230,9 +230,9 @@ describe("MatchmakingQueue", () => {
   // --- Duplicate prevention ---
 
   it("does not allow same user to enqueue twice", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
     // Enqueueing again with same userId just overwrites the existing entry
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
     expect(queue.getQueueSize()).toBe(1);
   });
 
@@ -270,14 +270,14 @@ describe("processMatchmaking", () => {
     getChannel() {
       return undefined;
     },
-    pushToUser(userId, event) {
+    pushToUser(userId: string, event: Record<string, unknown>) {
       pushCalls.push({ userId, event: event as Record<string, unknown> });
       return true;
     },
   };
 
   const mockStore = {
-    getGame: () => null,
+    getGame: (_matchId: string) => null,
     updateGame: () => {},
   };
 
@@ -294,9 +294,9 @@ describe("processMatchmaking", () => {
   });
 
   it("returns null when queue has fewer than 4 players", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1500, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1500, joinedAt: now, eloType: "individual" });
 
     const result = processMatchmaking({
       queue,
@@ -308,10 +308,10 @@ describe("processMatchmaking", () => {
   });
 
   it("creates match when 4 players in queue", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now, eloType: "individual" });
 
     const result = processMatchmaking({
       queue,
@@ -326,10 +326,10 @@ describe("processMatchmaking", () => {
   });
 
   it("removes matched players from queue", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now, eloType: "individual" });
 
     processMatchmaking({
       queue,
@@ -341,10 +341,10 @@ describe("processMatchmaking", () => {
   });
 
   it("pushes match_found to all 4 players", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now, eloType: "individual" });
 
     processMatchmaking({
       queue,
@@ -364,10 +364,10 @@ describe("processMatchmaking", () => {
   });
 
   it("creates game in store", () => {
-    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now });
-    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now });
-    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now });
-    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now });
+    queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u2", elo: 1520, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u3", elo: 1480, joinedAt: now, eloType: "individual" });
+    queue.enqueue({ userId: "u4", elo: 1510, joinedAt: now, eloType: "individual" });
 
     const result = processMatchmaking({
       queue,
@@ -375,7 +375,7 @@ describe("processMatchmaking", () => {
       userChannelManager: mockUserChannelManager,
     });
 
-    const _game = mockStore.getGame(result?.matchId);
+    const _game = mockStore.getGame(result?.matchId!);
     // With the default mock getGame returns null (it's not a real store),
     // but the match ID is returned correctly
     expect(result?.matchId).toBeTruthy();

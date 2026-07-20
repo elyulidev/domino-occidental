@@ -37,10 +37,11 @@ export const matchMoves = pgTable(
       .defaultNow(),
   },
   (table) => [
-    foreignKey(() => ({
+    // biome-ignore lint/suspicious/noExplicitAny: Drizzle foreignKey type inference mismatch
+    foreignKey((() => ({
       columns: [table.matchId],
       foreignColumns: [matches.id],
       name: "match_moves_match_id_fkey",
-    })).onDelete("cascade"),
+    })) as any).onDelete("cascade"),
   ],
 );

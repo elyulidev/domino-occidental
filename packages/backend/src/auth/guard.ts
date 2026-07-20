@@ -46,7 +46,8 @@ export function authGuard() {
  * Use in app-level `onError`:
  *   app.onError(authErrorHandler).use(authGuard())
  */
-export function authErrorHandler({ set }: { set: { status: number } }) {
+// biome-ignore lint/suspicious/noExplicitAny: Elysia ErrorHandler context type is complex; narrowing loses ergonomics
+export function authErrorHandler({ set }: any) {
   if (set.status === 401) {
     return { error: "unauthorized" };
   }

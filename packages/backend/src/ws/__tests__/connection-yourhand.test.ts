@@ -13,6 +13,7 @@ function makePlayer(id: string, hand: Array<{ id: string; top: number; bottom: n
     consecutivePasses: 0,
     isConnected: true,
     lastActionAt: new Date(),
+    blockedTileIds: [],
   };
 }
 
@@ -189,7 +190,7 @@ describe("open handler — yourHand population", () => {
       reconnectPlayer: vi.fn(() => ({
         match,
         events: [{ type: "player_reconnected", playerId: "p1" }],
-      })),
+      })) as any,
     });
 
     const ws = createMockWs("p1", "match-1");

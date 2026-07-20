@@ -54,6 +54,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p2",
@@ -61,6 +62,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p3",
@@ -68,6 +70,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
       {
         id: "p4",
@@ -75,6 +78,7 @@ function makeMatch() {
         consecutivePasses: 0,
         isConnected: true,
         lastActionAt: now,
+        blockedTileIds: [],
       },
     ],
     board: { leftEnd: null, rightEnd: null, tiles: [] },
@@ -211,8 +215,8 @@ describe("wsPlugin JWT auth integration", () => {
     const plugin = createWsPlugin({
       store: makeStore(),
       verifyToken,
-      disconnectPlayer: () => ({ match: makeMatch(), events: [] }),
-      reconnectPlayer: () => ({ match: makeMatch(), events: [] }),
+      disconnectPlayer: (() => ({ match: makeMatch(), events: [] })) as any,
+      reconnectPlayer: (() => ({ match: makeMatch(), events: [] })) as any,
     });
 
     const handlers = getHandler(plugin);
@@ -227,8 +231,8 @@ describe("wsPlugin JWT auth integration", () => {
     const plugin = createWsPlugin({
       store: makeStore(),
       verifyToken,
-      disconnectPlayer: () => ({ match: makeMatch(), events: [] }),
-      reconnectPlayer: () => ({ match: makeMatch(), events: [] }),
+      disconnectPlayer: (() => ({ match: makeMatch(), events: [] })) as any,
+      reconnectPlayer: (() => ({ match: makeMatch(), events: [] })) as any,
     });
 
     const handlers = getHandler(plugin);
@@ -246,8 +250,8 @@ describe("wsPlugin JWT auth integration", () => {
     const plugin = createWsPlugin({
       store: makeStore(match),
       verifyToken,
-      disconnectPlayer: () => ({ match, events: [] }),
-      reconnectPlayer: () => ({ match, events: [] }),
+      disconnectPlayer: (() => ({ match, events: [] })) as any,
+      reconnectPlayer: (() => ({ match, events: [] })) as any,
     });
 
     const handlers = getHandler(plugin);
@@ -271,11 +275,11 @@ describe("wsPlugin JWT auth integration", () => {
     const plugin = createWsPlugin({
       store: makeStore(match),
       verifyToken,
-      disconnectPlayer: () => ({ match, events: [] }),
-      reconnectPlayer: () => {
+      disconnectPlayer: (() => ({ match, events: [] })) as any,
+      reconnectPlayer: (() => {
         reconnectCalled = true;
         return { match, events: [] };
-      },
+      }) as any,
     });
 
     const handlers = getHandler(plugin);

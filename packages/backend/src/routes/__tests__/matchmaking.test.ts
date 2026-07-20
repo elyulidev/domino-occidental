@@ -54,7 +54,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.queued).toBe(true);
       expect(body.position).toBe(1);
       expect(body.queueType).toBe("individual");
@@ -70,7 +70,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(401);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.error).toBe("unauthorized");
     });
 
@@ -95,7 +95,7 @@ describe("Matchmaking REST endpoints", () => {
         }),
       );
       expect(res2.status).toBe(409);
-      const body = await res2.json();
+      const body = (await res2.json()) as any;
       expect(body.error).toBe("already_in_queue");
     });
 
@@ -119,7 +119,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.position).toBe(2);
     });
 
@@ -128,10 +128,10 @@ describe("Matchmaking REST endpoints", () => {
       const token = await signToken("user-1");
 
       // Mock resolvePartner to throw
-      const resolveSpy = spyOn(resolvePartner, "call").mockImplementation(
-        () => {
+      const resolveSpy = spyOn(resolvePartner as any, "call" as any).mockImplementation(
+        (() => {
           throw new Error("DB connection failed");
-        },
+        }) as any,
       );
 
       try {
@@ -143,7 +143,7 @@ describe("Matchmaking REST endpoints", () => {
         );
 
         expect(res.status).toBe(200);
-        const body = await res.json();
+        const body = (await res.json()) as any;
         expect(body.queued).toBe(true);
         expect(body.queueType).toBe("individual");
         expect(queue.getQueueSize()).toBe(1);
@@ -180,7 +180,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.left).toBe(true);
       expect(queue.getQueueSize()).toBe(0);
     });
@@ -197,7 +197,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.left).toBe(true);
     });
 
@@ -228,7 +228,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.inQueue).toBe(false);
       expect(body.queueType).toBeNull();
       expect(body.position).toBe(0);
@@ -253,7 +253,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.inQueue).toBe(true);
       expect(body.queueType).toBe("individual");
       expect(body.position).toBe(1);
@@ -294,7 +294,7 @@ describe("Matchmaking REST endpoints", () => {
       );
 
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = (await res.json()) as any;
       expect(body.inQueue).toBe(true);
       expect(body.position).toBe(2);
       expect(body.queueCount).toBe(3);
@@ -315,8 +315,8 @@ describe("Matchmaking REST endpoints", () => {
 
   describe("Stale entry cleanup", () => {
     it("removes stale entries on cleanup", () => {
-      queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 61_000 });
-      queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now });
+      queue.enqueue({ userId: "u1", elo: 1500, joinedAt: now - 61_000, eloType: "individual" });
+      queue.enqueue({ userId: "u2", elo: 1500, joinedAt: now, eloType: "individual" });
 
       const removed = queue.cleanupStale();
       expect(removed).toContain("u1");

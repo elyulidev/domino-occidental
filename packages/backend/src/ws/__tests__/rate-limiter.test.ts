@@ -218,9 +218,10 @@ describe("wsPlugin rate limiter integration", () => {
     handleCalled = false;
     // Set up a spy on ws.send
     let sentData = "";
-    ws.send = (data: string) => {
+    ws.send = ((data: string) => {
       sentData = data;
-    };
+      return 0;
+    }) as typeof ws.send;
     handlers.message(ws, JSON.stringify({ type: "pass" }));
 
     expect(handleCalled).toBe(false);

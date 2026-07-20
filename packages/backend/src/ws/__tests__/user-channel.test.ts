@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "bun:test";
-import type { UserWsConnection } from "../user-channel";
+import type { UserWsConnection } from "@domino/shared";
 import { createUserChannelManager } from "../user-channel";
 
 // ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ describe("UserChannelManager", () => {
     });
 
     expect(result).toBe(true);
-    const sent = JSON.parse(ws.send.mock.calls[0][0]);
+    const sent = JSON.parse((ws.send as any).mock.calls[0][0]);
     expect(sent.type).toBe("match_found");
     expect(sent.matchId).toBe("m1");
   });

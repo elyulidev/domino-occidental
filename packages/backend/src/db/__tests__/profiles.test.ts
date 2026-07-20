@@ -27,13 +27,13 @@ describe("profiles schema", () => {
   it("has elo column with default 1200", () => {
     const eloCol = profiles.elo;
     expect(eloCol).toBeDefined();
-    expect((eloCol as Record<string, unknown>).default).toBe(1200);
+    expect((eloCol as unknown as Record<string, unknown>).default).toBe(1200);
   });
 
   it("has coins column with default 250", () => {
     const coinsCol = profiles.coins;
     expect(coinsCol).toBeDefined();
-    expect((coinsCol as Record<string, unknown>).default).toBe(250);
+    expect((coinsCol as unknown as Record<string, unknown>).default).toBe(250);
   });
 
   it("preserves existing columns (username, avatarUrl, timestamps)", () => {
@@ -45,9 +45,9 @@ describe("profiles schema", () => {
   });
 
   it("maps column names to correct SQL identifiers", () => {
-    expect((profiles.elo as Record<string, unknown>).name).toBe("elo");
-    expect((profiles.coins as Record<string, unknown>).name).toBe("coins");
-    expect((profiles.username as Record<string, unknown>).name).toBe(
+    expect((profiles.elo as unknown as Record<string, unknown>).name).toBe("elo");
+    expect((profiles.coins as unknown as Record<string, unknown>).name).toBe("coins");
+    expect((profiles.username as unknown as Record<string, unknown>).name).toBe(
       "username",
     );
   });
