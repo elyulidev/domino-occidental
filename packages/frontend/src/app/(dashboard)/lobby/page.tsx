@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { LeaderboardEntry, ProfileResponse } from "@/lib/api/types";
 import { createClient } from "@/lib/supabase/server";
-import { QuickMatchButton } from "./_components/quick-match-button";
 import { QueueStatusBadge } from "./_components/queue-status-badge";
+import { QuickMatchButton } from "./_components/quick-match-button";
 
 export const metadata = {
   title: "Lobby — Dominó Occidental",

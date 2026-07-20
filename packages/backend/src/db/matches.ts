@@ -10,8 +10,8 @@
 
 import type { GameEvent, MatchState } from "@domino/shared";
 import { getDb } from "./client";
-import { matches } from "./schema";
 import { flushMatchMoves } from "./moves";
+import { matches } from "./schema";
 
 // ---------------------------------------------------------------------------
 // Types

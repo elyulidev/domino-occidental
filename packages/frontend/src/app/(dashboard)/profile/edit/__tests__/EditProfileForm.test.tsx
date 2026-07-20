@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { EditProfileForm } from "@/app/(dashboard)/profile/edit/EditProfileForm";
 
 // Mock server action

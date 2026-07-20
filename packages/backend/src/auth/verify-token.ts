@@ -11,7 +11,7 @@
  * and HS256 (legacy shared secret). Auto-detects from the token header.
  */
 
-import { importJWK, jwtVerify, type JWTPayload } from "jose";
+import { importJWK, jwtVerify } from "jose";
 
 // ---------------------------------------------------------------------------
 // EC public key from Supabase GOTRUE_JWT_KEYS (P-256 / ES256)

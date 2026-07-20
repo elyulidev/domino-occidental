@@ -59,9 +59,7 @@ export function broadcastEvents(
     }
   }
 
-  console.log(`[broadcaster] ${events.length} events → ${allPlayers.length} players match=${_matchId} hasState=${state !== undefined}`);
-
-  // Send one message per recipient with all their events
+  // Send one message per recipient with their events
   for (const [playerId, playerEvents] of eventsByPlayer) {
     if (playerEvents.length === 0) continue;
     try {

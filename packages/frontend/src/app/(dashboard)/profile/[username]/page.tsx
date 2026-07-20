@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getCountryName, getFlagEmoji } from "@/lib/countries";
 import { getInitials } from "@/lib/profile-validation";
 import { formatMemberSince } from "@/lib/profile-view";
-import { getCountryName, getFlagEmoji } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({

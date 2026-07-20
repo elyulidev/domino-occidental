@@ -132,7 +132,6 @@ export function PlayerAvatar({
     >
       {/* Avatar circle — focusable for touch tooltip on mobile */}
       <div
-        tabIndex={0}
         role="img"
         aria-label={`Avatar de ${playerName}`}
         className={[

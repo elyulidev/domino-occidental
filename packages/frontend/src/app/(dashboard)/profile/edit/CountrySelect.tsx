@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { COUNTRY_OPTIONS, getFlagEmoji, getCountryName } from "@/lib/countries";
+import { useEffect, useRef, useState } from "react";
+import { COUNTRY_OPTIONS, getCountryName, getFlagEmoji } from "@/lib/countries";
 
 type CountrySelectProps = {
   defaultValue: string | null;
@@ -91,7 +91,6 @@ export function CountrySelect({ defaultValue, name }: CountrySelectProps) {
       {isOpen && (
         <ul
           ref={listRef}
-          role="listbox"
           aria-label="Países"
           className="absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-domino-700 bg-domino-900 shadow-2xl shadow-black/40"
         >

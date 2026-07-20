@@ -188,16 +188,12 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
    * and broadcasts the updated state to all players.
    */
   function onAllFourConnected(matchId: string): void {
-    console.log(`[ws] onAllFourConnected called for match ${matchId}`);
     if (startedMatches.has(matchId)) {
-      console.log(`[ws] match ${matchId} already started, skipping`);
       return;
     }
 
     const playerIds = manager.getPlayerIdsForMatch(matchId);
-    console.log(`[ws] match ${matchId} has ${playerIds.length} players connected: ${playerIds.join(', ')}`);
     if (playerIds.length < 4) {
-      console.log(`[ws] match ${matchId} waiting for ${4 - playerIds.length} more players`);
       return;
     }
 
@@ -209,7 +205,6 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
 
     // Transition match status from "waiting" to "in_progress"
     const match = deps.store.getGame(matchId);
-    console.log(`[ws] Match ${matchId} exists: ${!!match}, status: ${match?.status}`);
     if (match && match.status === "waiting") {
       match.status = "in_progress";
       deps.store.updateGame(matchId, match);
@@ -221,7 +216,6 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
     // Broadcast the started match state to all 4 players
     const updatedMatch = deps.store.getGame(matchId);
     if (updatedMatch) {
-      console.log(`[ws] Broadcasting round_started to ${updatedMatch.players.length} players`);
       // Apply player names from profiles store if any are missing
       // (resolves race condition where async fetchPlayerProfiles hasn't completed yet)
       const profiles = getPlayerProfiles(matchId);
@@ -230,7 +224,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
         const namedPlayers = updatedMatch.players.map((p) => {
           if (!p.name && profiles.has(p.id)) {
             needsUpdate = true;
-            return { ...p, name: profiles.get(p.id)!.name } as (typeof updatedMatch.players)[number];
+            return { ...p, name: profiles.get(p.id)?.name } as (typeof updatedMatch.players)[number];
           }
           return p;
         });
@@ -274,7 +268,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
         const namedPlayers = match.players.map((p) => {
           if (!p.name && profiles.has(p.id)) {
             needsUpdate = true;
-            return { ...p, name: profiles.get(p.id)!.name } as (typeof match.players)[number];
+            return { ...p, name: profiles.get(p.id)?.name } as (typeof match.players)[number];
           }
           return p;
         });
@@ -431,7 +425,6 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
 
           // Broadcast events to ALL recipients with sanitized state included
           if (result.events.length > 0) {
-            console.log(`[ws] ${result.events.length} event(s) from player ${playerId}: ${result.events.map(e => e.type).join(',')} hasState=${!!result.sanitizedState}`);
             const match = deps.store.getGame(matchId);
             const playerIds = match?.players.map((p) => p.id);
             broadcastEvents(

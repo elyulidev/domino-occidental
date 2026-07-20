@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { updateProfile, uploadAvatar } from "@/lib/actions/profile";
 import { getInitials } from "@/lib/profile-validation";
 import { CountrySelect } from "./CountrySelect";

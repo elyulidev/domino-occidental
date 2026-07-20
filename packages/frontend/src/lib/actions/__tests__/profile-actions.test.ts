@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies BEFORE imports
 vi.mock("@/lib/supabase/server", () => ({
@@ -15,10 +15,10 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { updateProfile, uploadAvatar } from "@/lib/actions/profile";
+import { createClient } from "@/lib/supabase/server";
 
 const mockCreateClient = vi.mocked(createClient);
 const mockRevalidatePath = vi.mocked(revalidatePath);
@@ -46,7 +46,7 @@ function mockSupabase(overrides: {
 
   // Storage mocks
   const upload = vi.fn().mockResolvedValue({ error: null });
-  const storageFrom = vi.fn().mockReturnValue({ upload });
+  const _storageFrom = vi.fn().mockReturnValue({ upload });
   const getPublicUrl = vi.fn().mockReturnValue({
     data: {
       publicUrl:
