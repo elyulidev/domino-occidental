@@ -13,7 +13,7 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/backend/package.json packages/backend/
 
 # Install all workspace dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # --- Build: copy source and build shared ---
 FROM base AS build
