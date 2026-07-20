@@ -1,4 +1,5 @@
-import type { GameEvent, MatchState, Side } from "./types";
+import { z } from "zod";
+import type { GameEvent, MatchState } from "./types";
 
 /**
  * Interface for the in-memory game store.
@@ -9,13 +10,87 @@ export interface GameStore {
   updateGame(matchId: string, state: MatchState): void;
 }
 
+// ---------------------------------------------------------------------------
+// WebSocket Client Message — Zod Validation Schemas
+// ---------------------------------------------------------------------------
+
 /**
- * WebSocket client → server message types.
+ * Zod schema for the `play_tile` message: validates tileId is a non-empty
+ * string and side is exactly "left" or "right".
  */
-export type WsClientMessage =
-  | { type: "play_tile"; tileId: string; side: Side }
-  | { type: "pass" }
-  | { type: "leave" };
+const PlayTileMessageSchema = z.object({
+  type: z.literal("play_tile"),
+  tileId: z.string().min(1, "tileId is required"),
+  side: z.enum(["left", "right"]),
+});
+
+/**
+ * Zod schema for the `pass` message: no extra fields needed.
+ */
+const PassMessageSchema = z.object({
+  type: z.literal("pass"),
+});
+
+/**
+ * Zod schema for the `leave` message: no extra fields needed.
+ */
+const LeaveMessageSchema = z.object({
+  type: z.literal("leave"),
+});
+
+/**
+ * Discriminated union schema for all valid WebSocket client messages.
+ *
+ * This replaces the TypeScript-only type with runtime validation.
+ * Unknown `type` values or missing required fields produce a clear error.
+ */
+export const WsClientMessageSchema = z.discriminatedUnion("type", [
+  PlayTileMessageSchema,
+  PassMessageSchema,
+  LeaveMessageSchema,
+]);
+
+/**
+ * Result of validating a raw WebSocket message.
+ * On success: the parsed and narrowed WsClientMessage.
+ * On failure: a game_error event with details.
+ */
+export type WsClientMessageValidationResult =
+  | { ok: true; message: WsClientMessage }
+  | { ok: false; error: { type: "game_error"; code: string; message: string } };
+
+/**
+ * Validates a raw parsed object against the WsClientMessage schema.
+ *
+ * @param raw - The parsed JSON object from the WebSocket
+ * @returns Validation result with either the typed message or an error event
+ */
+export function validateWsMessage(
+  raw: unknown,
+): WsClientMessageValidationResult {
+  const result = WsClientMessageSchema.safeParse(raw);
+  if (result.success) {
+    return { ok: true, message: result.data };
+  }
+
+  const issues = result.error.issues;
+  const firstIssue = issues[0];
+  const path = firstIssue?.path?.join(".") ?? "unknown";
+
+  return {
+    ok: false,
+    error: {
+      type: "game_error",
+      code: "INVALID_MESSAGE",
+      message: `Invalid message: ${path} — ${firstIssue?.message ?? "validation failed"}`,
+    },
+  };
+}
+
+/**
+ * WebSocket client → server message types (runtime-validated).
+ */
+export type WsClientMessage = z.infer<typeof WsClientMessageSchema>;
 
 /**
  * Result of a handleMessage call.

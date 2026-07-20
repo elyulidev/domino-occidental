@@ -8,7 +8,7 @@ import type {
   WsClientMessage,
   WsServerMessage,
 } from "@domino/shared";
-import { sanitizeState } from "@domino/shared";
+import { sanitizeState, validateWsMessage } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
 import { persistMatch } from "../db/matches";
 import { handleMessage as defaultHandleMessage } from "../game/handler";
@@ -105,6 +105,18 @@ export function createConnectionManager(): ConnectionManager {
 
   return {
     register(matchId: string, playerId: string, ws: ElysiaWS): void {
+      // Close existing connection for this player to prevent orphan connections
+      // from multi-tab usage. The old tab gets a clean WebSocket close frame;
+      // the new tab takes over.
+      const existing = connections.get(playerId);
+      if (existing) {
+        try {
+          existing.ws.close(4002, "Replaced by new connection");
+        } catch {
+          // Already closed — safe to ignore
+        }
+      }
+
       connections.set(playerId, {
         ws,
         matchId,
@@ -310,7 +322,7 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
 			yourHand: player?.hand,
 		});
 
-		// Attempt reconnect notification if player was previously disconnected
+              // Attempt reconnect notification if player was previously disconnected
               if (reconnectPlayerFn) {
                 const playerIds = updatedMatch.players.map((p) => p.id);
                 const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
@@ -318,12 +330,14 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                   if (result.match !== updatedMatch) {
                     deps.store.updateGame(matchId, result.match);
                   }
+                  // Broadcast to OTHER players only — the reconnecting player
+                  // already received state + yourHand in the sendFn above.
                   broadcastEvents(
                     result.events,
                     matchId,
                     playerId,
                     sendFn,
-                    playerIds,
+                    playerIds.filter((id) => id !== playerId),
                     sanitizeState(result.match),
                   );
                 }
@@ -384,12 +398,14 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                   if (result.match !== updatedMatch) {
                     deps.store.updateGame(matchId, result.match);
                   }
+                  // Broadcast to OTHER players only — this player
+                  // already received state + yourHand in the sendFn above.
                   broadcastEvents(
                     result.events,
                     matchId,
                     playerId,
                     sendFn,
-                    playerIds,
+                    playerIds.filter((id) => id !== playerId),
                     sanitizeState(result.match),
                   );
                 }
@@ -436,12 +452,12 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
           }
 
           // Elysia 1.x auto-parses JSON WS messages — rawData may be already parsed or raw string
-          let parsed: WsClientMessage;
+          let raw: unknown;
           if (typeof rawData === "object" && !Buffer.isBuffer(rawData)) {
-            parsed = rawData as unknown as WsClientMessage;
+            raw = rawData;
           } else {
             try {
-              parsed = JSON.parse(
+              raw = JSON.parse(
                 typeof rawData === "string" ? rawData : (rawData as Buffer).toString(),
               );
             } catch {
@@ -459,7 +475,17 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             }
           }
 
-          const result = handleMessage(deps.store, matchId, playerId, parsed);
+          // Validate against Zod schema — rejects unknown types and missing fields
+          const validation = validateWsMessage(raw);
+          if (!validation.ok) {
+            sendFn(playerId, {
+              type: "game_events",
+              events: [validation.error],
+            });
+            return;
+          }
+
+          const result = handleMessage(deps.store, matchId, playerId, validation.message);
 
           // Broadcast events to ALL recipients with sanitized state included
           if (result.events.length > 0) {
