@@ -116,7 +116,7 @@ describe("broadcastEvents", () => {
       const sendFn = vi.fn();
       const event = makeGameError();
 
-      broadcastEvents([event], MATCH_ID, "1", sendFn);
+      broadcastEvents([event], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS);
 
       expect(sendFn).toHaveBeenCalledTimes(1);
       expect(sendFn).toHaveBeenCalledWith("1", {
@@ -129,7 +129,7 @@ describe("broadcastEvents", () => {
       const sendFn = vi.fn();
       const event = makeGameError();
 
-      broadcastEvents([event], MATCH_ID, "2", sendFn);
+      broadcastEvents([event], MATCH_ID, "2", sendFn, ALL_PLAYER_IDS);
 
       const calledPlayerIds = sendFn.mock.calls.map(
         (c: readonly unknown[]) => c[0],
@@ -168,7 +168,7 @@ describe("broadcastEvents", () => {
         const sendFn = vi.fn();
         const event = eventFactory();
 
-        broadcastEvents([event], MATCH_ID, "1", sendFn);
+        broadcastEvents([event], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS);
 
         expect(sendFn).toHaveBeenCalledTimes(4);
         const calledPlayerIds = sendFn.mock.calls.map(
@@ -189,7 +189,7 @@ describe("broadcastEvents", () => {
       const event = makeTilePlayed();
       const state = makeSanitizedState();
 
-      broadcastEvents([event], MATCH_ID, "1", sendFn, undefined, state);
+      broadcastEvents([event], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS, state);
 
       expect(sendFn).toHaveBeenCalledTimes(4);
       const envelope = sendFn.mock.calls[0][1] as WsServerMessage;
@@ -201,7 +201,7 @@ describe("broadcastEvents", () => {
       const sendFn = vi.fn();
       const event = makeTilePlayed();
 
-      broadcastEvents([event], MATCH_ID, "1", sendFn);
+      broadcastEvents([event], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS);
 
       const envelope = sendFn.mock.calls[0][1] as WsServerMessage;
       expect(envelope).not.toHaveProperty("state");
@@ -226,10 +226,11 @@ describe("broadcastEvents", () => {
       const tileEvent = makeTilePlayed();
       const errorEvent = makeGameError();
 
-      broadcastEvents([tileEvent, errorEvent], MATCH_ID, "1", sendFn);
+      broadcastEvents([tileEvent, errorEvent], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS);
 
-      // tile_played → 4 calls, game_error → 1 call = 5 total
-      expect(sendFn).toHaveBeenCalledTimes(5);
+      // tile_played → 4 players, game_error → only player "1"
+      // broadcaster groups by recipient, so player "1" gets both in one envelope = 4 total
+      expect(sendFn).toHaveBeenCalledTimes(4);
     });
 
     it("playerIds override limits recipients to specified IDs", () => {
@@ -256,7 +257,7 @@ describe("broadcastEvents", () => {
       });
       const event = makeTilePlayed();
 
-      broadcastEvents([event], MATCH_ID, "1", sendFn);
+      broadcastEvents([event], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS);
 
       // Should still call sendFn for all 4 players (error caught)
       expect(sendFn).toHaveBeenCalledTimes(4);
@@ -301,17 +302,18 @@ describe("broadcastEvents", () => {
       expect(calledPlayerIds).toEqual(uuids);
     });
 
-    it("fallback to [1,2,3,4] when playerIds is undefined", () => {
+    it("missing playerIds logs warning and sends nothing", () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const sendFn = vi.fn();
       const event = makePlayerPassed();
 
-      broadcastEvents([event], MATCH_ID, "1", sendFn, undefined);
+      broadcastEvents([event], MATCH_ID, "1", sendFn);
 
-      expect(sendFn).toHaveBeenCalledTimes(4);
-      const calledPlayerIds = sendFn.mock.calls.map(
-        (c: readonly unknown[]) => c[0],
+      expect(sendFn).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("broadcastEvents called without playerIds"),
       );
-      expect(calledPlayerIds).toEqual(["1", "2", "3", "4"]);
+      errorSpy.mockRestore();
     });
   });
 
@@ -324,7 +326,7 @@ describe("broadcastEvents", () => {
       const sendFn = vi.fn();
       const event = makeTilePlayed();
 
-      broadcastEvents([event], MATCH_ID, "1", sendFn);
+      broadcastEvents([event], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS);
 
       for (const call of sendFn.mock.calls) {
         const envelope = call[1] as WsServerMessage;
@@ -337,7 +339,7 @@ describe("broadcastEvents", () => {
       const sendFn = vi.fn();
       const event = makeGameError();
 
-      broadcastEvents([event], MATCH_ID, "1", sendFn);
+      broadcastEvents([event], MATCH_ID, "1", sendFn, ALL_PLAYER_IDS);
 
       const envelope = sendFn.mock.calls[0][1] as WsServerMessage;
       expect(envelope.events).toHaveLength(1);

@@ -252,12 +252,100 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
     }
   }
 
+  /**
+   * Common handler for player joining/reconnecting to a match.
+   * Shared by both JWT-authenticated and dev/testing code paths.
+   */
+  function handlePlayerJoin(
+    matchId: string,
+    playerId: string,
+    ws: ElysiaWS,
+  ): void {
+    (ws.data as Record<string, unknown>).playerId = playerId;
+    manager.register(matchId, playerId, ws);
+
+    // Update isConnected in the store on every join
+    const match = deps.store.getGame(matchId);
+    if (match) {
+      // Apply player names from profiles store if any are missing
+      const profiles = getPlayerProfiles(matchId);
+      if (profiles) {
+        let needsUpdate = false;
+        const namedPlayers = match.players.map((p) => {
+          if (!p.name && profiles.has(p.id)) {
+            needsUpdate = true;
+            return { ...p, name: profiles.get(p.id)!.name } as (typeof match.players)[number];
+          }
+          return p;
+        });
+        if (needsUpdate) {
+          match.players = namedPlayers as MatchState["players"];
+        }
+      }
+
+      const newPlayers = match.players.map((p) =>
+        p.id === playerId
+          ? { ...p, isConnected: true, lastActionAt: new Date() }
+          : p,
+      ) as MatchState["players"];
+      if (newPlayers !== match.players) {
+        deps.store.updateGame(matchId, { ...match, players: newPlayers });
+      }
+
+      // biome-ignore lint/style/noNonNullAssertion: game exists because we just updated it
+      const updatedMatch = deps.store.getGame(matchId)!;
+      const player = updatedMatch.players.find((p) => p.id === playerId);
+      sendFn(playerId, {
+        type: "game_events",
+        events: [],
+        state: sanitizeState(updatedMatch),
+        yourHand: player?.hand,
+      });
+
+      // Attempt reconnect notification if player was previously disconnected
+      if (reconnectPlayerFn) {
+        const playerIds = updatedMatch.players.map((p) => p.id);
+        const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
+        if (result.events.length > 0) {
+          if (result.match !== updatedMatch) {
+            deps.store.updateGame(matchId, result.match);
+          }
+          // Broadcast to OTHER players only — the reconnecting player
+          // already received state + yourHand in the sendFn above.
+          broadcastEvents(
+            result.events,
+            matchId,
+            playerId,
+            sendFn,
+            playerIds.filter((id) => id !== playerId),
+            sanitizeState(result.match),
+          );
+        }
+      }
+
+      // Broadcast updated state to ALL OTHER connected players
+      const broadcastState = sanitizeState(
+        deps.store.getGame(matchId) ?? updatedMatch,
+      );
+      for (const p of updatedMatch.players) {
+        if (p.id !== playerId && manager.getConnection(p.id)) {
+          sendState(p.id, broadcastState, sendFn);
+        }
+      }
+    }
+
+    // Cancel abandonment timer on reconnect
+    deps.timerManager?.cancelDisconnect(matchId, playerId);
+
+    // All-4-connected detection: start match, transition status, broadcast
+    onAllFourConnected(matchId);
+  }
+
   return {
     manager,
     ws: {
         open(ws: ElysiaWS) {
           const matchId = ((ws.data as Record<string, unknown>).params as Record<string, string>)?.matchId as string;
-          console.log(`[ws] Player connecting to match ${matchId}`);
           (ws.data as Record<string, unknown>).matchId = matchId;
 
           // --- JWT Authentication ---
@@ -277,157 +365,11 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
               return;
             }
 
-            // Player identity comes from the verified JWT
-            const playerId = verified.userId;
-            (ws.data as Record<string, unknown>).playerId = playerId;
-
-            manager.register(matchId, playerId, ws);
-
-            // Update isConnected in the store on every join
-            const match = deps.store.getGame(matchId);
-            console.log(`[ws] Player ${playerId} joining match ${matchId} - match exists: ${!!match}`);
-            if (match) {
-              // Apply player names from profiles store if any are missing
-              const profiles = getPlayerProfiles(matchId);
-              if (profiles) {
-                let needsUpdate = false;
-                const namedPlayers = match.players.map((p) => {
-                  if (!p.name && profiles.has(p.id)) {
-                    needsUpdate = true;
-                    return { ...p, name: profiles.get(p.id)!.name } as (typeof match.players)[number];
-                  }
-                  return p;
-                });
-                if (needsUpdate) {
-                  match.players = namedPlayers as MatchState["players"];
-                }
-              }
-
-              const newPlayers = match.players.map((p) =>
-                p.id === playerId
-                  ? { ...p, isConnected: true, lastActionAt: new Date() }
-                  : p,
-              ) as MatchState["players"];
-              if (newPlayers !== match.players) {
-                deps.store.updateGame(matchId, { ...match, players: newPlayers });
-              }
-
-		// biome-ignore lint/style/noNonNullAssertion: game exists because we just updated it
-		const updatedMatch = deps.store.getGame(matchId)!;
-		const player = updatedMatch.players.find((p) => p.id === playerId);
-		sendFn(playerId, {
-			type: "game_events",
-			events: [],
-			state: sanitizeState(updatedMatch),
-			yourHand: player?.hand,
-		});
-
-              // Attempt reconnect notification if player was previously disconnected
-              if (reconnectPlayerFn) {
-                const playerIds = updatedMatch.players.map((p) => p.id);
-                const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
-                if (result.events.length > 0) {
-                  if (result.match !== updatedMatch) {
-                    deps.store.updateGame(matchId, result.match);
-                  }
-                  // Broadcast to OTHER players only — the reconnecting player
-                  // already received state + yourHand in the sendFn above.
-                  broadcastEvents(
-                    result.events,
-                    matchId,
-                    playerId,
-                    sendFn,
-                    playerIds.filter((id) => id !== playerId),
-                    sanitizeState(result.match),
-                  );
-                }
-              }
-
-              // Broadcast updated state to ALL OTHER connected players
-              const broadcastState = sanitizeState(
-                deps.store.getGame(matchId) ?? updatedMatch,
-              );
-              for (const p of updatedMatch.players) {
-                if (p.id !== playerId && manager.getConnection(p.id)) {
-                  sendState(p.id, broadcastState, sendFn);
-                }
-              }
-            }
-
-            // Cancel abandonment timer on reconnect
-            deps.timerManager?.cancelDisconnect(matchId, playerId);
-
-            // All-4-connected detection: start match, transition status, broadcast
-            onAllFourConnected(matchId);
+            handlePlayerJoin(matchId, verified.userId, ws);
           } else {
             // No auth configured — use playerId from upstream (dev/testing)
             const playerId = ((ws.data as Record<string, unknown>).params as Record<string, string>)?.playerId as string;
-            console.log(`[ws] Registering player ${playerId} for match ${matchId}`);
-            (ws.data as Record<string, unknown>).playerId = playerId;
-            manager.register(matchId, playerId, ws);
-
-            // Set player as connected and notify others on every join
-            const match = deps.store.getGame(matchId);
-            if (match) {
-              const newPlayers = match.players.map((p) =>
-                p.id === playerId
-                  ? { ...p, isConnected: true, lastActionAt: new Date() }
-                  : p,
-              ) as MatchState["players"];
-
-              if (newPlayers !== match.players) {
-                deps.store.updateGame(matchId, { ...match, players: newPlayers });
-              }
-
-		// Re-use the updated match for state sending
-		// biome-ignore lint/style/noNonNullAssertion: game exists because we just updated it
-		const updatedMatch = deps.store.getGame(matchId)!;
-              const player = updatedMatch.players.find((p) => p.id === playerId);
-              sendFn(playerId, {
-                type: "game_events",
-                events: [],
-                state: sanitizeState(updatedMatch),
-                yourHand: player?.hand,
-              });
-
-              // Notify all players and run reconnect/connect logic
-              if (reconnectPlayerFn) {
-                const playerIds = updatedMatch.players.map((p) => p.id);
-                const result = reconnectPlayerFn(updatedMatch, playerId, new Date());
-                if (result.events.length > 0) {
-                  if (result.match !== updatedMatch) {
-                    deps.store.updateGame(matchId, result.match);
-                  }
-                  // Broadcast to OTHER players only — this player
-                  // already received state + yourHand in the sendFn above.
-                  broadcastEvents(
-                    result.events,
-                    matchId,
-                    playerId,
-                    sendFn,
-                    playerIds.filter((id) => id !== playerId),
-                    sanitizeState(result.match),
-                  );
-                }
-              }
-
-              // Broadcast updated state to ALL OTHER connected players so they see
-              // the new isConnected status in real time
-              const broadcastState = sanitizeState(
-                deps.store.getGame(matchId) ?? updatedMatch,
-              );
-              for (const p of updatedMatch.players) {
-                if (p.id !== playerId && manager.getConnection(p.id)) {
-                  sendState(p.id, broadcastState, sendFn);
-                }
-              }
-            }
-
-            // Cancel abandonment timer on reconnect
-            deps.timerManager?.cancelDisconnect(matchId, playerId);
-
-            // All-4-connected detection: start match, transition status, broadcast
-            onAllFourConnected(matchId);
+            handlePlayerJoin(matchId, playerId, ws);
           }
 
         },

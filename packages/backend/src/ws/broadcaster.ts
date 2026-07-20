@@ -33,7 +33,14 @@ export function broadcastEvents(
 ): void {
   if (events.length === 0) return;
 
-  const allPlayers = playerIds ?? ["1", "2", "3", "4"];
+  if (!playerIds || playerIds.length === 0) {
+    console.error(
+      `[broadcaster] broadcastEvents called without playerIds (match=${_matchId}, actingPlayer=${actingPlayerId}). This is a bug — all callers must pass playerIds explicitly.`,
+    );
+    return;
+  }
+
+  const allPlayers = playerIds;
 
   // Group events by recipient
   const eventsByPlayer = new Map<string, GameEvent[]>();
