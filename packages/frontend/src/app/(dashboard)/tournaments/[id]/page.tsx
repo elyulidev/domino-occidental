@@ -4,11 +4,7 @@ export const metadata: Metadata = {
   title: "Detalle del Torneo — Dominó Occidental",
 };
 
-export const dynamic = "force-static";
-
-export async function generateStaticParams() {
-  return [{ id: "1" }, { id: "2" }, { id: "3" }];
-}
+export const dynamic = "force-dynamic";
 
 export default async function TournamentDetailPage({
   params,
