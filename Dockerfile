@@ -30,12 +30,11 @@ COPY --from=build /app/packages/shared ./packages/shared
 COPY --from=build /app/packages/backend ./packages/backend
 COPY --from=build /app/package.json ./
 
-# Expose backend port
-EXPOSE 3001
+# Render injects PORT env var automatically (default 3001)
+EXPOSE ${PORT:-3001}
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3001/health || exit 1
+# Health check: configure in Render dashboard → /health
+# (curl not available in bun:1-slim, Render handles it natively)
 
 # Start the server
 WORKDIR /app/packages/backend
