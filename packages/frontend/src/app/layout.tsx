@@ -55,31 +55,6 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  openGraph: {
-    type: "website",
-    locale: "es_AR",
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    title: `${SITE_NAME} — Dominó doble-9 online por parejas`,
-    description:
-      "Jugá al dominó doble-9 por parejas en tiempo real. Partidas multijugador, torneos, ranking ELO y toda la acción con amigos.",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Dominó Occidental — Juego de dominó online por parejas",
-        type: "image/jpg",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${SITE_NAME} — Dominó doble-9 online por parejas`,
-    description:
-      "Jugá al dominó doble-9 por parejas en tiempo real. Torneos, ranking ELO y más.",
-    images: ["/og-image.jpg"],
-  },
   robots: {
     index: true,
     follow: true,
