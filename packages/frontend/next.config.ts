@@ -21,20 +21,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-
-  async headers() {
-    return [
-      {
-        source: "/:all(favicon\\.ico|favicon-:size(16|32)x:size(16|32)\\.png|apple-touch-icon\\.png|android-chrome-:size(192|512)x:size(192|512)\\.png)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate",
-          },
-        ],
-      },
-    ];
-  },
 };
 
 export default nextConfig;
