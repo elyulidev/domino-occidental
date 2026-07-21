@@ -23,7 +23,8 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@paralleldrive/cuid2": "^3.3.0"
+    "@paralleldrive/cuid2": "^3.3.0",
+    "@vercel/analytics": "^2.0.1"
   },
   "ignoreScripts": [
     "sharp",
