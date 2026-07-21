@@ -65,11 +65,11 @@ export const metadata: Metadata = {
       "Jugá al dominó doble-9 por parejas en tiempo real. Partidas multijugador, torneos, ranking ELO y toda la acción con amigos.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Dominó Occidental — Juego de dominó online por parejas",
-        type: "image/png",
+        type: "image/jpg",
       },
     ],
   },
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} — Dominó doble-9 online por parejas`,
     description:
       "Jugá al dominó doble-9 por parejas en tiempo real. Torneos, ranking ELO y más.",
-    images: ["/og-image.png"],
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
