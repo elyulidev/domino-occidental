@@ -7,7 +7,7 @@ import { useQueueStatus } from "@/hooks/use-queue-status";
 // ---------------------------------------------------------------------------
 
 export function QueueStatusBadge() {
-  const { queueCount, estimatedWait } = useQueueStatus(2_000);
+  const { queueCount, estimatedWait } = useQueueStatus(15_000);
 
   return (
     <div className="mt-3 flex flex-wrap gap-3">
