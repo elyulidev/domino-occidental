@@ -265,6 +265,7 @@ export type GameEvent =
   | {
       type: "hand_ended";
       winner: number | null;
+      starter: number;
       reason: "empty_hand" | "blocked" | "annulled" | "forced_winner";
       playerHands: number[];
       scoresAfter: [number, number];

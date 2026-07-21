@@ -138,7 +138,7 @@ export function handleMessage(
         boardRightEnd: result.match.board.rightEnd,
         boardTileCount,
         playerHands: event.playerHands,
-        firstPlayer: (result.match.turn.lastHandWinner ?? 0) as number,
+        firstPlayer: event.starter,
       };
 
       // Enrich from hand_scored event (always follows hand_ended)

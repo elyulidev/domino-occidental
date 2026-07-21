@@ -54,6 +54,11 @@ create policy "Authenticated users can view match rounds"
 -- Server inserts with service_role; only SELECT policy needed for clients
 grant select on public.match_rounds to authenticated;
 
+-- FK constraint: match_rounds.match_id → matches(id)
+alter table public.match_rounds
+  add constraint match_rounds_match_id_fkey
+  foreign key (match_id) references matches(id) on delete cascade;
+
 comment on table public.match_rounds is 'Per-hand results for replay and match history';
 comment on column public.match_rounds.winning_pair is 'Pair index (0 or 1) that won the hand; null if annulled';
 comment on column public.match_rounds.points is 'Points awarded to the winning pair (0 if annulled)';

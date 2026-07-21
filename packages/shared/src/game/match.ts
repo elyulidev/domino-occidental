@@ -499,6 +499,11 @@ export function handleHandEnd(
   const hands = match.players.map((p) => p.hand);
   const isBlockedBoard = reason === "blocked";
 
+  // Capture the starter BEFORE lastHandWinner is updated to the current hand's winner.
+  // lastHandWinner holds the previous hand's winner, which is the current hand's starter.
+  // On the first hand (lastHandWinner === null), default to 0.
+  const starter = (match.turn.lastHandWinner ?? 0) as number;
+
   // Score the hand
   const result = scoreHand(
     hands,
@@ -551,6 +556,7 @@ export function handleHandEnd(
         {
           type: "hand_ended",
           winner: minIndex,
+          starter,
           reason: "forced_winner",
           playerHands: match.players.map((p) => sumHand(p.hand)),
           scoresAfter: newScores.scores,
@@ -592,6 +598,7 @@ export function handleHandEnd(
         {
           type: "hand_ended",
           winner: null,
+          starter,
           reason: "annulled",
           playerHands: match.players.map((p) => sumHand(p.hand)),
           scoresAfter: match.scores.scores,
@@ -653,6 +660,7 @@ export function handleHandEnd(
     {
       type: "hand_ended",
       winner: winnerPlayerIndex,
+      starter,
       reason: eventReason,
       playerHands: match.players.map((p) => sumHand(p.hand)),
       scoresAfter: newScores.scores,
