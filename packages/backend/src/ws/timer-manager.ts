@@ -8,6 +8,7 @@ import type {
 } from "@domino/shared";
 import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS, sanitizeState } from "@domino/shared";
 import { persistMatch } from "../db/matches";
+import { type RoundRecord, recordRound } from "../db/rounds";
 import { startedMatches } from "./started-matches";
 
 // ---------------------------------------------------------------------------
@@ -204,6 +205,43 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
                 state: sanitizeState(matchAfterTimeout),
                 yourHand: p.hand,
               });
+            }
+          }
+
+          // Fire-and-forget: record round snapshot from hand_ended events (timeout-triggered)
+          for (const event of result.events) {
+            if (event.type === "hand_ended") {
+              const boardTileCount = result.match.board.tiles.length;
+              const roundData: RoundRecord = {
+                matchId,
+                roundNumber: result.match.turn.roundNumber,
+                winningPair: event.winner !== null ? (event.winner % 2 === 0 ? 0 : 1) : null,
+                points: 0,
+                isBlocked: event.reason === "blocked" || event.reason === "forced_winner",
+                isAnnulled: event.reason === "annulled",
+                reason: event.reason,
+                handScores: [0, 0],
+                scoresAfter: event.scoresAfter,
+                boardLeftEnd: result.match.board.leftEnd,
+                boardRightEnd: result.match.board.rightEnd,
+                boardTileCount,
+                playerHands: event.playerHands,
+                firstPlayer: (result.match.turn.lastHandWinner ?? 0) as number,
+              };
+
+              // Enrich from hand_scored event (always follows hand_ended)
+              const scored = result.events.find(
+                (e): e is Extract<GameEvent, { type: "hand_scored" }> =>
+                  e.type === "hand_scored",
+              );
+              if (scored) {
+                roundData.winningPair = scored.winningPair;
+                roundData.points = scored.points;
+                roundData.handScores = scored.scores;
+              }
+
+              void recordRound(roundData);
+              break; // only one hand_ended per action
             }
           }
 

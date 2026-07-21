@@ -1,4 +1,4 @@
-import type { ActionResult } from "@domino/shared";
+import type { ActionResult, GameEvent } from "@domino/shared";
 import {
   type GameStore,
   type MessageResult,
@@ -7,6 +7,7 @@ import {
 } from "@domino/shared";
 import { passTurn, playTile } from "@domino/shared/src/game";
 import { type MoveRecord, recordMatchMove } from "../db/moves";
+import { type RoundRecord, recordRound } from "../db/rounds";
 import { forfeitMatch } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -117,6 +118,43 @@ export function handleMessage(
   // Fire-and-forget: record match move for replay (never blocks the game loop)
   if (moveData) {
     void recordMatchMove(moveData);
+  }
+
+  // Fire-and-forget: record round snapshot from hand_ended events (never blocks the game loop)
+  for (const event of result.events) {
+    if (event.type === "hand_ended") {
+      const boardTileCount = result.match.board.tiles.length;
+      const roundData: RoundRecord = {
+        matchId,
+        roundNumber: result.match.turn.roundNumber,
+        winningPair: event.winner !== null ? (event.winner % 2 === 0 ? 0 : 1) : null,
+        points: 0, // will be overwritten from hand_scored if present
+        isBlocked: event.reason === "blocked" || event.reason === "forced_winner",
+        isAnnulled: event.reason === "annulled",
+        reason: event.reason,
+        handScores: [0, 0], // placeholder — filled from hand_scored
+        scoresAfter: event.scoresAfter,
+        boardLeftEnd: result.match.board.leftEnd,
+        boardRightEnd: result.match.board.rightEnd,
+        boardTileCount,
+        playerHands: event.playerHands,
+        firstPlayer: (result.match.turn.lastHandWinner ?? 0) as number,
+      };
+
+      // Enrich from hand_scored event (always follows hand_ended)
+      const scored = result.events.find(
+        (e): e is Extract<GameEvent, { type: "hand_scored" }> =>
+          e.type === "hand_scored",
+      );
+      if (scored) {
+        roundData.winningPair = scored.winningPair;
+        roundData.points = scored.points;
+        roundData.handScores = scored.scores;
+      }
+
+      void recordRound(roundData);
+      break; // only one hand_ended per action
+    }
   }
 
   return {

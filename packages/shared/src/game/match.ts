@@ -548,7 +548,13 @@ export function handleHandEnd(
       };
 
       const events: GameEvent[] = [
-        { type: "hand_ended", winner: minIndex, reason: "forced_winner" },
+        {
+          type: "hand_ended",
+          winner: minIndex,
+          reason: "forced_winner",
+          playerHands: match.players.map((p) => sumHand(p.hand)),
+          scoresAfter: newScores.scores,
+        },
         { type: "hand_scored", winningPair, points, scores: newScores.scores },
       ];
 
@@ -582,7 +588,15 @@ export function handleHandEnd(
 
     return {
       match: newMatch,
-      events: [{ type: "hand_ended", winner: null, reason: "annulled" }],
+      events: [
+        {
+          type: "hand_ended",
+          winner: null,
+          reason: "annulled",
+          playerHands: match.players.map((p) => sumHand(p.hand)),
+          scoresAfter: match.scores.scores,
+        },
+      ],
     };
   }
 
@@ -636,7 +650,13 @@ export function handleHandEnd(
   };
 
   const events: GameEvent[] = [
-    { type: "hand_ended", winner: winnerPlayerIndex, reason: eventReason },
+    {
+      type: "hand_ended",
+      winner: winnerPlayerIndex,
+      reason: eventReason,
+      playerHands: match.players.map((p) => sumHand(p.hand)),
+      scoresAfter: newScores.scores,
+    },
     {
       type: "hand_scored",
       winningPair: result.winningPair,
