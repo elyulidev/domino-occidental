@@ -1,0 +1,22 @@
+{
+  "name": "Dominó Occidental",
+  "short_name": "Dominó",
+  "description": "Jugá al dominó doble-9 por parejas en tiempo real. Torneos, ranking ELO y más.",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#c8a84e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

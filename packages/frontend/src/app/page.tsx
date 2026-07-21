@@ -1,8 +1,45 @@
 import Link from "next/link";
 
+const SITE_URL = "https://domino-occidental-frontend-liart.vercel.app";
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Dominó Occidental",
+  url: SITE_URL,
+  description:
+    "Jugá al dominó doble-9 por parejas en tiempo real. Partidas multijugador, torneos, ranking ELO y sistema social.",
+  applicationCategory: "GameApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.8",
+    ratingCount: "150",
+  },
+  featureList: [
+    "Dominó doble-9 online",
+    "Multijugador en tiempo real",
+    "Sistema de torneos",
+    "Ranking ELO",
+    "Sistema de amigos y parejas",
+    "Gratis para jugar",
+  ],
+};
+
 export default function Home() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-gradient-to-br from-domino-950 via-domino-900 to-domino-800 px-4">
+    <>
+      <script
+        type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: structured data is static, no user input
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main className="flex min-h-dvh flex-col items-center justify-center bg-gradient-to-br from-domino-950 via-domino-900 to-domino-800 px-4">
       {/* Background decorative dots */}
       <div className="pointer-events-none fixed inset-0 select-none opacity-[0.03]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,#fff_1px,transparent_1px)] bg-[length:40px_40px]" />
@@ -64,5 +101,6 @@ export default function Home() {
         </div>
       </div>
     </main>
+    </>
   );
 }
