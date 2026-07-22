@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "bun:test";
 import type { GameStore, MatchState, MessageResult, SanitizedMatchState, WsClientMessage, WsServerMessage } from "@domino/shared";
 import type { ConnectionManager, WsPlugin } from "../connection";
 import {
@@ -6,6 +6,7 @@ import {
   createWsPlugin,
   sendToPlayer,
 } from "../connection";
+import { startedMatches } from "../started-matches";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -135,6 +136,10 @@ function getHandler(plugin: WsPlugin, _event: "open" | "message" | "close") {
 // ---------------------------------------------------------------------------
 // ConnectionMap
 // ---------------------------------------------------------------------------
+
+beforeEach(() => {
+  startedMatches.clear();
+});
 
 describe("ConnectionMap", () => {
   it("register adds connection, getConnection retrieves it", () => {

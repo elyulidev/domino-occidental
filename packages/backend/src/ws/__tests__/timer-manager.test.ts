@@ -245,9 +245,11 @@ describe("TimerManager", () => {
 
       timerManager.startMatch("match-1", ["p1"]);
 
-      // Trigger heartbeat callbacks
-      for (const cb of timers.intervalCallbacks.values()) {
-        cb();
+      // Trigger heartbeat callbacks 3 times (readyState=-1 requires 3 consecutive failures)
+      for (let i = 0; i < 3; i++) {
+        for (const cb of timers.intervalCallbacks.values()) {
+          cb();
+        }
       }
 
       expect(deps.disconnectPlayer).toHaveBeenCalledTimes(1);
