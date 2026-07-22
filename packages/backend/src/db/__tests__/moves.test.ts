@@ -13,6 +13,7 @@ import {
   flushMatchMoves,
   resetMoveCounters,
 } from "../moves";
+import { resetRoundBuffers } from "../rounds";
 
 const mockGetDb = getDb as ReturnType<typeof vi.fn>;
 
@@ -64,6 +65,7 @@ function makeMockDb(insertError?: unknown): MockDb {
 
 beforeEach(() => {
   resetMoveCounters();
+  resetRoundBuffers();
   vi.clearAllMocks();
 });
 
@@ -199,7 +201,7 @@ describe("flushMatchMoves", () => {
     const fields = mockDb._mockValues.mock.calls[0][0][0];
     expect(fields).toMatchObject({
       matchId: "00000000-0000-0000-0000-000000000001",
-      roundId: null, // no rounds buffered → getRoundId returns undefined → null
+      roundId: expect.stringMatching(/^[0-9a-f-]{36}$/), // ensureRoundId generates UUID
       roundNumber: 3,
       playerIndex: 2,
       moveNumber: 1,

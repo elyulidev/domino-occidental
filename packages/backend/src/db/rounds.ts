@@ -15,6 +15,7 @@
  * Each buffered round gets a UUID that moves can look up via getRoundId().
  */
 
+import type { MatchState } from "@domino/shared";
 import { getDb } from "./client";
 import { matchRounds } from "./schema";
 
@@ -186,6 +187,55 @@ export async function flushMatchRounds(matchId: string): Promise<void> {
   for (const key of roundIdLookup.keys()) {
     if (key.startsWith(`${matchId}:`)) roundIdLookup.delete(key);
   }
+}
+
+/**
+ * Record a stub round for the in-progress hand when a match is abandoned.
+ *
+ * When a player forfeits or times out mid-hand, `hand_ended` never fires,
+ * so `recordRound()` is never called. But moves may have already been
+ * buffered with a `round_id` from `ensureRoundId()`. This function
+ * creates a stub round with `reason: 'abandoned'` so the FK constraint
+ * on `match_moves.round_id` is satisfied.
+ *
+ * If the current round was already recorded (normal hand_end flow),
+ * this is a no-op.
+ */
+export function recordAbandonedRoundIfNeeded(
+  matchId: string,
+  state: MatchState,
+): void {
+  const roundNumber = state.turn.roundNumber;
+  const existing = getRoundId(matchId, roundNumber);
+  if (existing) return; // round already recorded — nothing to do
+
+  const boardTileCount = state.board.tiles.length;
+  const playerHands = state.players.map((p) => p.hand.length) as [
+    number,
+    number,
+    number,
+    number,
+  ];
+
+  const roundData: RoundRecord = {
+    matchId,
+    roundId: ensureRoundId(matchId, roundNumber),
+    roundNumber,
+    winningPair: null,
+    points: 0,
+    isBlocked: false,
+    isAnnulled: false,
+    reason: "abandoned",
+    handScores: [0, 0],
+    scoresAfter: [...state.scores.scores] as [number, number],
+    boardLeftEnd: state.board.leftEnd,
+    boardRightEnd: state.board.rightEnd,
+    boardTileCount,
+    playerHands,
+    firstPlayer: state.turn.currentTurn,
+  };
+
+  void recordRound(roundData);
 }
 
 /**

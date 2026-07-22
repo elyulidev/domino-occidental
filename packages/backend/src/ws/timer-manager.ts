@@ -8,7 +8,7 @@ import type {
 } from "@domino/shared";
 import { ABANDONMENT_THRESHOLD_MS, HEARTBEAT_MS, sanitizeState } from "@domino/shared";
 import { persistMatch } from "../db/matches";
-import { type RoundRecord, recordRound } from "../db/rounds";
+import { type RoundRecord, recordAbandonedRoundIfNeeded, recordRound } from "../db/rounds";
 import { startedMatches } from "./started-matches";
 
 // ---------------------------------------------------------------------------
@@ -250,6 +250,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
           if (result.events.some((e) => e.type === "match_ended" || e.type === "match_abandoned")) {
             startedMatches.delete(matchId);
             const finalMatch = store.getGame(matchId) ?? result.match;
+            recordAbandonedRoundIfNeeded(matchId, finalMatch);
             void persistMatch(finalMatch, result.events);
           }
         }
@@ -295,6 +296,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
           if (result.events.some((e) => e.type === "match_abandoned")) {
             startedMatches.delete(matchId);
             const finalMatch = store.getGame(matchId) ?? result.match;
+            recordAbandonedRoundIfNeeded(matchId, finalMatch);
             void persistMatch(finalMatch, result.events);
           }
         }

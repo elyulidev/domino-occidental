@@ -24,7 +24,7 @@ export const matchMoves = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     matchId: uuid("match_id").notNull(),
-    roundId: uuid("round_id"),
+    roundId: uuid("round_id").notNull(),
     roundNumber: integer("round_number").notNull(), // denormalized for query convenience
     playerIndex: smallint("player_index").notNull(),
     moveNumber: integer("move_number").notNull(),
@@ -47,6 +47,11 @@ export const matchMoves = pgTable(
       foreignColumns: [matches.id],
       name: "match_moves_match_id_fkey",
     })) as any).onDelete("cascade"),
-    // NOTE: round_id FK dropped — nullable for abandoned matches mid-hand
+    // biome-ignore lint/suspicious/noExplicitAny: Drizzle foreignKey type inference mismatch
+    foreignKey((() => ({
+      columns: [table.roundId],
+      foreignColumns: [matchRounds.id],
+      name: "match_moves_round_id_fkey",
+    })) as any).onDelete("cascade"),
   ],
 );
