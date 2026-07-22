@@ -13,7 +13,7 @@
 
 import { getDb } from "./client";
 import { matchMoves } from "./schema";
-import { ensureRoundId } from "./rounds";
+import { getRoundId } from "./rounds";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,7 +48,7 @@ const moveCounters = new Map<string, number>();
  */
 interface BufferedMove extends MoveRecord {
   moveNumber: number;
-  roundId: string;
+  roundId: string | null;
 }
 
 /**
@@ -79,8 +79,8 @@ export async function recordMatchMove(move: MoveRecord): Promise<void> {
 
   const moveNumber = nextMoveNumber(move.matchId);
 
-  // Resolve round_id from rounds buffer (generates UUID on first move of each hand)
-  const roundId = ensureRoundId(move.matchId, move.roundNumber);
+  // Resolve round_id from rounds buffer (null if round not yet recorded — e.g. mid-hand abandon)
+  const roundId = getRoundId(move.matchId, move.roundNumber) ?? null;
 
   if (db) {
     // Buffer the move — will be flushed after the match row is created in the DB.
@@ -114,7 +114,7 @@ export async function flushMatchMoves(matchId: string): Promise<void> {
       await db.insert(matchMoves).values(
         moves.map((m) => ({
           matchId: m.matchId,
-          roundId: m.roundId,  // resolved from rounds buffer
+          roundId: m.roundId,  // null for moves without a completed round
           roundNumber: m.roundNumber,
           playerIndex: m.playerIndex,
           moveNumber: m.moveNumber,
