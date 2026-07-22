@@ -123,7 +123,7 @@ export async function persistMatch(
       })
       .then(() => {
         console.log(`[db/matches] match ${record.matchId.slice(0, 8)} persisted OK — flushing moves + rounds`);
-        // Match row created — now flush buffered moves and rounds (FK satisfied)
+        // Match row created — now flush buffered moves and rounds
         void flushMatchMoves(record.matchId);
         void flushMatchRounds(record.matchId);
       })

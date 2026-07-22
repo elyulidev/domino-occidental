@@ -9,19 +9,23 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { matches } from "./matches";
+import { matchRounds } from "./match-rounds";
 
 /**
  * Match moves table — historial de jugadas para replay y auditoría.
  * Schema mirrors the SQL migration. The actual writes go through
  * `recordMatchMove()` in `../moves.ts` which uses Drizzle ORM (fire-and-forget).
- * This schema exists for consistency and future typed reads.
+ *
+ * Normalized schema: matches → match_rounds → match_moves
+ * Each move references a round via round_id FK.
  */
 export const matchMoves = pgTable(
   "match_moves",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     matchId: uuid("match_id").notNull(),
-    roundNumber: integer("round_number").notNull(),
+    roundId: uuid("round_id").notNull(),
+    roundNumber: integer("round_number").notNull(), // denormalized for query convenience
     playerIndex: smallint("player_index").notNull(),
     moveNumber: integer("move_number").notNull(),
     isPass: boolean("is_pass").notNull(),
@@ -42,6 +46,12 @@ export const matchMoves = pgTable(
       columns: [table.matchId],
       foreignColumns: [matches.id],
       name: "match_moves_match_id_fkey",
+    })) as any).onDelete("cascade"),
+    // biome-ignore lint/suspicious/noExplicitAny: Drizzle foreignKey type inference mismatch
+    foreignKey((() => ({
+      columns: [table.roundId],
+      foreignColumns: [matchRounds.id],
+      name: "match_moves_round_id_fkey",
     })) as any).onDelete("cascade"),
   ],
 );

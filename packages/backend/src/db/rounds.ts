@@ -10,6 +10,9 @@
  * IMPORTANT: match_rounds has a FK to matches. The match row doesn't exist in
  * the DB until persistMatch() creates it. So we buffer rounds in memory and
  * flush them after the match row is created.
+ *
+ * NORMALIZATION: match_moves now references match_rounds via round_id.
+ * Each buffered round gets a UUID that moves can look up via getRoundId().
  */
 
 import { getDb } from "./client";
@@ -21,6 +24,7 @@ import { matchRounds } from "./schema";
 
 export interface RoundRecord {
   matchId: string;
+  roundId: string;  // generated UUID for FK reference from match_moves
   roundNumber: number;
   winningPair: number | null;
   points: number;
@@ -43,14 +47,39 @@ export interface RoundRecord {
 /**
  * Buffered rounds per match — accumulated during gameplay, flushed after
  * the match row is created in the DB by persistMatch().
+ * Key: `${matchId}:${roundNumber}` → RoundRecord
  */
 const bufferedRounds = new Map<string, RoundRecord[]>();
+
+/**
+ * Lookup map: `${matchId}:${roundNumber}` → roundId (UUID)
+ * Used by match_moves to resolve the FK before flush.
+ */
+const roundIdLookup = new Map<string, string>();
+
+/**
+ * Generate a lookup key for round ID resolution.
+ */
+function roundKey(matchId: string, roundNumber: number): string {
+  return `${matchId}:${roundNumber}`;
+}
+
+/**
+ * Look up the round UUID for a given match + round number.
+ * Returns undefined if the round hasn't been recorded yet.
+ * Used by moves.ts to resolve the round_id FK.
+ */
+export function getRoundId(matchId: string, roundNumber: number): string | undefined {
+  return roundIdLookup.get(roundKey(matchId, roundNumber));
+}
 
 /**
  * Persist a match round to Supabase (fire-and-forget).
  *
  * If the DB connection is unavailable (no SUPABASE_DB_URL), logs to console
  * so local development is not disrupted.
+ *
+ * Generates a UUID for the round so match_moves can reference it via FK.
  */
 export async function recordRound(round: RoundRecord): Promise<void> {
   const db = await getDb();
@@ -61,6 +90,9 @@ export async function recordRound(round: RoundRecord): Promise<void> {
     const rounds = bufferedRounds.get(round.matchId) ?? [];
     rounds.push(round);
     bufferedRounds.set(round.matchId, rounds);
+
+    // Register round ID for moves lookup
+    roundIdLookup.set(roundKey(round.matchId, round.roundNumber), round.roundId);
   } else {
     // Dev fallback: log to console
     console.log(
@@ -83,6 +115,10 @@ export async function flushMatchRounds(matchId: string): Promise<void> {
   const rounds = bufferedRounds.get(matchId);
   if (!rounds || rounds.length === 0) {
     bufferedRounds.delete(matchId);
+    // Clean up round ID lookup entries for this match
+    for (const key of roundIdLookup.keys()) {
+      if (key.startsWith(`${matchId}:`)) roundIdLookup.delete(key);
+    }
     return;
   }
 
@@ -90,6 +126,7 @@ export async function flushMatchRounds(matchId: string): Promise<void> {
     try {
       await db.insert(matchRounds).values(
         rounds.map((r) => ({
+          id: r.roundId,  // use pre-generated UUID
           matchId: r.matchId,
           roundNumber: r.roundNumber,
           winningPair: r.winningPair ?? undefined,
@@ -122,6 +159,10 @@ export async function flushMatchRounds(matchId: string): Promise<void> {
   }
 
   bufferedRounds.delete(matchId);
+  // Clean up round ID lookup entries for this match
+  for (const key of roundIdLookup.keys()) {
+    if (key.startsWith(`${matchId}:`)) roundIdLookup.delete(key);
+  }
 }
 
 /**
@@ -129,4 +170,5 @@ export async function flushMatchRounds(matchId: string): Promise<void> {
  */
 export function resetRoundBuffers(): void {
   bufferedRounds.clear();
+  roundIdLookup.clear();
 }

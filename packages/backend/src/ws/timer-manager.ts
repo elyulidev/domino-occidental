@@ -214,6 +214,7 @@ export function createTimerManager(deps: TimerManagerDeps): TimerManager {
               const boardTileCount = result.match.board.tiles.length;
               const roundData: RoundRecord = {
                 matchId,
+                roundId: crypto.randomUUID(),  // generated for FK reference from match_moves
                 roundNumber: result.match.turn.roundNumber,
                 winningPair: event.winner !== null ? (event.winner % 2 === 0 ? 0 : 1) : null,
                 points: 0,

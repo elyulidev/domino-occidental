@@ -7,7 +7,7 @@ vi.mock("../client", () => ({
 
 // Must import AFTER vi.mock so the mock is wired
 import { getDb } from "../client";
-import { flushMatchRounds, type RoundRecord, recordRound, resetRoundBuffers } from "../rounds";
+import { flushMatchRounds, getRoundId, type RoundRecord, recordRound, resetRoundBuffers } from "../rounds";
 
 const mockGetDb = getDb as ReturnType<typeof vi.fn>;
 
@@ -28,6 +28,7 @@ interface MockDb {
 function makeRound(overrides?: Partial<RoundRecord>): RoundRecord {
   return {
     matchId: "00000000-0000-0000-0000-000000000001",
+    roundId: "11111111-1111-1111-1111-111111111111",
     roundNumber: 0,
     winningPair: 0,
     points: 45,
@@ -270,5 +271,52 @@ describe("flushMatchRounds", () => {
     expect(rows[0].roundNumber).toBe(0);
     expect(rows[1].roundNumber).toBe(1);
     expect(rows[2].roundNumber).toBe(2);
+  });
+
+  // --- Scenario 8: flush includes roundId in insert ---
+  it("includes roundId in flushed rows for FK reference from match_moves", async () => {
+    const mockDb = makeMockDb();
+    mockGetDb.mockResolvedValue(mockDb);
+
+    const roundId = "22222222-2222-2222-2222-222222222222";
+    await recordRound(makeRound({ roundId }));
+    await flushMatchRounds("00000000-0000-0000-0000-000000000001");
+
+    const rows = mockDb._mockValues.mock.calls[0][0];
+    expect(rows[0].id).toBe(roundId);
+  });
+});
+
+describe("getRoundId", () => {
+  it("returns undefined for unknown round", () => {
+    expect(getRoundId("match-1", 0)).toBeUndefined();
+  });
+
+  it("returns roundId after recordRound is called", async () => {
+    mockGetDb.mockResolvedValue(makeMockDb());
+
+    const roundId = "33333333-3333-3333-3333-333333333333";
+    await recordRound(makeRound({ roundId }));
+
+    expect(getRoundId("00000000-0000-0000-0000-000000000001", 0)).toBe(roundId);
+  });
+
+  it("returns undefined after flush clears the buffer", async () => {
+    mockGetDb.mockResolvedValue(makeMockDb());
+
+    await recordRound(makeRound({ roundId: "44444444-4444-4444-4444-444444444444" }));
+    await flushMatchRounds("00000000-0000-0000-0000-000000000001");
+
+    expect(getRoundId("00000000-0000-0000-0000-000000000001", 0)).toBeUndefined();
+  });
+
+  it("distinguishes between rounds of the same match", async () => {
+    mockGetDb.mockResolvedValue(makeMockDb());
+
+    await recordRound(makeRound({ roundNumber: 0, roundId: "aaaa-aaaa" }));
+    await recordRound(makeRound({ roundNumber: 1, roundId: "bbbb-bbbb" }));
+
+    expect(getRoundId("00000000-0000-0000-0000-000000000001", 0)).toBe("aaaa-aaaa");
+    expect(getRoundId("00000000-0000-0000-0000-000000000001", 1)).toBe("bbbb-bbbb");
   });
 });

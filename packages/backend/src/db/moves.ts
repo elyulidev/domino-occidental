@@ -6,13 +6,14 @@
  *
  * The game loop is NEVER blocked by DB writes — recordMatchMove is fire-and-forget.
  *
- * IMPORTANT: match_moves has a FK to matches. The match row doesn't exist in
- * the DB until persistMatch() creates it. So we buffer moves in memory and
- * flush them after the match row is created.
+ * NORMALIZATION: match_moves now references match_rounds via round_id FK.
+ * The round_id is resolved from the rounds buffer (rounds must be recorded
+ * before moves within the same hand, or at least before flush).
  */
 
 import { getDb } from "./client";
 import { matchMoves } from "./schema";
+import { getRoundId } from "./rounds";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,10 +44,18 @@ export interface MoveRecord {
 const moveCounters = new Map<string, number>();
 
 /**
+ * Internal move record with resolved roundId for DB insert.
+ */
+interface BufferedMove extends MoveRecord {
+  moveNumber: number;
+  roundId: string | undefined;
+}
+
+/**
  * Buffered moves per match — accumulated during gameplay, flushed after
  * the match row is created in the DB by persistMatch().
  */
-const bufferedMoves = new Map<string, MoveRecord[]>();
+const bufferedMoves = new Map<string, BufferedMove[]>();
 
 /**
  * Get the next move number for a match, then increment.
@@ -62,17 +71,23 @@ function nextMoveNumber(matchId: string): number {
  *
  * If the DB connection is unavailable (no SUPABASE_DB_URL), logs to console
  * so local development is not disrupted.
+ *
+ * Resolves round_id from the rounds buffer before buffering.
  */
 export async function recordMatchMove(move: MoveRecord): Promise<void> {
   const db = await getDb();
 
   const moveNumber = nextMoveNumber(move.matchId);
 
+  // Resolve round_id from rounds buffer
+  const roundId = getRoundId(move.matchId, move.roundNumber);
+
   if (db) {
     // Buffer the move — will be flushed after the match row is created in the DB.
-    // match_moves has FK to matches, so we can't insert until persistMatch() runs.
+    // match_moves has FK to matches AND match_rounds, so we can't insert until
+    // persistMatch() runs and rounds are flushed first.
     const moves = bufferedMoves.get(move.matchId) ?? [];
-    moves.push({ ...move, moveNumber });
+    moves.push({ ...move, moveNumber, roundId });
     bufferedMoves.set(move.matchId, moves);
   } else {
     // Dev fallback: log to console
@@ -99,6 +114,7 @@ export async function flushMatchMoves(matchId: string): Promise<void> {
       await db.insert(matchMoves).values(
         moves.map((m) => ({
           matchId: m.matchId,
+          roundId: m.roundId!,  // resolved from rounds buffer
           roundNumber: m.roundNumber,
           playerIndex: m.playerIndex,
           moveNumber: m.moveNumber,
