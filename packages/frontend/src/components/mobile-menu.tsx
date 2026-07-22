@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { createBrowserClient } from "@/lib/supabase/client";
+
+interface Profile {
+  username: string;
+  elo: number;
+  coins: number;
+}
 
 const NAV_ITEMS: Array<{
   href: string;
@@ -22,8 +29,25 @@ const NAV_ITEMS: Array<{
 export default function MobileMenu() {
   const [open, setOpen]       = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    async function fetchProfile() {
+      const supabase = createBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("username, elo, coins")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (data) setProfile(data);
+      }
+    }
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -119,14 +143,20 @@ export default function MobileMenu() {
         <div className="border-t border-domino-800 px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-domino-700 text-sm font-bold text-gold-400">
-              JD
+              {profile?.username?.slice(0, 2).toUpperCase() ?? "??"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-domino-50">JugadorDemo</p>
-              <p className="text-xs text-domino-400">ELO 1,200</p>
+              <p className="truncate text-sm font-medium text-domino-50">
+                {profile?.username ?? "Sin perfil"}
+              </p>
+              <p className="text-xs text-domino-400">
+                ELO {profile?.elo?.toLocaleString("es-AR") ?? "—"}
+              </p>
             </div>
             <div className="flex items-center gap-1 rounded-full bg-gold-500/10 px-2.5 py-1">
-              <span className="text-xs font-semibold text-gold-400">250</span>
+              <span className="text-xs font-semibold text-gold-400">
+                {profile?.coins?.toLocaleString("es-AR") ?? "0"}
+              </span>
             </div>
           </div>
         </div>

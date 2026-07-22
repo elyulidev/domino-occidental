@@ -28,7 +28,11 @@ export default async function proxy(request: NextRequest) {
         });
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
+          response.cookies.set(name, value, {
+            ...options,
+            // Supabase defaults to secure:true, which breaks on local HTTP
+            secure: process.env.NODE_ENV === "production",
+          });
         });
       },
     },
