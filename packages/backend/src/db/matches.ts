@@ -121,11 +121,11 @@ export async function persistMatch(
         startedAt: record.startedAt,
         endedAt: record.endedAt,
       })
-      .then(() => {
+      .then(async () => {
         console.log(`[db/matches] match ${record.matchId.slice(0, 8)} persisted OK — flushing moves + rounds`);
-        // Match row created — now flush buffered moves and rounds
-        void flushMatchMoves(record.matchId);
-        void flushMatchRounds(record.matchId);
+        // Match row created — flush rounds FIRST (moves depend on round_id FK)
+        await flushMatchRounds(record.matchId);
+        await flushMatchMoves(record.matchId);
       })
       .catch((err: unknown) => {
         console.error("[db/matches] FAILED to persist match:", err);
