@@ -7,7 +7,7 @@ import {
 } from "@domino/shared";
 import { passTurn, playTile } from "@domino/shared/src/game";
 import { type MoveRecord, recordMatchMove } from "../db/moves";
-import { type RoundRecord, recordRound } from "../db/rounds";
+import { type RoundRecord, ensureRoundId, recordRound } from "../db/rounds";
 import { forfeitMatch } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -126,7 +126,7 @@ export function handleMessage(
       const boardTileCount = result.match.board.tiles.length;
       const roundData: RoundRecord = {
         matchId,
-        roundId: crypto.randomUUID(),  // generated for FK reference from match_moves
+        roundId: ensureRoundId(matchId, result.match.turn.roundNumber),  // reuse UUID registered by first move
         roundNumber: result.match.turn.roundNumber,
         winningPair: event.winner !== null ? (event.winner % 2 === 0 ? 0 : 1) : null,
         points: 0, // will be overwritten from hand_scored if present

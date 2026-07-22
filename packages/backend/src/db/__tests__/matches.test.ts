@@ -212,7 +212,7 @@ describe("persistMatch", () => {
     await new Promise((r) => setTimeout(r, 10));
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
-    expect(errorSpy.mock.calls[0][0]).toBe("[db/matches] failed to persist match:");
+    expect(errorSpy.mock.calls[0][0]).toBe("[db/matches] FAILED to persist match:");
 
     errorSpy.mockRestore();
   });

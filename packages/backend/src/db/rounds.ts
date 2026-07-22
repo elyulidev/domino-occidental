@@ -74,6 +74,22 @@ export function getRoundId(matchId: string, roundNumber: number): string | undef
 }
 
 /**
+ * Ensure a round UUID exists in the lookup map.
+ * Called by moves.ts on the FIRST move of each hand so the round_id FK is
+ * resolved before any move is buffered. If the round was already registered
+ * (e.g. by recordRound at hand_end), returns the existing UUID.
+ */
+export function ensureRoundId(matchId: string, roundNumber: number): string {
+  const key = roundKey(matchId, roundNumber);
+  const existing = roundIdLookup.get(key);
+  if (existing) return existing;
+
+  const id = crypto.randomUUID();
+  roundIdLookup.set(key, id);
+  return id;
+}
+
+/**
  * Persist a match round to Supabase (fire-and-forget).
  *
  * If the DB connection is unavailable (no SUPABASE_DB_URL), logs to console
@@ -91,8 +107,15 @@ export async function recordRound(round: RoundRecord): Promise<void> {
     rounds.push(round);
     bufferedRounds.set(round.matchId, rounds);
 
-    // Register round ID for moves lookup
-    roundIdLookup.set(roundKey(round.matchId, round.roundNumber), round.roundId);
+    // Register round ID for moves lookup (or reuse existing from ensureRoundId)
+    const key = roundKey(round.matchId, round.roundNumber);
+    const existingId = roundIdLookup.get(key);
+    if (existingId) {
+      // Round was already registered by ensureRoundId — use that UUID
+      round.roundId = existingId;
+    } else {
+      roundIdLookup.set(key, round.roundId);
+    }
   } else {
     // Dev fallback: log to console
     console.log(
