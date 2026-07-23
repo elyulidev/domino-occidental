@@ -25,6 +25,8 @@ interface GameState {
   ownHand: Tile[];
   /** Tile IDs blocked by timeout for the current player (from server). */
   blockedTileIds: string[];
+  /** Player ID of the last player who passed (voluntary or forced). Cleared on next play. */
+  lastPassedPlayerId: string | null;
   /** Avatar URLs for each player, indexed by seat position (0–3). */
   avatarUrls: [string, string, string, string];
   /** Map of playerId → disconnect timestamp (Date.now() or null). */
@@ -64,6 +66,10 @@ interface StoreState {
   clearSelection: () => void;
   playTile: (side: Side) => void;
   pass: () => void;
+  /** Mark a player as having passed (voluntary or forced) for visual indicator. */
+  markPassed: (playerId: string) => void;
+  /** Clear the passed indicator (called when a tile is played). */
+  clearPassed: () => void;
   reset: () => void;
 }
 
@@ -77,6 +83,7 @@ const defaultGameState: GameState = {
   players: [],
   ownHand: [],
   blockedTileIds: [],
+  lastPassedPlayerId: null,
   avatarUrls: ["", "", "", ""],
   disconnectedSince: new Map(),
   matchAbandonedBy: null,
@@ -102,6 +109,9 @@ const defaultUIState: UIState = {
 
 function syncGameState(state: StoreState, match: MatchState): Partial<StoreState> {
   const playerIdx = state.engine?.playerIndex ?? 0;
+  // Clear pass indicator when a new hand starts (round changed)
+  const prevRound = state.game?.turn?.roundNumber ?? -1;
+  const newHand = match.turn.roundNumber !== prevRound;
   return {
     game: {
       board: match.board,
@@ -114,6 +124,7 @@ function syncGameState(state: StoreState, match: MatchState): Partial<StoreState
       })),
       ownHand: state.engine?.hand ?? match.players[0].hand,
       blockedTileIds: match.players[playerIdx]?.blockedTileIds ?? [],
+      lastPassedPlayerId: newHand ? null : (state.game?.lastPassedPlayerId ?? null),
       avatarUrls: state.game?.avatarUrls ?? ["", "", "", ""],
       disconnectedSince: state.game?.disconnectedSince ?? new Map(),
       matchAbandonedBy: state.game?.matchAbandonedBy ?? null,
@@ -157,7 +168,16 @@ export const useGameStore = create<StoreState>((set, get) => ({
     const { hands, pool } = deal(deck);
     const matchId = crypto.randomUUID();
     const initResult = initializeMatch(matchId, hands, pool);
-    const handResult = startHand(initResult.match);
+    // Fix: createPlayer() sets isConnected=false by default (server convention).
+    // In CPU mode all players are local and always connected.
+    const connectedMatch = {
+      ...initResult.match,
+      players: initResult.match.players.map((p) => ({
+        ...p,
+        isConnected: true,
+      })) as MatchState["players"],
+    };
+    const handResult = startHand(connectedMatch);
     const engine = new LocalGameEngine(handResult.match, 0);
     // biome-ignore lint/style/noNonNullAssertion: syncGameState always returns game
     const gameState = { ...syncGameState({ engine } as unknown as StoreState, handResult.match).game!, matchAbandonedBy: null };
@@ -256,14 +276,15 @@ export const useGameStore = create<StoreState>((set, get) => ({
       // Server broadcast will reconcile board, turn, handSizes.
       engine.playTile(ui.selectedTileId, side);
       set({
-        game: { ...get().game, ownHand: engine.hand },
+        game: { ...get().game, ownHand: engine.hand, lastPassedPlayerId: null },
         ui: { selectedTileId: null, error: null },
       });
     } else {
       // Local mode: full synchronous processing
       const result = engine.playTile(ui.selectedTileId, side);
+      const sync = syncGameState(get(), result.match);
       set({
-        ...syncGameState(get(), result.match),
+        game: { ...sync.game!, lastPassedPlayerId: null },
         ui: { selectedTileId: null, error: null },
       });
     }
@@ -276,15 +297,31 @@ export const useGameStore = create<StoreState>((set, get) => ({
     if (engine.remote) {
       // Remote (WS) mode: send message, clear selection.
       engine.pass();
-      set({ ui: { ...get().ui, selectedTileId: null } });
+      // Mark this player as having passed (for visual indicator)
+      const playerId = engine.state.players[engine.playerIndex].id;
+      set({
+        game: { ...get().game, lastPassedPlayerId: playerId },
+        ui: { ...get().ui, selectedTileId: null },
+      });
     } else {
       // Local mode: full synchronous processing
       const result = engine.pass();
+      // Mark this player as having passed (for visual indicator)
+      const playerId = engine.state.players[engine.playerIndex].id;
+      const sync = syncGameState(get(), result.match);
       set({
-        ...syncGameState(get(), result.match),
+        game: { ...sync.game!, lastPassedPlayerId: playerId },
         ui: { selectedTileId: null, error: null },
       });
     }
+  },
+
+  markPassed: (playerId: string) => {
+    set({ game: { ...get().game, lastPassedPlayerId: playerId } });
+  },
+
+  clearPassed: () => {
+    set({ game: { ...get().game, lastPassedPlayerId: null } });
   },
 
   reset: () => {

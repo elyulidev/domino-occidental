@@ -30,6 +30,7 @@ describe("useGameStore", () => {
         players: [],
         ownHand: [],
         blockedTileIds: [],
+        lastPassedPlayerId: null,
         avatarUrls: ["", "", "", ""],
         disconnectedSince: new Map(),
         matchAbandonedBy: null,
@@ -102,6 +103,7 @@ describe("useGameStore", () => {
       get playerIndex() { return 0; },
       playTile: () => ({ events: [], match: {} as never }),
       pass: () => ({ events: [], match: {} as never }),
+      checkTimeout: () => null,
       processBotTurns: () => ({} as never),
       destroy: () => {},
     };
@@ -257,6 +259,13 @@ describe("useGameStore", () => {
       useGameStore.getState().initCpuMatch();
       const id2 = useGameStore.getState().engine?.state.matchId;
       expect(id1).not.toBe(id2);
+    });
+
+    it("sets all players as connected (bugfix)", () => {
+      useGameStore.getState().initCpuMatch();
+      const state = useGameStore.getState();
+      // All 4 players must be connected — otherwise validateAction rejects moves
+      expect(state.game.players.every((p) => p.isConnected)).toBe(true);
     });
   });
 

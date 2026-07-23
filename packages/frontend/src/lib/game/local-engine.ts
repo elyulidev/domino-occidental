@@ -1,5 +1,5 @@
-import type { GameEvent, MatchState, Side, Tile } from "@domino/shared";
-import { passTurn, playTile as sharedPlayTile } from "@domino/shared/src/game";
+import type { ActionResult, GameEvent, MatchState, Side, Tile } from "@domino/shared";
+import { checkTimeout as sharedCheckTimeout, passTurn, playTile as sharedPlayTile } from "@domino/shared/src/game";
 import { findBotMove } from "./bot";
 import type { GameEngine } from "./types";
 
@@ -7,7 +7,10 @@ import type { GameEngine } from "./types";
 // Constants
 // ---------------------------------------------------------------------------
 
-const BOT_DELAY_MS = 1_500; // 1.5s delay between bot turns for visual feedback
+/** Random delay between bot turns for visual feedback (5–10 seconds). */
+function randomBotDelay(): number {
+  return 5_000 + Math.random() * 5_000;
+}
 
 // ---------------------------------------------------------------------------
 // Local Game Engine
@@ -65,10 +68,10 @@ export class LocalGameEngine implements GameEngine {
    * the user visual feedback. Returns when it's the human's turn again
    * or the match ends.
    *
-   * @param onBotPlayed - Optional callback fired after each bot action (for UI sync)
+   * @param onBotPlayed - Optional callback fired after each bot action, receives events array
    * @returns The current match state after all bot turns are resolved
    */
-  processBotTurns(_onBotPlayed?: () => void): MatchState {
+  processBotTurns(onBotPlayed?: (events?: GameEvent[]) => void): MatchState {
     // Synchronous version: resolve all bot turns immediately (used in tests)
     while (true) {
       if (this._state.status !== "in_progress") break;
@@ -88,6 +91,9 @@ export class LocalGameEngine implements GameEngine {
 
       this._state = result.match;
 
+      // Notify caller with events
+      onBotPlayed?.(result.events);
+
       if (this._state.status !== "in_progress") break;
     }
 
@@ -100,10 +106,10 @@ export class LocalGameEngine implements GameEngine {
    * Resolves bot turns one at a time with BOT_DELAY_MS between each,
    * yielding to the event loop so the UI can render updates.
    *
-   * @param onBotPlayed - Optional callback fired after each bot action (for UI sync)
+   * @param onBotPlayed - Optional callback fired after each bot action, receives events array (for UI sync)
    * @returns Promise that resolves when it's the human's turn or match ends
    */
-  async processBotTurnsAsync(onBotPlayed?: () => void): Promise<MatchState> {
+  async processBotTurnsAsync(onBotPlayed?: (events?: GameEvent[]) => void): Promise<MatchState> {
     while (true) {
       if (this._state.status !== "in_progress") break;
       if (this._state.turn.currentTurn === this._playerIndex) break;
@@ -111,8 +117,8 @@ export class LocalGameEngine implements GameEngine {
       const currentPlayer = this._state.players[this._state.turn.currentTurn];
       if (currentPlayer.hand.length === 0) break;
 
-      // Yield to event loop for rendering
-      await new Promise((resolve) => setTimeout(resolve, BOT_DELAY_MS));
+      // Yield to event loop for rendering with random delay
+      await new Promise((resolve) => setTimeout(resolve, randomBotDelay()));
 
       const move = findBotMove(currentPlayer.hand, this._state.board);
 
@@ -125,13 +131,32 @@ export class LocalGameEngine implements GameEngine {
 
       this._state = result.match;
 
-      // Notify caller so UI can sync
-      onBotPlayed?.();
+      // Notify caller with events so UI can detect passes
+      onBotPlayed?.(result.events);
 
       if (this._state.status !== "in_progress") break;
     }
 
     return this._state;
+  }
+
+  /**
+   * Checks if the current turn has timed out and forces a pass + blocks playable tiles.
+   *
+   * Wraps the shared checkTimeout() function. Should be called periodically by the
+   * host (e.g. cpu/page.tsx) when it's the human player's turn and the deadline has passed.
+   *
+   * @param now - Current time in Unix ms (Date.now())
+   * @returns ActionResult if a timeout occurred, null otherwise
+   */
+  checkTimeout(now: number): ActionResult | null {
+    const result = sharedCheckTimeout(this._state, now);
+    // Only update state if something actually changed (timedOut happened)
+    if (result.events.length > 0) {
+      this._state = result.match;
+      return result;
+    }
+    return null;
   }
 
   destroy(): void {

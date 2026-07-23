@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { GameBoard } from "@/components/game/game-board";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
+import { LeaveMatchConfirmModal } from "@/components/game/leave-match-confirm-modal";
 import { PlayerHand } from "@/components/game/player-hand";
 import { ScorePanel } from "@/components/game/score-panel";
 import { useGameStore } from "@/stores/game-store";
@@ -12,15 +14,23 @@ import { useGameStore } from "@/stores/game-store";
 // ---------------------------------------------------------------------------
 
 export default function CpuMatchPage() {
+  const router = useRouter();
   const initCpuMatch = useGameStore((s) => s.initCpuMatch);
   const engine = useGameStore((s) => s.engine);
   const status = useGameStore((s) => s.game.status);
   const currentTurn = useGameStore((s) => s.game.turn.currentTurn);
+  const turnDeadline = useGameStore((s) => s.game.turn.turnDeadline);
+  const playerIndex = useGameStore((s) => s.game.playerIndex);
+  const reset = useGameStore((s) => s.reset);
+  const markPassed = useGameStore((s) => s.markPassed);
 
   const isProcessing = useRef(false);
+  const isAbandoned = useRef(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   // Initialize CPU match on mount
   useEffect(() => {
+    isAbandoned.current = false;
     initCpuMatch();
   }, [initCpuMatch]);
 
@@ -39,7 +49,20 @@ export default function CpuMatchPage() {
       isProcessing.current = false;
       return;
     }
-    asyncFn.call(engine, () => {
+    asyncFn.call(engine, (events?: import("@domino/shared").GameEvent[]) => {
+        // Guard: skip if user abandoned during bot processing
+        if (isAbandoned.current) return;
+
+        // Detect passes (voluntary or forced) from bot turns for visual indicator
+        if (events) {
+          const passEvent = events.find(
+            (e) => e.type === "player_passed" || e.type === "turn_timeout",
+          );
+          if (passEvent && "playerId" in passEvent) {
+            markPassed(passEvent.playerId);
+          }
+        }
+
         // Sync state to store after each bot action
         useGameStore.setState((state) => {
           if (!state.engine) return {};
@@ -74,7 +97,7 @@ export default function CpuMatchPage() {
       .then(() => {
         isProcessing.current = false;
       });
-  }, [engine, status, currentTurn]);
+  }, [engine, status, currentTurn, markPassed]);
 
   // Trigger bot processing after human plays or passes
   useEffect(() => {
@@ -83,8 +106,75 @@ export default function CpuMatchPage() {
     }
   }, [currentTurn, status, processBots]);
 
-  // Auto-play: if it's human's turn and a tile is selected, wait for side selection
-  // The PlayerHand component handles tile selection and side picking
+  // Enforce turn timeout for the human player
+  useEffect(() => {
+    if (!engine || engine.remote) return;
+    if (status !== "in_progress") return;
+    if (currentTurn !== playerIndex) return;
+    if (turnDeadline === null) return;
+
+    const interval = setInterval(() => {
+      if (isAbandoned.current) return;
+      if (!engine || engine.remote) return;
+
+      const now = Date.now();
+      if (now < (turnDeadline ?? Infinity)) return;
+
+      // Time's up — call shared checkTimeout to force pass + block playable tiles
+      const result = engine.checkTimeout(now);
+      if (!result) return;
+
+      // Sync state to store
+      const match = result.match;
+      const idx = engine.playerIndex;
+      useGameStore.setState((state) => ({
+        game: {
+          ...state.game,
+          board: match.board,
+          scores: match.scores.scores,
+          players: match.players.map((p) => ({
+            id: p.id,
+            name: p.name,
+            handSize: p.hand.length,
+            isConnected: p.isConnected,
+          })),
+          ownHand: engine.hand,
+          blockedTileIds: match.players[idx]?.blockedTileIds ?? [],
+          turn: {
+            currentTurn: match.turn.currentTurn,
+            turnDeadline: match.turn.turnDeadline,
+            consecutiveNullRounds: match.turn.consecutiveNullRounds,
+            roundNumber: match.turn.roundNumber,
+            lastHandWinner: match.turn.lastHandWinner,
+          },
+          status: match.status,
+        },
+      }));
+
+      // Mark the passed player for visual indicator (forced timeout counts as pass)
+      const timeoutEvent = result.events.find((e) => e.type === "turn_timeout");
+      if (timeoutEvent && timeoutEvent.type === "turn_timeout") {
+        markPassed(timeoutEvent.playerId);
+      }
+
+      // If it was the human who timed out and it's now a bot's turn, trigger bot processing
+      if (match.turn.currentTurn !== playerIndex && match.status === "in_progress") {
+        processBots();
+      }
+    }, 500); // Check every 500ms for responsive enforcement
+
+    return () => clearInterval(interval);
+  }, [engine, status, currentTurn, turnDeadline, playerIndex, markPassed, processBots]);
+
+  // Abandon match
+  const handleConfirmAbandon = useCallback(() => {
+    setShowLeaveModal(false);
+    isAbandoned.current = true;
+    reset();
+    router.push("/lobby");
+  }, [reset, router]);
+
+  const canAbandon = status === "in_progress";
 
   return (
     <div className="relative min-h-screen bg-domino-950 text-domino-50">
@@ -105,6 +195,24 @@ export default function CpuMatchPage() {
           <PlayerHand />
         </div>
       </div>
+
+      {/* Abandon button — bottom-left, subtle */}
+      {canAbandon && (
+        <button
+          type="button"
+          onClick={() => setShowLeaveModal(true)}
+          className="fixed bottom-4 left-4 z-40 rounded-lg border border-domino-700/50 bg-domino-900/80 px-3 py-1.5 text-xs text-domino-400 backdrop-blur-sm transition-colors hover:border-red-500/50 hover:text-red-400"
+        >
+          Abandonar partida
+        </button>
+      )}
+
+      {/* Leave confirmation modal */}
+      <LeaveMatchConfirmModal
+        isOpen={showLeaveModal}
+        onClose={() => setShowLeaveModal(false)}
+        onConfirm={handleConfirmAbandon}
+      />
 
       {/* Overlays */}
       <GameStatusOverlay />

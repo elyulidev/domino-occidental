@@ -50,7 +50,10 @@ export function PlayerHand() {
 
   const isMyTurn = currentTurn === playerIndex;
   const currentTurnName = players[currentTurn]?.name ?? `P${currentTurn + 1}`;
-  const hasPlayableTile = ownHand.some((tile) => isTilePlayable(tile, board));
+  // A tile is "effectively playable" only if it connects to the board AND is not blocked
+  const hasPlayableTile = ownHand.some(
+    (tile) => isTilePlayable(tile, board) && !blockedTileIds.includes(tile.id),
+  );
 
   const selectedTile = selectedTileId
     ? ownHand.find((t) => t.id === selectedTileId) ?? null

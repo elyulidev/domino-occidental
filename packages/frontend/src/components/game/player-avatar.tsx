@@ -52,6 +52,25 @@ export function tooltipPositionClass(seatIndex: number): string {
 }
 
 /**
+ * Compute the CSS class for "Se pasó" popover positioning based on seat.
+ * Popover appears opposite to the tooltip (away from board center) to avoid overlap.
+ */
+export function popoverPositionClass(seatIndex: number): string {
+  switch (seatIndex) {
+    case 0: // bottom → popover above avatar
+      return "bottom-full left-1/2 -translate-x-1/2 mb-1";
+    case 1: // right → popover to the left
+      return "right-full top-1/2 -translate-y-1/2 mr-1";
+    case 2: // top → popover below avatar
+      return "top-full left-1/2 -translate-x-1/2 mt-1";
+    case 3: // left → popover to the right
+      return "left-full top-1/2 -translate-y-1/2 ml-1";
+    default:
+      return "bottom-full left-1/2 -translate-x-1/2 mb-1";
+  }
+}
+
+/**
  * Determine if the avatar should be grayed out.
  * Returns true if disconnected AND more than 30s have elapsed.
  */
@@ -86,6 +105,8 @@ export interface PlayerAvatarProps {
   seatIndex: number;
   handSize?: number;
   pairLabel?: string;
+  /** Whether this player just passed (voluntary or forced) — shows "Se pasó" indicator. */
+  hasPassed?: boolean;
   "data-seat"?: number;
   avatarRef?: React.RefObject<HTMLDivElement | null>;
   className?: string;
@@ -100,11 +121,14 @@ export function PlayerAvatar({
   seatIndex,
   handSize,
   pairLabel,
+  hasPassed,
   "data-seat": dataSeat,
   avatarRef,
   className,
 }: PlayerAvatarProps) {
   const [now, setNow] = useState(Date.now());
+  const [showPassed, setShowPassed] = useState(false);
+  const prevPassedRef = useRef(false);
   const internalRef = useRef<HTMLDivElement>(null);
   const ref = avatarRef ?? internalRef;
 
@@ -114,6 +138,19 @@ export function PlayerAvatar({
     const id = setInterval(() => setNow(Date.now()), 5_000);
     return () => clearInterval(id);
   }, [isConnected, disconnectedSince]);
+
+  // "Se pasó" popover: show for 2 seconds when hasPassed transitions to true
+  useEffect(() => {
+    if (hasPassed && !prevPassedRef.current) {
+      setShowPassed(true);
+      const timer = setTimeout(() => setShowPassed(false), 2_000);
+      prevPassedRef.current = true;
+      return () => clearTimeout(timer);
+    }
+    if (!hasPassed) {
+      prevPassedRef.current = false;
+    }
+  }, [hasPassed]);
 
   const grayed = isGrayedOut(isConnected, disconnectedSince, now);
   const style = seatStyle(seatIndex);
@@ -165,6 +202,29 @@ export function PlayerAvatar({
           </svg>
         )}
       </div>
+
+      {/* "Se pasó" popover — auto-shows for 2s, no hover needed */}
+      {showPassed && (
+        <div
+          className={[
+            "absolute z-50 pointer-events-none whitespace-nowrap",
+            "bg-amber-500 text-white rounded-full",
+            "px-2.5 py-1 sm:px-3 sm:py-1.5",
+            "shadow-lg shadow-amber-500/30",
+            "backdrop-blur-sm",
+            "font-bold text-[10px] sm:text-xs",
+            popoverPositionClass(seatIndex),
+          ].join(" ")}
+          style={{
+            animation: "popover-in 200ms ease-out forwards",
+          }}
+        >
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            Se pasó
+          </span>
+        </div>
+      )}
 
       {/* Hover/focus tooltip — positioned inward toward board center */}
       <div

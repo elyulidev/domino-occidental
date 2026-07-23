@@ -79,6 +79,7 @@ export function GameBoard() {
   const playerIndex = useGameStore((s) => s.game.playerIndex);
   const currentTurn = useGameStore((s) => s.game.turn.currentTurn);
   const disconnectedSince = useGameStore((s) => s.game.disconnectedSince);
+  const lastPassedPlayerId = useGameStore((s) => s.game.lastPassedPlayerId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const boardWrapperRef = useRef<HTMLDivElement>(null);
@@ -387,6 +388,7 @@ export function GameBoard() {
           {[0, 1, 2, 3].map((playerIdx) => {
             const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
             const pairLabel = playerIdx % 2 === 0 ? "Pareja 0" : "Pareja 1";
+            const pid = players[playerIdx]?.id ?? "";
             return (
               <PlayerAvatar
                 key={players[playerIdx]?.id ?? playerIdx}
@@ -394,10 +396,11 @@ export function GameBoard() {
                 playerName={players[playerIdx]?.name ?? `P${playerIdx + 1}`}
                 isActive={currentTurn === playerIdx}
                 isConnected={players[playerIdx]?.isConnected ?? true}
-                disconnectedSince={disconnectedSince.get(players[playerIdx]?.id ?? "") ?? null}
+                disconnectedSince={disconnectedSince.get(pid) ?? null}
                 seatIndex={seatIndex}
                 handSize={players[playerIdx]?.handSize}
                 pairLabel={pairLabel}
+                hasPassed={lastPassedPlayerId === pid}
               data-seat={seatIndex}
               />
             );
@@ -492,6 +495,7 @@ export function GameBoard() {
           {[0, 1, 2, 3].map((playerIdx) => {
             const seatIndex = ((playerIdx - playerIndex + 4) % 4) as 0 | 1 | 2 | 3;
             const pairLabel = playerIdx % 2 === 0 ? "Pareja 0" : "Pareja 1";
+            const pid = players[playerIdx]?.id ?? "";
             return (
               <PlayerAvatar
                 key={players[playerIdx]?.id ?? playerIdx}
@@ -499,10 +503,11 @@ export function GameBoard() {
                 playerName={players[playerIdx]?.name ?? `P${playerIdx + 1}`}
                 isActive={currentTurn === playerIdx}
                 isConnected={players[playerIdx]?.isConnected ?? true}
-                disconnectedSince={disconnectedSince.get(players[playerIdx]?.id ?? "") ?? null}
+                disconnectedSince={disconnectedSince.get(pid) ?? null}
                 seatIndex={seatIndex}
                 handSize={players[playerIdx]?.handSize}
                 pairLabel={pairLabel}
+                hasPassed={lastPassedPlayerId === pid}
                 data-seat={seatIndex}
                 className="pointer-events-auto"
               />
