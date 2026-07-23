@@ -3,15 +3,20 @@
  * to Supabase for historical data, replay, and leaderboard.
  *
  * This module uses a lazy postgres connection. If SUPABASE_DB_URL is not set
- * (e.g. local dev without Supabase), matches are logged to console instead.
+ * (e.g. local dev without Supabase), rounds are logged to console instead.
  *
  * The game loop is NEVER blocked by DB writes — persistMatch is fire-and-forget.
+ *
+ * RESPONSIBILITY: persistMatch is the single entry point for persisting a
+ * terminal match. It ensures the current round is buffered, inserts the
+ * match row, and flushes rounds + moves in a single transaction.
+ * Callers do NOT need to call recordAbandonedRoundIfNeeded separately.
  */
 
 import type { GameEvent, MatchState } from "@domino/shared";
 import { getDb } from "./client";
 import { flushMatchMoves } from "./moves";
-import { flushMatchRounds } from "./rounds";
+import { flushMatchRounds, recordAbandonedRoundIfNeeded } from "./rounds";
 import { matches } from "./schema";
 
 // ---------------------------------------------------------------------------
@@ -90,6 +95,11 @@ export function extractTerminalData(
  * so local development is not disrupted.
  *
  * The game loop is NEVER blocked — DB errors are caught and logged.
+ *
+ * Flow:
+ * 1. Ensure the current round is buffered (no-op if already recorded by hand_end)
+ * 2. Insert match row
+ * 3. Flush rounds + moves in a single transaction
  */
 export async function persistMatch(
   state: MatchState,
@@ -97,6 +107,12 @@ export async function persistMatch(
 ): Promise<void> {
   const record = extractTerminalData(state, events);
   if (!record) return;
+
+  // Ensure the current round is buffered before flushing.
+  // This is a no-op when the round was already recorded by recordRound (hand_end).
+  // When the match is abandoned mid-hand, this creates a stub round so the
+  // FK constraint on match_moves.round_id is satisfied.
+  await recordAbandonedRoundIfNeeded(record.matchId, state);
 
   const db = await getDb();
 
@@ -123,9 +139,12 @@ export async function persistMatch(
       })
       .then(async () => {
         console.log(`[db/matches] match ${record.matchId.slice(0, 8)} persisted OK — flushing moves + rounds`);
-        // Match row created — flush rounds FIRST (moves depend on round_id FK)
-        await flushMatchRounds(record.matchId);
-        await flushMatchMoves(record.matchId);
+        // Match row created — flush rounds + moves in a SINGLE transaction
+        // to guarantee atomicity (FK: match_moves → match_rounds → matches)
+        await db.transaction(async (tx) => {
+          await flushMatchRounds(record.matchId, tx);
+          await flushMatchMoves(record.matchId, tx);
+        });
       })
       .catch((err: unknown) => {
         console.error("[db/matches] FAILED to persist match:", err);

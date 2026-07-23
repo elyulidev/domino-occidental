@@ -213,28 +213,17 @@ describe("flushMatchRounds", () => {
     consoleSpy.mockRestore();
   });
 
-  // --- Scenario 5: insert error is caught and logged ---
-  it("catches insert errors and logs to console.error", async () => {
+  // --- Scenario 5: insert error propagates to caller (for transaction rollback) ---
+  it("propagates insert errors (caller handles via transaction catch)", async () => {
     const dbError = new Error("connection refused");
     const mockDb = makeMockDb(dbError);
     mockGetDb.mockResolvedValue(mockDb);
-    const errorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
 
     await recordRound(makeRound());
-    await flushMatchRounds("00000000-0000-0000-0000-000000000001");
 
-    // Give the fire-and-forget promise time to settle
-    await new Promise((r) => setTimeout(r, 10));
-
-    expect(errorSpy).toHaveBeenCalledTimes(1);
-    expect(errorSpy.mock.calls[0][0]).toBe(
-      "[db/rounds] failed to flush 1 rounds for match 00000000:",
-    );
-    expect(errorSpy.mock.calls[0][1]).toBe(dbError);
-
-    errorSpy.mockRestore();
+    await expect(
+      flushMatchRounds("00000000-0000-0000-0000-000000000001"),
+    ).rejects.toThrow("connection refused");
   });
 
   // --- Scenario 6: maps all fields correctly including optional nulls ---

@@ -216,24 +216,16 @@ describe("flushMatchMoves", () => {
     });
   });
 
-  it("catches insert errors and logs to console.error", async () => {
+  it("propagates insert errors (caller handles via transaction catch)", async () => {
     const dbError = new Error("connection refused");
     const mockDb = makeMockDb(dbError);
     mockGetDb.mockResolvedValue(mockDb);
-    const errorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
 
     await recordMatchMove(makeMove());
-    await flushMatchMoves("00000000-0000-0000-0000-000000000001");
 
-    expect(errorSpy).toHaveBeenCalledTimes(1);
-    expect(errorSpy.mock.calls[0][0]).toBe(
-      "[db/moves] failed to flush 1 moves for match 00000000:",
-    );
-    expect(errorSpy.mock.calls[0][1]).toBe(dbError);
-
-    errorSpy.mockRestore();
+    await expect(
+      flushMatchMoves("00000000-0000-0000-0000-000000000001"),
+    ).rejects.toThrow("connection refused");
   });
 
   it("returns silently when no moves are buffered", async () => {

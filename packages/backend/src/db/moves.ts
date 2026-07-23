@@ -11,7 +11,7 @@
  * before moves within the same hand, or at least before flush).
  */
 
-import { getDb } from "./client";
+import { type DrizzleDB, getDb } from "./client";
 import { ensureRoundId } from "./rounds";
 import { matchMoves } from "./schema";
 
@@ -100,8 +100,14 @@ export async function recordMatchMove(move: MoveRecord): Promise<void> {
   }
 }
 
-export async function flushMatchMoves(matchId: string): Promise<void> {
-  const db = await getDb();
+/**
+ * Flush all buffered moves for a match to the database.
+ *
+ * When called inside a transaction, the transaction client is used directly.
+ * Errors bubble up to the caller (transaction will rollback).
+ */
+export async function flushMatchMoves(matchId: string, tx?: DrizzleDB): Promise<void> {
+  const db = tx ?? await getDb();
   const moves = bufferedMoves.get(matchId);
   if (!moves || moves.length === 0) {
     bufferedMoves.delete(matchId);
@@ -110,28 +116,24 @@ export async function flushMatchMoves(matchId: string): Promise<void> {
   }
 
   if (db) {
-    try {
-      await db.insert(matchMoves).values(
-        moves.map((m) => ({
-          matchId: m.matchId,
-          roundId: m.roundId,  // resolved from rounds buffer
-          roundNumber: m.roundNumber,
-          playerIndex: m.playerIndex,
-          moveNumber: m.moveNumber,
-          isPass: m.isPass,
-          actionSource: m.actionSource,
-          tileId: m.tileId ?? undefined,
-          tileTop: m.tileTop ?? undefined,
-          tileBottom: m.tileBottom ?? undefined,
-          side: m.side ?? undefined,
-          boardLeftEnd: m.boardLeftEnd,
-          boardRightEnd: m.boardRightEnd,
-        })),
-      );
-      console.log(`[db/moves] flushed ${moves.length} moves for match ${matchId.slice(0, 8)}`);
-    } catch (err: unknown) {
-      console.error(`[db/moves] failed to flush ${moves.length} moves for match ${matchId.slice(0, 8)}:`, err);
-    }
+    await db.insert(matchMoves).values(
+      moves.map((m) => ({
+        matchId: m.matchId,
+        roundId: m.roundId,  // resolved from rounds buffer
+        roundNumber: m.roundNumber,
+        playerIndex: m.playerIndex,
+        moveNumber: m.moveNumber,
+        isPass: m.isPass,
+        actionSource: m.actionSource,
+        tileId: m.tileId ?? undefined,
+        tileTop: m.tileTop ?? undefined,
+        tileBottom: m.tileBottom ?? undefined,
+        side: m.side ?? undefined,
+        boardLeftEnd: m.boardLeftEnd,
+        boardRightEnd: m.boardRightEnd,
+      })),
+    );
+    console.log(`[db/moves] flushed ${moves.length} moves for match ${matchId.slice(0, 8)}`);
   } else {
     console.log(`[db/moves] skipped flush (${moves.length} moves) — no DB connection`);
   }

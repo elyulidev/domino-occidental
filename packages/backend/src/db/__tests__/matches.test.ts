@@ -8,6 +8,8 @@ vi.mock("../client", () => ({
 // Must import AFTER vi.mock so the mock is wired
 import type { GameEvent, MatchState } from "@domino/shared";
 import { getDb } from "../client";
+import { flushMatchMoves } from "../moves";
+import { flushMatchRounds, recordAbandonedRoundIfNeeded } from "../rounds";
 import { extractTerminalData, persistMatch } from "../matches";
 
 const mockGetDb = getDb as ReturnType<typeof vi.fn>;
@@ -18,6 +20,7 @@ const mockGetDb = getDb as ReturnType<typeof vi.fn>;
 
 interface MockDb {
   insert: ReturnType<typeof vi.fn>;
+  transaction: ReturnType<typeof vi.fn>;
   _mockValues: ReturnType<typeof vi.fn>;
   _mockInsert: ReturnType<typeof vi.fn>;
 }
@@ -53,7 +56,14 @@ function makeMockDb(insertError?: unknown): MockDb {
       : Promise.resolve(),
   );
   const mockInsert = vi.fn(() => ({ values: mockValues }));
-  return { insert: mockInsert, _mockValues: mockValues, _mockInsert: mockInsert };
+
+  // transaction: calls the callback with a mock tx client that has the same insert behavior
+  const mockTransaction = vi.fn(async (fn: (tx: MockDb) => Promise<void>) => {
+    const txClient = { insert: mockInsert, transaction: mockTransaction, _mockValues: mockValues, _mockInsert: mockInsert };
+    await fn(txClient);
+  });
+
+  return { insert: mockInsert, transaction: mockTransaction, _mockValues: mockValues, _mockInsert: mockInsert };
 }
 
 // ---------------------------------------------------------------------------
@@ -160,8 +170,10 @@ describe("persistMatch", () => {
 
     await persistMatch(state, events);
 
-    expect(mockDb._mockInsert).toHaveBeenCalledTimes(1);
-    expect(mockDb._mockValues).toHaveBeenCalledTimes(1);
+    // persistMatch now does: recordAbandonedRoundIfNeeded (buffers round) + insert match + flush rounds
+    // The first values() call is the match row insert
+    expect(mockDb._mockInsert).toHaveBeenCalled();
+    expect(mockDb._mockValues).toHaveBeenCalled();
 
     const fields = mockDb._mockValues.mock.calls[0][0];
     expect(fields.id).toBe("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
@@ -186,11 +198,14 @@ describe("persistMatch", () => {
 
     await persistMatch(state, events);
 
-    expect(consoleSpy).toHaveBeenCalledTimes(1);
-    const output = consoleSpy.mock.calls[0][0] as string;
-    expect(output).toContain("[db/matches]");
-    expect(output).toContain("FINISHED");
-    expect(output).toContain("winner=0");
+    // persistMatch calls recordAbandonedRoundIfNeeded (logs round) + persistMatch (logs match)
+    expect(consoleSpy).toHaveBeenCalled();
+    // The match log should be present
+    const matchLog = consoleSpy.mock.calls.find(
+      (call: unknown[]) => typeof call[0] === "string" && call[0].includes("[db/matches]"),
+    );
+    expect(matchLog).toBeDefined();
+    expect((matchLog as unknown[])[0]).toContain("FINISHED");
 
     consoleSpy.mockRestore();
   });

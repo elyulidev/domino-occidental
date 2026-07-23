@@ -16,7 +16,7 @@
  */
 
 import type { MatchState } from "@domino/shared";
-import { getDb } from "./client";
+import { type DrizzleDB, getDb } from "./client";
 import { matchRounds } from "./schema";
 
 // ---------------------------------------------------------------------------
@@ -132,10 +132,11 @@ export async function recordRound(round: RoundRecord): Promise<void> {
  * Flush all buffered rounds for a match to the database.
  *
  * Called after persistMatch() creates the match row (FK constraint satisfied).
- * Fire-and-forget: errors are logged, game loop is never blocked.
+ * When called inside a transaction, the transaction client is used directly.
+ * Errors bubble up to the caller (transaction will rollback).
  */
-export async function flushMatchRounds(matchId: string): Promise<void> {
-  const db = await getDb();
+export async function flushMatchRounds(matchId: string, tx?: DrizzleDB): Promise<void> {
+  const db = tx ?? await getDb();
   const rounds = bufferedRounds.get(matchId);
   if (!rounds || rounds.length === 0) {
     bufferedRounds.delete(matchId);
@@ -147,35 +148,28 @@ export async function flushMatchRounds(matchId: string): Promise<void> {
   }
 
   if (db) {
-    try {
-      await db.insert(matchRounds).values(
-        rounds.map((r) => ({
-          id: r.roundId,  // use pre-generated UUID
-          matchId: r.matchId,
-          roundNumber: r.roundNumber,
-          winningPair: r.winningPair ?? undefined,
-          points: r.points,
-          isBlocked: r.isBlocked,
-          isAnnulled: r.isAnnulled,
-          reason: r.reason,
-          handScores: r.handScores,
-          scoresAfter: r.scoresAfter,
-          boardLeftEnd: r.boardLeftEnd,
-          boardRightEnd: r.boardRightEnd,
-          boardTileCount: r.boardTileCount,
-          playerHands: r.playerHands,
-          firstPlayer: r.firstPlayer,
-        })),
-      );
-      console.log(
-        `[db/rounds] flushed ${rounds.length} rounds for match ${matchId.slice(0, 8)}`,
-      );
-    } catch (err: unknown) {
-      console.error(
-        `[db/rounds] failed to flush ${rounds.length} rounds for match ${matchId.slice(0, 8)}:`,
-        err,
-      );
-    }
+    await db.insert(matchRounds).values(
+      rounds.map((r) => ({
+        id: r.roundId,  // use pre-generated UUID
+        matchId: r.matchId,
+        roundNumber: r.roundNumber,
+        winningPair: r.winningPair ?? undefined,
+        points: r.points,
+        isBlocked: r.isBlocked,
+        isAnnulled: r.isAnnulled,
+        reason: r.reason,
+        handScores: r.handScores,
+        scoresAfter: r.scoresAfter,
+        boardLeftEnd: r.boardLeftEnd,
+        boardRightEnd: r.boardRightEnd,
+        boardTileCount: r.boardTileCount,
+        playerHands: r.playerHands,
+        firstPlayer: r.firstPlayer,
+      })),
+    );
+    console.log(
+      `[db/rounds] flushed ${rounds.length} rounds for match ${matchId.slice(0, 8)}`,
+    );
   } else {
     console.log(
       `[db/rounds] skipped flush (${rounds.length} rounds) — no DB connection`,
@@ -201,13 +195,16 @@ export async function flushMatchRounds(matchId: string): Promise<void> {
  * If the current round was already recorded (normal hand_end flow),
  * this is a no-op.
  */
-export function recordAbandonedRoundIfNeeded(
+export async function recordAbandonedRoundIfNeeded(
   matchId: string,
   state: MatchState,
-): void {
+): Promise<void> {
   const roundNumber = state.turn.roundNumber;
-  const existing = getRoundId(matchId, roundNumber);
-  if (existing) return; // round already recorded — nothing to do
+  // Check if the round was actually recorded (pushed to buffer), not just if a UUID
+  // exists in roundIdLookup. ensureRoundId() creates UUIDs for moves FK but does NOT
+  // push round data to the buffer — so a UUID alone means the round is NOT persisted yet.
+  const rounds = bufferedRounds.get(matchId);
+  if (rounds?.some((r) => r.roundNumber === roundNumber)) return;
 
   const boardTileCount = state.board.tiles.length;
   const playerHands = state.players.map((p) => p.hand.length) as [
@@ -235,7 +232,7 @@ export function recordAbandonedRoundIfNeeded(
     firstPlayer: state.turn.currentTurn,
   };
 
-  void recordRound(roundData);
+  await recordRound(roundData);
 }
 
 /**

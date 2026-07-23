@@ -11,7 +11,6 @@ import type {
 import { sanitizeState, validateWsMessage } from "@domino/shared";
 import type { ElysiaWS } from "elysia/ws";
 import { persistMatch } from "../db/matches";
-import { recordAbandonedRoundIfNeeded } from "../db/rounds";
 import { handleMessage as defaultHandleMessage } from "../game/handler";
 import { getPlayerProfiles } from "../game/store";
 import { broadcastEvents as defaultBroadcastEvents, sendState as defaultSendState } from "./broadcaster";
@@ -450,9 +449,9 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
             }
 
             // Persist terminal matches (finished/abandoned) — fire-and-forget
+            // persistMatch handles round buffering + transactional flush internally
             if (match && result.events.some((e) => e.type === "match_ended" || e.type === "match_abandoned")) {
               startedMatches.delete(matchId);
-              recordAbandonedRoundIfNeeded(matchId, match);
               void persistMatch(match, result.events);
             }
           }
@@ -491,9 +490,9 @@ export function createWsPlugin(deps: WsPluginDeps): WsPlugin {
                 );
 
                 // Persist terminal matches — fire-and-forget
+                // persistMatch handles round buffering + transactional flush internally
                 if (result.events.some((e) => e.type === "match_ended" || e.type === "match_abandoned")) {
                   startedMatches.delete(matchId);
-                  recordAbandonedRoundIfNeeded(matchId, result.match);
                   void persistMatch(result.match, result.events);
                 }
               }
