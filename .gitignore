@@ -37,6 +37,9 @@ yarn-error.log*
 # opencode internal config (personal per-dev)
 .atl/
 
+# supabase local
+supabase/snippets/
+
 # vercel
 .vercel
 
