@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { LeaderboardEntry, ProfileResponse } from "@/lib/api/types";
 import { createClient } from "@/lib/supabase/server";
+import { PlayVsCpuButton } from "./_components/play-vs-cpu-button";
 import { QueueStatusBadge } from "./_components/queue-status-badge";
 import { QuickMatchButton } from "./_components/quick-match-button";
 
@@ -77,6 +78,30 @@ function QuickMatchCard() {
             <QueueStatusBadge />
           </div>
           <QuickMatchButton />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PlayVsCpuCard() {
+  return (
+    <section>
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-700/30 bg-gradient-to-br from-domino-800 via-domino-800/80 to-domino-900 p-6 sm:p-8">
+        <div className="pointer-events-none absolute inset-0 select-none opacity-[0.04]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,#10b981_0%,transparent_50%)]" />
+        </div>
+        <div className="relative flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-domino-50 sm:text-2xl">
+              Practicar vs CPU
+            </h2>
+            <p className="mt-1.5 max-w-md text-sm text-domino-300">
+              Jugar contra la computadora para aprender reglas y probar
+              estrategias. Sin penalización ELO.
+            </p>
+          </div>
+          <PlayVsCpuButton />
         </div>
       </div>
     </section>
@@ -457,6 +482,7 @@ export default async function LobbyPage() {
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <WelcomeHeader profile={profile} />
       <QuickMatchCard />
+      <PlayVsCpuCard />
       <LeaderboardCard leaderboard={leaderboard} />
 
       <div className="grid gap-6 lg:grid-cols-3">

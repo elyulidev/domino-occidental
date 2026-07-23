@@ -208,6 +208,58 @@ describe("useGameStore", () => {
     expect(engine1).not.toBe(engine2);
   });
 
+  // =========================================================================
+  // Task 3.1: initCpuMatch
+  // =========================================================================
+
+  describe("initCpuMatch", () => {
+    it("creates a valid match with 4 players", () => {
+      useGameStore.getState().initCpuMatch();
+      const state = useGameStore.getState();
+      expect(state.game.players).toHaveLength(4);
+      expect(state.engine).not.toBeNull();
+    });
+
+    it("deals 10 tiles to human player", () => {
+      useGameStore.getState().initCpuMatch();
+      const state = useGameStore.getState();
+      expect(state.game.ownHand).toHaveLength(10);
+    });
+
+    it("sets status to in_progress", () => {
+      useGameStore.getState().initCpuMatch();
+      expect(useGameStore.getState().game.status).toBe("in_progress");
+    });
+
+    it("starts with empty board", () => {
+      useGameStore.getState().initCpuMatch();
+      const state = useGameStore.getState();
+      expect(state.game.board.tiles).toHaveLength(0);
+      expect(state.game.board.leftEnd).toBeNull();
+      expect(state.game.board.rightEnd).toBeNull();
+    });
+
+    it("starts with scores at 0-0", () => {
+      useGameStore.getState().initCpuMatch();
+      expect(useGameStore.getState().game.scores).toEqual([0, 0]);
+    });
+
+    it("uses a local engine (not remote)", () => {
+      useGameStore.getState().initCpuMatch();
+      const engine = useGameStore.getState().engine;
+      expect(engine).not.toBeNull();
+      expect(engine!.remote).toBe(false);
+    });
+
+    it("generates unique match IDs", () => {
+      useGameStore.getState().initCpuMatch();
+      const id1 = useGameStore.getState().engine?.state.matchId;
+      useGameStore.getState().initCpuMatch();
+      const id2 = useGameStore.getState().engine?.state.matchId;
+      expect(id1).not.toBe(id2);
+    });
+  });
+
   it("selectTile replaces previous selection", () => {
     const { match } = setupStore();
     useGameStore.getState().initEngine(match);

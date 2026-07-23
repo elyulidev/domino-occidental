@@ -27,6 +27,7 @@ export function buildMatchResultMessage(
   scores: [number, number],
   matchAbandonedBy?: string | null,
   players?: Array<{ id: string; name?: string; handSize: number; isConnected: boolean }>,
+  isCpuMode?: boolean,
 ): { title: string; subtitle: string } {
   if (status === "abandoned") {
     // TODO: All players must have username (not email) for proper display
@@ -44,6 +45,16 @@ export function buildMatchResultMessage(
   const [pair0, pair1] = scores;
   if (pair0 >= TARGET_SCORE || pair1 >= TARGET_SCORE) {
     const winner = pair0 > pair1 ? 0 : 1;
+
+    // CPU mode: human-centric messages
+    if (isCpuMode) {
+      const humanWon = winner === 0;
+      return {
+        title: humanWon ? "¡Ganaste!" : "Perdiste",
+        subtitle: `Marcador final: ${pair0} – ${pair1}`,
+      };
+    }
+
     return {
       title: `¡Pareja ${winner + 1} Gana!`,
       subtitle: `Marcador final: ${pair0} – ${pair1}`,
@@ -67,8 +78,10 @@ export function GameStatusOverlay() {
   const matchAbandonedBy = useGameStore((s) => s.game.matchAbandonedBy);
   const players = useGameStore((s) => s.game.players);
   const reset = useGameStore((s) => s.reset);
+  const engine = useGameStore((s) => s.engine);
 
   const mode = resolveOverlayMode(status);
+  const isCpuMode = engine != null && !engine.remote;
 
   const handleBackToLobby = useCallback(() => {
     reset();
@@ -77,7 +90,13 @@ export function GameStatusOverlay() {
 
   if (mode === "none") return null;
 
-  const { title, subtitle } = buildMatchResultMessage(status, scores, matchAbandonedBy, players);
+  const { title, subtitle } = buildMatchResultMessage(
+    status,
+    scores,
+    matchAbandonedBy,
+    players,
+    isCpuMode,
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -99,12 +118,16 @@ export function GameStatusOverlay() {
         {status === "finished" && (
           <div className="mt-4 flex items-center justify-center gap-6">
             <div className="text-center">
-              <p className="text-xs text-domino-400">Pareja 0</p>
+              <p className="text-xs text-domino-400">
+                {isCpuMode ? "Tu" : "Pareja 0"}
+              </p>
               <p className="text-lg font-bold text-domino-50">{scores[0]}</p>
             </div>
             <span className="text-domino-500">vs</span>
             <div className="text-center">
-              <p className="text-xs text-domino-400">Pareja 1</p>
+              <p className="text-xs text-domino-400">
+                {isCpuMode ? "CPU" : "Pareja 1"}
+              </p>
               <p className="text-lg font-bold text-domino-50">{scores[1]}</p>
             </div>
           </div>

@@ -12,6 +12,8 @@ export interface GameEngine {
   pass(): { events: GameEvent[]; match: MatchState };
   /** Resolve all pending bot turns synchronously. No-op for remote engines. */
   processBotTurns(): MatchState;
+  /** Async version with visual delays between bot turns. No-op for remote engines. */
+  processBotTurnsAsync?(onBotPlayed?: () => void): Promise<MatchState>;
   destroy(): void;
 }
 

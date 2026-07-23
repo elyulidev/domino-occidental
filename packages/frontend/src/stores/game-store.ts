@@ -1,4 +1,5 @@
 import type { BoardState, MatchState, SanitizedMatchState, Side, Tile } from "@domino/shared";
+import { createDeck, deal, initializeMatch, shuffle, startHand } from "@domino/shared/src/game";
 import { create } from "zustand";
 import { LocalGameEngine } from "@/lib/game/local-engine";
 import type { GameEngine, GameStatus } from "@/lib/game/types";
@@ -55,6 +56,7 @@ interface StoreState {
 
   // Actions
   initEngine: (match: MatchState) => void;
+  initCpuMatch: () => void;
   setEngine: (engine: GameEngine) => void;
   applyWsUpdate: (sanitized: SanitizedMatchState, yourHand?: Tile[]) => void;
   setHandOver: (info: HandOverInfo | null) => void;
@@ -142,6 +144,23 @@ export const useGameStore = create<StoreState>((set, get) => ({
     const engine = new LocalGameEngine(match, 0);
     // biome-ignore lint/style/noNonNullAssertion: syncGameState always returns game
     const gameState = { ...syncGameState({ engine } as unknown as StoreState, match).game!, matchAbandonedBy: null };
+    set({
+      engine,
+      game: gameState,
+      ui: { ...defaultUIState },
+      handOver: null,
+    });
+  },
+
+  initCpuMatch: () => {
+    const deck = shuffle(createDeck());
+    const { hands, pool } = deal(deck);
+    const matchId = crypto.randomUUID();
+    const initResult = initializeMatch(matchId, hands, pool);
+    const handResult = startHand(initResult.match);
+    const engine = new LocalGameEngine(handResult.match, 0);
+    // biome-ignore lint/style/noNonNullAssertion: syncGameState always returns game
+    const gameState = { ...syncGameState({ engine } as unknown as StoreState, handResult.match).game!, matchAbandonedBy: null };
     set({
       engine,
       game: gameState,

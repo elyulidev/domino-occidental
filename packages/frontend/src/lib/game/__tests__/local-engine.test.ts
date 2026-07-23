@@ -1,6 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import type { MatchState, } from "@domino/shared";
-import { createDeck, deal, initializeMatch, setCurrentTurn, shuffle, startHand } from "@domino/shared/src/game";
+import type { MatchState } from "@domino/shared";
+import {
+  createDeck,
+  deal,
+  initializeMatch,
+  setCurrentTurn,
+  shuffle,
+  startHand,
+} from "@domino/shared/src/game";
 import { LocalGameEngine } from "../local-engine";
 
 function createTestEngine(): LocalGameEngine {
@@ -15,7 +22,11 @@ function createTestEngine(): LocalGameEngine {
     ...p,
     isConnected: true,
   })) as MatchState["players"];
-  const match = { ...handResult.match, players: connectedPlayers, turn: forcedTurn };
+  const match = {
+    ...handResult.match,
+    players: connectedPlayers,
+    turn: forcedTurn,
+  };
   return new LocalGameEngine(match, 0);
 }
 
@@ -69,31 +80,8 @@ describe("LocalGameEngine", () => {
     engine.destroy();
   });
 
-  it("processBotTurns is a no-op after bot logic removal", () => {
-    const engine = createTestEngine();
-    engine.playTile(engine.hand[0].id, "left");
-    const turnBefore = engine.state.turn.currentTurn;
-    expect(turnBefore).not.toBe(0);
-
-    // processBotTurns no longer resolves bot turns — it's a no-op
-    const finalState = engine.processBotTurns();
-    expect(finalState.turn.currentTurn).toBe(turnBefore);
-    engine.destroy();
-  });
-
-  it("processBotTurns returns immediately if it's already human's turn", () => {
-    const engine = createTestEngine();
-    // No human action yet — human's turn
-    const state = engine.processBotTurns();
-    expect(state.turn.currentTurn).toBe(0);
-    engine.destroy();
-  });
-
   it("pass returns player_passed event", () => {
     const engine = createTestEngine();
-    // Force a blocked situation: set board to values that no hand tile matches
-    // Actually, on empty board any tile is playable, so let's just verify pass works
-    // by directly testing the passTurn path via the engine
     const result = engine.pass();
     expect(result.events.some((e) => e.type === "player_passed")).toBe(true);
     engine.destroy();
@@ -136,5 +124,67 @@ describe("LocalGameEngine", () => {
     expect(engine.hand).toBe(engine.state.players[0].hand);
     expect(engine.hand.length).toBe(handBefore - 1);
     engine.destroy();
+  });
+
+  // =========================================================================
+  // processBotTurns — sync version
+  // =========================================================================
+
+  describe("processBotTurns (sync)", () => {
+    it("returns immediately if it's already human's turn", () => {
+      const engine = createTestEngine();
+      const state = engine.processBotTurns();
+      expect(state.turn.currentTurn).toBe(0);
+      engine.destroy();
+    });
+
+    it("resolves bot turns until human's turn", () => {
+      const engine = createTestEngine();
+      // Play a tile to advance to bot's turn
+      const tile = engine.hand[0];
+      engine.playTile(tile.id, "left");
+      expect(engine.state.turn.currentTurn).not.toBe(0);
+
+      // processBotTurns should resolve all bot turns back to human
+      const finalState = engine.processBotTurns();
+      expect(finalState.turn.currentTurn).toBe(0);
+      engine.destroy();
+    });
+
+    it("stops if match ends during bot turns", () => {
+      const engine = createTestEngine();
+      // Manually empty a bot's hand to trigger match end scenario
+      const bot1 = engine.state.players[1];
+      const emptyBot1 = { ...bot1, hand: [] as MatchState["players"][0]["hand"] };
+      const newPlayers = engine.state.players.map((p, i) =>
+        i === 1 ? emptyBot1 : p,
+      ) as MatchState["players"];
+      // Modify internal state (test-only)
+      (engine as unknown as { _state: MatchState })._state = {
+        ...engine.state,
+        players: newPlayers,
+      };
+
+      // processBotTurns should not infinite-loop
+      const finalState = engine.processBotTurns();
+      expect(finalState).toBeDefined();
+      engine.destroy();
+    });
+
+    it("bot plays a valid move on the board", () => {
+      const engine = createTestEngine();
+      // Play human tile to advance turn
+      const tile = engine.hand[0];
+      engine.playTile(tile.id, "left");
+
+      const boardTilesBefore = engine.state.board.tiles.length;
+      engine.processBotTurns();
+
+      // At least one new tile should be on the board (bot played)
+      // or the bot passed (board unchanged but turn advanced)
+      expect(engine.state.turn.currentTurn).toBe(0);
+      expect(engine.state.board.tiles.length).toBeGreaterThanOrEqual(boardTilesBefore);
+      engine.destroy();
+    });
   });
 });
