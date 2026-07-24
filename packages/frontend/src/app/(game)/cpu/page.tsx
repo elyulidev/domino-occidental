@@ -201,9 +201,25 @@ export default function CpuMatchPage() {
         <button
           type="button"
           onClick={() => setShowLeaveModal(true)}
-          className="fixed bottom-4 left-4 z-40 rounded-lg border border-domino-700/50 bg-domino-900/80 px-3 py-1.5 text-xs text-domino-400 backdrop-blur-sm transition-colors hover:border-red-500/50 hover:text-red-400"
+          className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-lg border border-domino-700/50 bg-domino-900/80 px-3 py-1.5 text-xs text-domino-400 backdrop-blur-sm transition-colors hover:border-red-500/50 hover:text-red-400"
         >
-          Abandonar partida
+          {/* Door/exit icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          {/* Text — hidden on mobile */}
+          <span className="hidden sm:inline">Abandonar partida</span>
         </button>
       )}
 
