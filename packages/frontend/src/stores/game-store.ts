@@ -226,6 +226,10 @@ export const useGameStore = create<StoreState>((set, get) => ({
       }
     }
 
+    // Clear pass indicator when a new hand starts (round changed)
+    const prevRound = store.game.turn.roundNumber;
+    const roundChanged = sanitized.roundNumber !== prevRound;
+
     set({
       game: {
         board: sanitized.board as BoardState,
@@ -238,7 +242,7 @@ export const useGameStore = create<StoreState>((set, get) => ({
         })),
         ownHand: yourHand ?? store.game.ownHand,
         blockedTileIds: sanitized.players[playerIdx]?.blockedTileIds ?? [],
-        lastPassedPlayerId: store.game.lastPassedPlayerId,
+        lastPassedPlayerId: roundChanged ? null : store.game.lastPassedPlayerId,
         avatarUrls: sanitized.avatarUrls,
         disconnectedSince: newDisconnectedSince,
         matchAbandonedBy: store.game.matchAbandonedBy,

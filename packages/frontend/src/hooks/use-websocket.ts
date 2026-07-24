@@ -154,6 +154,33 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
               }));
             }
 
+            // Handle player_passed → show "Se pasó" badge for all clients
+            const passed = msg.events?.find(
+              (e): e is { type: "player_passed"; playerId: string } =>
+                e.type === "player_passed",
+            );
+            if (passed) {
+              useGameStore.getState().markPassed(passed.playerId);
+            }
+
+            // Handle turn_timeout with forcedPass → show "Se pasó" badge for timed-out player
+            const timeout = msg.events?.find(
+              (e): e is { type: "turn_timeout"; playerId: string; forcedPass: boolean } =>
+                e.type === "turn_timeout",
+            );
+            if (timeout?.forcedPass) {
+              useGameStore.getState().markPassed(timeout.playerId);
+            }
+
+            // Handle tile_played → clear "Se pasó" badge (someone made a move)
+            const tilePlayed = msg.events?.find(
+              (e): e is { type: "tile_played"; playerId: string; tileId: string; side: "left" | "right" } =>
+                e.type === "tile_played",
+            );
+            if (tilePlayed) {
+              useGameStore.getState().clearPassed();
+            }
+
             const sanitized = msg.state;
             if (sanitized) {
               const store = useGameStore.getState();

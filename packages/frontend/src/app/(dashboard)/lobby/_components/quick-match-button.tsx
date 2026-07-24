@@ -1,6 +1,7 @@
 "use client";
 
 import { useMatchmaking } from "@/hooks/use-matchmaking";
+import { useOnlineCount } from "@/hooks/use-online-count";
 
 export function QuickMatchButton() {
   const {
@@ -10,9 +11,9 @@ export function QuickMatchButton() {
     isJoining,
     queuePosition,
     waitTimeMs,
-    queueCount,
     error,
   } = useMatchmaking();
+  const onlineCount = useOnlineCount(60_000);
 
   // --- Match found: show redirecting state ---
   if (status === "matched") {
@@ -52,7 +53,7 @@ export function QuickMatchButton() {
           En cola — Posición: {queuePosition ?? "—"}
         </div>
         <div className="text-sm text-slate-400">
-          Espera estimada: ~{waitSeconds}s · {queueCount} jugadores en cola
+          Espera estimada: ~{waitSeconds}s · {onlineCount} jugadores online
         </div>
         <button
           type="button"
