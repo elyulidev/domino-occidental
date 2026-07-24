@@ -75,22 +75,21 @@ function nextMoveNumber(matchId: string): number {
  * Resolves round_id from the rounds buffer before buffering.
  */
 export async function recordMatchMove(move: MoveRecord): Promise<void> {
-  const db = await getDb();
-
   const moveNumber = nextMoveNumber(move.matchId);
 
   // Resolve round_id from rounds buffer (generates UUID on first move of each hand)
   const roundId = ensureRoundId(move.matchId, move.roundNumber);
 
-  if (db) {
-    // Buffer the move — will be flushed after the match row is created in the DB.
-    // match_moves has FK to matches AND match_rounds, so we can't insert until
-    // persistMatch() runs and rounds are flushed first.
-    const moves = bufferedMoves.get(move.matchId) ?? [];
-    moves.push({ ...move, moveNumber, roundId });
-    bufferedMoves.set(move.matchId, moves);
-  } else {
-    // Dev fallback: log to console
+  // ALWAYS buffer to memory — DB availability only gates the console log.
+  // Buffering must happen regardless of getDb() state so that flushMatchMoves()
+  // can insert all moves when persistMatch() runs later.
+  const moves = bufferedMoves.get(move.matchId) ?? [];
+  moves.push({ ...move, moveNumber, roundId });
+  bufferedMoves.set(move.matchId, moves);
+
+  // Dev fallback: log to console when DB is unavailable
+  const db = await getDb();
+  if (!db) {
     console.log(
       `[db/moves] ${move.isPass ? "PASS" : "PLAY"}  match=${move.matchId.slice(0, 8)} ` +
       `round=${move.roundNumber} move#=${moveNumber} player=${move.playerIndex}` +
