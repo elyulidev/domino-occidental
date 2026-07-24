@@ -238,6 +238,7 @@ export const useGameStore = create<StoreState>((set, get) => ({
         })),
         ownHand: yourHand ?? store.game.ownHand,
         blockedTileIds: sanitized.players[playerIdx]?.blockedTileIds ?? [],
+        lastPassedPlayerId: store.game.lastPassedPlayerId,
         avatarUrls: sanitized.avatarUrls,
         disconnectedSince: newDisconnectedSince,
         matchAbandonedBy: store.game.matchAbandonedBy,

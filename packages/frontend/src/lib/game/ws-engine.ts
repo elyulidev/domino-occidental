@@ -1,4 +1,5 @@
 import type {
+  ActionResult,
   BoardState,
   GameEvent,
   MatchState,
@@ -83,6 +84,11 @@ export class WsGameEngine implements GameEngine {
   processBotTurns(): MatchState {
     // Server handles bot turns — no-op for WS engine
     return this.state;
+  }
+
+  /** Timeout is enforced by the server — no-op for WS engine. */
+  checkTimeout(_now: number): ActionResult | null {
+    return null;
   }
 
   applyState(sanitized: SanitizedMatchState, yourHand?: Tile[], playerIndex?: number): void {
