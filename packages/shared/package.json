@@ -16,7 +16,10 @@
     "./game/board": "./src/game/board.ts",
     "./game/turn": "./src/game/turn.ts",
     "./game/player": "./src/game/player.ts",
-    "./game/scoring": "./src/game/scoring.ts"
+    "./game/scoring": "./src/game/scoring.ts",
+    "./src/game": "./src/game/index.ts",
+    "./src/game/deck": "./src/game/deck.ts",
+    "./src/game/match": "./src/game/match.ts"
   },
   "scripts": {
     "test": "echo \"No tests yet\""
