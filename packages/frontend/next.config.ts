@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${BACKEND_URL}/api/:path*`,
       },
+      // Migration shim: PR4 frontend calls /matchmaking/* but Elysia serves /api/v1/matchmaking/*
+      {
+        source: "/matchmaking/:path*",
+        destination: `${BACKEND_URL}/api/v1/matchmaking/:path*`,
+      },
     ];
   },
 };

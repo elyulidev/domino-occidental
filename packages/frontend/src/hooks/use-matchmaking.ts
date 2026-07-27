@@ -64,9 +64,8 @@ export function useMatchmaking(): UseMatchmakingReturn {
   // --- Connect WS for matchmaking notifications ---
   const connectWs = useCallback(
     (userId: string, token: string) => {
-      // playerId is no longer in the URL — the CF Worker extracts it from the JWT
       const ws = new WebSocket(
-        `${WS_BASE_URL}/ws/matchmaking?token=${token}`,
+        `${WS_BASE_URL}/ws/matchmaking/${userId}`,
       );
 
       ws.onmessage = (ev: MessageEvent) => {
