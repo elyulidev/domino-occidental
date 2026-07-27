@@ -26,6 +26,8 @@ export interface Env {
 export interface GameDOStorage {
   /** The full match state (serialized MatchState from @domino/shared) */
   match: unknown;
+  /** Assigned player IDs (set before game starts, 4 entries) */
+  playerIds: string[];
   /** Next heartbeat check timestamp (Unix ms) */
   heartbeatDue: number;
   /** Next turn timeout check timestamp (Unix ms) */

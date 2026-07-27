@@ -1,4 +1,5 @@
 import type { Env } from "./types";
+export { GameDO } from "./game-do";
 
 // ---------------------------------------------------------------------------
 // URL patterns
