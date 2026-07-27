@@ -18,6 +18,14 @@ import {
   checkTimeout,
 } from "@domino/shared/game/match";
 import { createDeck, shuffle, deal } from "@domino/shared/game/deck";
+import {
+  persistTerminalMatch,
+  recordMatchMove,
+  recordRound,
+  findTerminalEvent,
+  findHandEndedEvent,
+  extractRoundData,
+} from "./persistence";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -42,6 +50,8 @@ const ABANDONMENT_WINDOW_MS = 60_000;
 export class GameDO extends DurableObject<Env> {
   private state: GameDOStorage | null = null;
   private rateLimiter = new RateLimiter();
+  /** Per-DO move counter (resets when DO is evicted, like in-memory game state) */
+  private moveCounter = 0;
 
   // -----------------------------------------------------------------------
   // Storage helpers
@@ -138,6 +148,83 @@ export class GameDO extends DurableObject<Env> {
         player.hand,
         this.ctx.getWebSockets.bind(this.ctx),
         this.ctx.getTags.bind(this.ctx),
+      );
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // DB persistence — fire-and-forget via ctx.waitUntil
+  // -----------------------------------------------------------------------
+
+  private persistEvents(events: GameEvent[], match: MatchState): void {
+    const supabaseUrl = this.env.SUPABASE_URL;
+    const serviceRoleKey = this.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    // Skip if env vars are not configured (local dev without Supabase)
+    if (!supabaseUrl || !serviceRoleKey) return;
+
+    // Record individual moves (play_tile / pass via turn_timeout)
+    for (const event of events) {
+      if (event.type === "play_tile" || event.type === "pass") {
+        this.moveCounter += 1;
+        const move = {
+          playerId: match.players[match.turn.currentTurn]?.id ?? "unknown",
+          isPass: event.type === "pass",
+          tileId: "tileId" in event ? (event as { tileId: string }).tileId : undefined,
+          tileTop: "tileTop" in event ? (event as { tileTop: number }).tileTop : undefined,
+          tileBottom:
+            "tileBottom" in event
+              ? (event as { tileBottom: number }).tileBottom
+              : undefined,
+          side: "side" in event ? (event as { side: string }).side : undefined,
+          actionSource: "player" as const,
+          moveNumber: this.moveCounter,
+        };
+        this.ctx.waitUntil(
+          recordMatchMove(match, move, supabaseUrl, serviceRoleKey).catch(
+            (err) => console.error("[persistence] recordMatchMove failed:", err),
+          ),
+        );
+      }
+
+      // Record forced pass from turn_timeout
+      if (event.type === "turn_timeout") {
+        this.moveCounter += 1;
+        const timeoutEv = event as { playerId: string; forced: string };
+        const move = {
+          playerId: timeoutEv.playerId,
+          isPass: true,
+          actionSource: "timeout" as const,
+          moveNumber: this.moveCounter,
+        };
+        this.ctx.waitUntil(
+          recordMatchMove(match, move, supabaseUrl, serviceRoleKey).catch(
+            (err) => console.error("[persistence] recordMatchMove (timeout) failed:", err),
+          ),
+        );
+      }
+    }
+
+    // Record completed round (hand_ended)
+    const handEnded = findHandEndedEvent(events);
+    if (handEnded) {
+      const roundData = extractRoundData(match, handEnded);
+      if (roundData) {
+        this.ctx.waitUntil(
+          recordRound(match, roundData, supabaseUrl, serviceRoleKey).catch(
+            (err) => console.error("[persistence] recordRound failed:", err),
+          ),
+        );
+      }
+    }
+
+    // Persist terminal match (match_ended / match_abandoned)
+    const terminal = findTerminalEvent(events);
+    if (terminal) {
+      this.ctx.waitUntil(
+        persistTerminalMatch(match, terminal, supabaseUrl, serviceRoleKey).catch(
+          (err) => console.error("[persistence] persistTerminalMatch failed:", err),
+        ),
       );
     }
   }
@@ -411,17 +498,16 @@ export class GameDO extends DurableObject<Env> {
       if (match) {
         const updatedMatch: MatchState = { ...match, status: "abandoned" };
         this.state.match = updatedMatch;
-        this.broadcast(
-          [
-            {
-              type: "match_abandoned",
-              disconnectedPlayerId: playerId,
-              reason: "forfeit",
-            },
-          ],
-          playerId,
-          sanitizeState(updatedMatch),
-        );
+        const forfeitEvents: GameEvent[] = [
+          {
+            type: "match_abandoned",
+            disconnectedPlayerId: playerId,
+            reason: "forfeit",
+          },
+        ];
+        this.broadcast(forfeitEvents, playerId, sanitizeState(updatedMatch));
+        // Persist forfeit to Supabase (fire-and-forget)
+        this.persistEvents(forfeitEvents, updatedMatch);
         await this.saveState(this.state);
       }
       await this.ctx.storage.deleteAlarm();
@@ -480,6 +566,9 @@ export class GameDO extends DurableObject<Env> {
     // Broadcast events + sanitized state
     const sanitized = sanitizeState(result.match);
     this.broadcast(result.events, playerId, sanitized);
+
+    // Persist to Supabase (fire-and-forget)
+    this.persistEvents(result.events, result.match);
 
     // After a hand redeal: send new hands to all players
     if (result.events.some((e) => e.type === "round_started")) {
@@ -611,6 +700,9 @@ export class GameDO extends DurableObject<Env> {
             sanitizeState(result.match),
           );
 
+          // Persist timeout events to Supabase (fire-and-forget)
+          this.persistEvents(result.events, result.match);
+
           // After a hand redeal via timeout: send new hands
           if (result.events.some((e) => e.type === "round_started")) {
             this.sendNewHands();
@@ -664,17 +756,21 @@ export class GameDO extends DurableObject<Env> {
         this.state.match = updatedMatch;
         changed = true;
 
+        const abandonEvents: GameEvent[] = [
+          {
+            type: "match_abandoned",
+            disconnectedPlayerId,
+            reason: "abandonment",
+          },
+        ];
         this.broadcast(
-          [
-            {
-              type: "match_abandoned",
-              disconnectedPlayerId,
-              reason: "abandonment",
-            },
-          ],
+          abandonEvents,
           disconnectedPlayerId,
           sanitizeState(updatedMatch),
         );
+
+        // Persist abandonment to Supabase (fire-and-forget)
+        this.persistEvents(abandonEvents, updatedMatch);
       }
 
       this.state.abandonmentDue = null;
