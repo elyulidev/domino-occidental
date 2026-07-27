@@ -11,6 +11,7 @@
     "dev:frontend": "bun --cwd packages/frontend dev",
     "build": "bun --cwd packages/frontend build",
     "test": "bun --cwd packages/backend test",
+    "test:workers": "bun --cwd packages/workers vitest run",
     "biome:check": "biome check",
     "lint": "biome check",
     "format": "biome format --write",

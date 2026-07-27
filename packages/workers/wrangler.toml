@@ -1,0 +1,30 @@
+name = "domino-occidental"
+main = "src/index.ts"
+compatibility_date = "2025-07-25"
+compatibility_flags = ["nodejs_compat"]
+
+# ---------------------------------------------------------------------------
+# Durable Object bindings
+# ---------------------------------------------------------------------------
+[durable_objects]
+bindings = [
+  { name = "GAME_DO", class_name = "GameDO" },
+  { name = "MATCHMAKING_DO", class_name = "MatchmakingDO" },
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameDO", "MatchmakingDO"]
+
+# ---------------------------------------------------------------------------
+# Environment variables (non-secret)
+# ---------------------------------------------------------------------------
+[vars]
+SUPABASE_URL = "http://127.0.0.1:54321"
+SUPABASE_ANON_KEY = ""
+
+# ---------------------------------------------------------------------------
+# Secrets (set via `wrangler secret put` — never hardcode real values)
+# SUPABASE_SERVICE_ROLE_KEY
+# JWT_SECRET
+# ---------------------------------------------------------------------------

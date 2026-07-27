@@ -43,6 +43,9 @@ supabase/snippets/
 # vercel
 .vercel
 
+# cloudflare workers
+.wrangler/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
