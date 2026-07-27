@@ -3,6 +3,7 @@
 import type { WsClientMessage, WsServerMessage } from "@domino/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WsGameEngine } from "@/lib/game/ws-engine";
+import { createBrowserClient } from "@/lib/supabase/client";
 import { useGameStore } from "@/stores/game-store";
 
 // ---------------------------------------------------------------------------
@@ -90,6 +91,17 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
       reconnectTimerRef.current = null;
     }
 
+    // Capture the Supabase session token once for the connection lifetime.
+    // Stored in a ref so reconnects reuse the same token (refresh is handled
+    // by Supabase's built-in auto-refresh; if the token expires mid-session
+    // the WS will close and the user must re-enter the match).
+    let sessionToken: string | null = null;
+
+    const supabase = createBrowserClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      sessionToken = session?.access_token ?? null;
+    });
+
     function connect() {
       // Don't reconnect if unmounted or match ended
       if (unmountedRef.current) return;
@@ -99,7 +111,11 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
       // Reset engine initialization flag for the new connection
       engineInitializedRef.current = false;
 
-      const url = `${WS_BASE_URL}/ws/game/${matchId}/${playerId}`;
+      // playerId is no longer in the URL — the CF Worker extracts it from the
+      // JWT.  The client-side playerId param is still used for player-index
+      // lookup inside the state array (line ~191).
+      const tokenParam = sessionToken ? `?token=${sessionToken}` : "";
+      const url = `${WS_BASE_URL}/ws/game/${matchId}${tokenParam}`;
       const ws = new WebSocket(url);
       wsRef.current = ws;
 

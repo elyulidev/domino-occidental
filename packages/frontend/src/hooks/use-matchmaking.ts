@@ -64,8 +64,9 @@ export function useMatchmaking(): UseMatchmakingReturn {
   // --- Connect WS for matchmaking notifications ---
   const connectWs = useCallback(
     (userId: string, token: string) => {
+      // playerId is no longer in the URL — the CF Worker extracts it from the JWT
       const ws = new WebSocket(
-        `${WS_BASE_URL}/ws/matchmaking/${userId}?token=${token}`,
+        `${WS_BASE_URL}/ws/matchmaking?token=${token}`,
       );
 
       ws.onmessage = (ev: MessageEvent) => {
@@ -137,7 +138,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
     }
 
     try {
-      const res = await fetch("/api/v1/matchmaking/quick", {
+      const res = await fetch("/matchmaking/quick", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -178,7 +179,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
     } = await supabase.auth.getSession();
 
     if (session?.access_token) {
-      await fetch("/api/v1/matchmaking/leave", {
+      await fetch("/matchmaking/leave", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -203,7 +204,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
         // Fire-and-forget server leave on unmount
         supabase.auth.getSession().then(({ data: { session } }) => {
           if (session?.access_token) {
-            fetch("/api/v1/matchmaking/leave", {
+            fetch("/matchmaking/leave", {
               method: "POST",
               headers: { Authorization: `Bearer ${session.access_token}` },
             }).catch(() => {});

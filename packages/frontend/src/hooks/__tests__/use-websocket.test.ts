@@ -105,8 +105,8 @@ describe("useWebSocket (WebSocket layer)", () => {
     // and using the mocked WebSocket constructor.
 
     // Instead, test that our MockWebSocket works as expected
-    const ws = new MockWebSocket("ws://localhost:3001/ws/game/match-1/player-1");
-    expect(ws.url).toBe("ws://localhost:3001/ws/game/match-1/player-1");
+    const ws = new MockWebSocket("ws://localhost:3001/ws/game/match-1?token=test-jwt");
+    expect(ws.url).toBe("ws://localhost:3001/ws/game/match-1?token=test-jwt");
     expect(ws.readyState).toBe(0); // CONNECTING
   });
 
