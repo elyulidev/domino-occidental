@@ -11,6 +11,7 @@
     "./handler": "./src/handler.ts",
     "./ws": "./src/ws.ts",
     "./game": "./src/game/index.ts",
+    "./game/grid-layout": "./src/game/grid-layout.ts",
     "./game/match": "./src/game/match.ts",
     "./game/deck": "./src/game/deck.ts",
     "./game/board": "./src/game/board.ts",

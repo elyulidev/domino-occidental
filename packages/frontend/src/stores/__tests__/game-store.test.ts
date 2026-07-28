@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { SanitizedMatchState, Tile } from "@domino/shared";
 import { createDeck, deal, initializeMatch, setCurrentTurn, shuffle, startHand } from "@domino/shared/src/game";
 import type { GameEngine } from "@/lib/game/types";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { PlacedTile, Tile } from "@domino/shared";
 import { calculateLayout, } from "../layout-engine";
 
