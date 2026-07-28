@@ -65,7 +65,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
   const connectWs = useCallback(
     (userId: string, token: string) => {
       const ws = new WebSocket(
-        `${WS_BASE_URL}/ws/matchmaking/${userId}`,
+        `${WS_BASE_URL}/ws/matchmaking/${userId}?token=${token}`,
       );
 
       ws.onmessage = (ev: MessageEvent) => {
