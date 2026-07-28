@@ -23,12 +23,13 @@
     "./src/game/match": "./src/game/match.ts"
   },
   "scripts": {
-    "test": "echo \"No tests yet\""
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "^3.24.4"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

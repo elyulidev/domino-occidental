@@ -398,7 +398,7 @@ export class GameDO extends DurableObject<Env> {
     const { hands, pool } = deal(deck);
 
     // Initialize match with the4 player IDs in order
-    const result = initializeMatch("pending", hands, pool);
+    const result = initializeMatch(this.ctx.id.toString(), hands, pool);
     let match = result.match;
 
     // Assign real player IDs and mark connected

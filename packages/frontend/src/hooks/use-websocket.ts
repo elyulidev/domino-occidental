@@ -1,6 +1,6 @@
 "use client";
 
-import type { WsClientMessage, WsServerMessage } from "@domino/shared";
+import type { GameEvent, WsClientMessage, WsServerMessage } from "@domino/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WsGameEngine } from "@/lib/game/ws-engine";
 import { useGameStore } from "@/stores/game-store";
@@ -174,7 +174,7 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
 
             // Handle tile_played → clear "Se pasó" badge (someone made a move)
             const tilePlayed = msg.events?.find(
-              (e): e is { type: "tile_played"; playerId: string; tileId: string; side: "left" | "right" } =>
+              (e): e is GameEvent & { type: "tile_played" } =>
                 e.type === "tile_played",
             );
             if (tilePlayed) {
