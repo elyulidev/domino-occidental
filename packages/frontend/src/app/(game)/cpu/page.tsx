@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { GameBoard } from "@/components/game/game-board";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { LeaveMatchConfirmModal } from "@/components/game/leave-match-confirm-modal";
+import { MatchNavBar } from "@/components/game/match-navbar";
 import { PlayerHand } from "@/components/game/player-hand";
 import { ScorePanel } from "@/components/game/score-panel";
 import { useGameStore } from "@/stores/game-store";
@@ -179,7 +180,7 @@ export default function CpuMatchPage() {
   return (
     <div className="relative min-h-screen bg-domino-950 text-domino-50">
       {/* Grid: 2 rows × 2 columns */}
-      <div className="grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 h-screen max-h-screen">
+      <div className="grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 pb-16 lg:pb-2 h-screen max-h-screen">
         {/* Row 1: Board (spans both columns) */}
         <div className="lg:col-span-2 min-h-0">
           <GameBoard />
@@ -232,6 +233,9 @@ export default function CpuMatchPage() {
 
       {/* Overlays */}
       <GameStatusOverlay />
+
+      {/* Mobile bottom navbar */}
+      <MatchNavBar onLeaveMatch={canAbandon ? () => setShowLeaveModal(true) : undefined} />
     </div>
   );
 }

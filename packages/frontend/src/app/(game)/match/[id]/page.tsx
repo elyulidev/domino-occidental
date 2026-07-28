@@ -6,6 +6,7 @@ import { GameBoard } from "@/components/game/game-board";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { HandOverModal } from "@/components/game/hand-over-modal";
 import { LeaveMatchConfirmModal } from "@/components/game/leave-match-confirm-modal";
+import { MatchNavBar } from "@/components/game/match-navbar";
 import { PlayerHand } from "@/components/game/player-hand";
 import { ScorePanel } from "@/components/game/score-panel";
 import type { WsStatus } from "@/hooks/use-websocket";
@@ -123,7 +124,7 @@ function MatchContent() {
 	return (
 		<div className='relative min-h-screen bg-domino-950 text-domino-50'>
 			{/* Grid: 2 rows × 2 columns */}
-			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 h-screen max-h-screen'>
+			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 pb-16 lg:pb-2 h-screen max-h-screen'>
 				{/* Row 1: Board (spans both columns) */}
 				<div className='lg:col-span-2 min-h-0'>
 					<GameBoard />
@@ -138,8 +139,8 @@ function MatchContent() {
 				<div className='relative min-h-0' data-hand-area>
 					<PlayerHand />
 
-					{/* Leave match button — bottom right, floating over hand */}
-					<div className='absolute bottom-2 right-2 z-20'>
+					{/* Leave match button — bottom right, floating over hand (desktop only) */}
+					<div className='absolute bottom-2 right-2 z-20 hidden lg:block'>
 						<button
 							type='button'
 							onClick={handleLeaveMatch}
@@ -179,6 +180,9 @@ function MatchContent() {
 				onClose={() => setShowLeaveModal(false)}
 				onConfirm={handleConfirmLeave}
 			/>
+
+			{/* Mobile bottom navbar */}
+			<MatchNavBar onLeaveMatch={handleLeaveMatch} />
 		</div>
 	);
 }
