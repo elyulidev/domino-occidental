@@ -1,4 +1,5 @@
 import type { Env } from "./types";
+
 export { GameDO } from "./game-do";
 export { MatchmakingDO } from "./matchmaking-do";
 
