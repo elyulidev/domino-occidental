@@ -1,4 +1,10 @@
-import { jwtVerify, type JWTPayload } from "jose";
+import {
+  createRemoteJWKSet,
+  type JWK,
+  type JWTPayload,
+  jwtVerify,
+  type KeyLike,
+} from "jose";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -8,38 +14,85 @@ export interface VerifiedToken {
   userId: string;
 }
 
+/**
+ * A function that resolves a JWKS to a cryptographic key.
+ *
+ * Compatible with jose's `GetKeyFunction` — this is the type returned by
+ * `createRemoteJWKSet` and accepted by `jwtVerify` as the key argument.
+ */
+// biome-ignore lint/complexity/noBannedTypes: jose GetKeyFunction uses `Object`
+type GetKey = (protectedHeader: Object, token: Object) => Promise<KeyLike>;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Module-level cache for remote JWK Sets.
+ *
+ * Keyed by Supabase project URL so each DO isolate creates at most one
+ * fetch-and-cache cycle per project. `createRemoteJWKSet` already caches
+ * internally — this Map avoids re-creating the wrapper on every request.
+ */
+const jwksCache = new Map<string, GetKey>();
+
+/**
+ * Resolve a JWK Set function for a Supabase project.
+ *
+ * The JWKS endpoint is `{supabaseUrl}/auth/v1/.well-known/jwks.json`.
+ * Supabase publishes ECC P-256 keys there; the returned function
+ * auto-detects the algorithm from the `kid` in the JWT header.
+ */
+function jwksFromUrl(supabaseUrl: string): GetKey {
+  const cached = jwksCache.get(supabaseUrl);
+  if (cached) return cached;
+
+  const url = new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`);
+  const jwks = createRemoteJWKSet(url) as unknown as GetKey;
+  jwksCache.set(supabaseUrl, jwks);
+  return jwks;
+}
+
+/**
+ * Build a JWK Set resolver from a local JWKS payload (no network).
+ *
+ * Uses `createRemoteJWKSet` with a data: URI to avoid actual HTTP traffic.
+ * Exported for testing — allows tests to inject controlled keys.
+ */
+export function jwksFromPayload(payload: { keys: JWK[] }): GetKey {
+  const json = JSON.stringify(payload);
+  const encoded = btoa(json);
+  return createRemoteJWKSet(
+    new URL(`data:application/json;base64,${encoded}`),
+  ) as unknown as GetKey;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 /**
- * Verify a Supabase JWT using HS256 (HMAC-SHA256).
- *
- * Uses the `jose` library which works in Cloudflare Workers runtime
- * (no Node.js dependencies required).
+ * Verify a Supabase JWT against a key resolver.
  *
  * @param token - Raw JWT string from `?token=` query parameter
- * @param secret - The JWT secret (from SUPABASE_JWT_SECRET / JWT_SECRET env)
- * @returns `VerifiedToken` with the user's UUID, or `null` if verification
- *          fails (invalid signature, expired, or malformed token)
+ * @param keyResolver - Either:
+ *   - A Supabase project URL string (e.g. `"https://xxx.supabase.co"`) — the
+ *     JWKS endpoint is auto-resolved from it
+ *   - A `GetKey` function (from `jwksFromPayload()` or `createRemoteJWKSet`)
+ * @returns `VerifiedToken` with the user's UUID, or `null` on failure
  */
 export async function verifyToken(
   token: string,
-  secret: string,
+  keyResolver: string | GetKey,
 ): Promise<VerifiedToken | null> {
   if (!token) return null;
 
   try {
-    const encoder = new TextEncoder();
-    const key = encoder.encode(secret);
+    const getKey =
+      typeof keyResolver === "string" ? jwksFromUrl(keyResolver) : keyResolver;
+    const { payload } = await jwtVerify(token, getKey);
 
-    // jwtVerify throws on invalid/expired tokens — we catch and return null
-    const { payload } = await jwtVerify(token, key, { algorithms: ["HS256"] });
-
-    // Extract userId — try common Supabase JWT claim locations
-    const casted = payload as JWTPayload & {
-      userId?: string;
-    };
+    const casted = payload as JWTPayload & { userId?: string };
     const userId = casted.userId ?? casted.sub ?? null;
     if (!userId) return null;
 

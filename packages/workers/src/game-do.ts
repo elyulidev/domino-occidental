@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env, GameDOStorage } from "./types";
-import { verifyToken } from "./auth";
+import { verifyToken, jwksFromPayload } from "./auth";
 import { broadcastEvents, sendHand } from "./broadcaster";
 import { RateLimiter } from "./rate-limiter";
 import type {
@@ -279,7 +279,10 @@ export class GameDO extends DurableObject<Env> {
     }
 
     // Verify JWT
-    const verified = await verifyToken(token, this.env.JWT_SECRET);
+    const keyResolver = this.env.SUPABASE_JWKS
+      ? jwksFromPayload(JSON.parse(this.env.SUPABASE_JWKS))
+      : this.env.SUPABASE_URL;
+    const verified = await verifyToken(token, keyResolver);
     if (!verified) {
       return new Response("Invalid token", { status: 401 });
     }

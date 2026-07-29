@@ -11,10 +11,11 @@ export interface Env {
 
   // Environment variables
   SUPABASE_URL: string;
-  SUPABASE_ANON_KEY: string;
+
+  // Optional: local JWKS JSON for testing (bypasses remote Supabase JWKS)
+  SUPABASE_JWKS?: string;
 
   // Secrets (injected at runtime)
-  JWT_SECRET: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
 }
 

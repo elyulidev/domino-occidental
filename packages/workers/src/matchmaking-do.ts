@@ -84,7 +84,7 @@ export class MatchmakingDO extends DurableObject<Env> {
       return new Response("Missing token", { status: 401 });
     }
 
-    const verified = await verifyToken(token, this.env.JWT_SECRET);
+    const verified = await verifyToken(token, this.env.SUPABASE_URL);
     if (!verified) {
       return new Response("Invalid token", { status: 401 });
     }

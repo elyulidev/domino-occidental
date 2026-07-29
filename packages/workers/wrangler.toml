@@ -17,14 +17,12 @@ tag = "v1"
 new_sqlite_classes = ["GameDO", "MatchmakingDO"]
 
 # ---------------------------------------------------------------------------
-# Environment variables (non-secret)
-# ---------------------------------------------------------------------------
-[vars]
-SUPABASE_URL = "http://127.0.0.1:54321"
-SUPABASE_ANON_KEY = ""
-
-# ---------------------------------------------------------------------------
-# Secrets (set via `wrangler secret put` — never hardcode real values)
-# SUPABASE_SERVICE_ROLE_KEY
-# JWT_SECRET
+# Environment-specific values are handled by:
+#   Local:  .dev.vars  (loaded automatically by `wrangler dev`)
+#   Prod:   `wrangler secret put` (set once, used by `wrangler deploy`)
+#
+# Secrets required in production:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   SUPABASE_JWKS (optional: local JWKS JSON, overrides remote JWKS for testing)
 # ---------------------------------------------------------------------------

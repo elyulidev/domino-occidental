@@ -1,39 +1,48 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
+import { importJWK, type JWK, type KeyLike, SignJWT } from "jose";
 import { env } from "cloudflare:test";
+import { jwksFromPayload } from "./auth";
+
+// ---------------------------------------------------------------------------
+// Test key setup
+// ---------------------------------------------------------------------------
+// We generate an ECDSA P-256 key pair (ES256) — the same algorithm Supabase
+// uses for its JWKS signing keys. The public key is published as a local
+// JWKS via env.SUPABASE_JWKS, and the private key signs test tokens.
+// ---------------------------------------------------------------------------
+
+let privateKey: KeyLike;
+let jwksPayload: string;
+
+beforeAll(async () => {
+  const keyPair = await crypto.subtle.generateKey(
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["sign", "verify"],
+  );
+
+  const privJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
+  privateKey = await importJWK(privJwk, "ES256");
+
+  const rawPub = (await crypto.subtle.exportKey(
+    "jwk",
+    keyPair.publicKey,
+  )) as unknown as JWK;
+  jwksPayload = JSON.stringify({ keys: [rawPub] });
+
+  // Inject the local JWKS so the DO uses our test keys instead of remote Supabase
+  (env as Record<string, unknown>).SUPABASE_JWKS = jwksPayload;
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const JWT_SECRET = "dev-jwt-secret-change-in-production";
-
-/**
- * Create a minimal HS256 JWT for testing.
- * Uses crypto.subtle which is available in CF Workers runtime.
- */
 async function makeToken(userId: string): Promise<string> {
-  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = btoa(JSON.stringify({ sub: userId, userId }));
-  const data = `${header}.${payload}`;
-
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(JWT_SECRET);
-  const dataBytes = encoder.encode(data);
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    keyData,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, dataBytes);
-  const signature = btoa(String.fromCharCode(...new Uint8Array(sig)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-
-  return `${data}.${signature}`;
+  return new SignJWT({ sub: userId })
+    .setProtectedHeader({ alg: "ES256", typ: "JWT" })
+    .setIssuedAt()
+    .sign(privateKey);
 }
 
 function getGameDO(matchId: string) {
