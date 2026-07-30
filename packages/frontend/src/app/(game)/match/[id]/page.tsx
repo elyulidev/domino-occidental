@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GameBoard } from "@/components/game/game-board";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { HandOverModal } from "@/components/game/hand-over-modal";
@@ -12,6 +12,7 @@ import { ScorePanel } from "@/components/game/score-panel";
 import type { WsStatus } from "@/hooks/use-websocket";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useGameStore } from "@/stores/game-store";
+import { createBrowserClient } from "@/lib/supabase/client";
 import { resolvePageView } from "./page-helpers";
 
 // ---------------------------------------------------------------------------
@@ -44,8 +45,17 @@ function MatchContent() {
 	const players = useGameStore((s) => s.game.players);
 	const isMatchOver = status === "finished" || status === "abandoned" || matchAbandonedBy !== null;
 
+	// Get auth token for WS connection
+	const supabase = useMemo(() => createBrowserClient(), []);
+	const [wsToken, setWsToken] = useState<string | undefined>(undefined);
+	useEffect(() => {
+		supabase.auth.getSession().then(({ data: { session } }) => {
+			setWsToken(session?.access_token);
+		});
+	}, [supabase]);
+
 	// Always call hooks (rules of hooks)
-	const wsHook = useWebSocket(params.id ?? "", playerId, false);
+	const wsHook = useWebSocket(params.id ?? "", playerId, false, wsToken);
 
 	// Leave-match modal state
 	const [showLeaveModal, setShowLeaveModal] = useState(false);

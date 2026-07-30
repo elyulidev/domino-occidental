@@ -30,7 +30,7 @@ const RECONNECT_MAX_ATTEMPTS = 10;
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useWebSocket(matchId: string, playerId: string, disabled = false): UseWebSocketReturn {
+export function useWebSocket(matchId: string, playerId: string, disabled = false, token?: string): UseWebSocketReturn {
   const [status, setStatus] = useState<WsStatus>(disabled ? "disconnected" : "connecting");
   const wsRef = useRef<WebSocket | null>(null);
   const engineRef = useRef<WsGameEngine | null>(null);
@@ -99,7 +99,9 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
       // Reset engine initialization flag for the new connection
       engineInitializedRef.current = false;
 
-      const url = `${WS_BASE_URL}/ws/game/${matchId}/${playerId}`;
+      const url = token
+        ? `${WS_BASE_URL}/ws/game/${matchId}/${playerId}?token=${token}`
+        : `${WS_BASE_URL}/ws/game/${matchId}/${playerId}`;
       const ws = new WebSocket(url);
       wsRef.current = ws;
 
