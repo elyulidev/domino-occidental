@@ -124,7 +124,7 @@ export class MatchmakingDO extends DurableObject<Env> {
     try {
       const rows = await supabaseSelect(
         "profiles",
-        "elo_individual",
+        "elo",
         { id: `eq.${userId}` },
         {
           supabaseUrl: this.env.SUPABASE_URL,
