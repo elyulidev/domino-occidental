@@ -17,8 +17,8 @@ const MATCHMAKING_HTTP_RE = /^\/matchmaking\//;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new Request(request).url;
-    const path = new URL(url).pathname;
+    const url = new URL(request.url);
+    const path = url.pathname;
 
     // /ws/game/:matchId → GameDO
     const gameMatch = path.match(GAME_WS_RE);
