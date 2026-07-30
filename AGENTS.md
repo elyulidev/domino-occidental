@@ -191,3 +191,7 @@ Format:
 - **When you're wrong**: Acknowledge immediately with proof of what you missed.
 - **Ask one question at a time**. Stop and wait for the answer.
 - **No option menus** unless there's a real fork with meaningful tradeoffs.
+- **Direct questions get direct answers first**: If the user asks a question
+  ("does this also happen in production?", "should I do X?"), answer it
+  directly — do NOT take action or assume they want you to act. After
+  answering, ask if they want you to proceed with the action.
