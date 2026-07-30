@@ -57,8 +57,8 @@ export class MatchmakingDO extends DurableObject<Env> {
     // HTTP API — strip /matchmaking prefix
     const path = url.pathname.replace(/^\/matchmaking/, "") || "/";
 
-    // POST /enqueue
-    if (request.method === "POST" && path.endsWith("/enqueue")) {
+    // POST /enqueue or /quick
+    if (request.method === "POST" && (path.endsWith("/enqueue") || path.endsWith("/quick"))) {
       return this.handleEnqueue(request);
     }
 

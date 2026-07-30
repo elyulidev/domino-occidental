@@ -53,14 +53,33 @@ describe("Worker fetch handler", () => {
     expect(res.status).toBe(200);
   });
 
-  it("routes /ws/matchmaking to MATCHMAKING_DO", async () => {
-    const req = new Request("https://example.com/ws/matchmaking");
+  it("routes /ws/game/:matchId/:playerId to GAME_DO", async () => {
+    const req = new Request("https://example.com/ws/game/m-1/p42");
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(req, env, ctx);
+    await waitOnExecutionContext(ctx);
+
+    expect(env.GAME_DO.idFromName).toHaveBeenCalledWith("m-1");
+    expect(res.status).toBe(200);
+  });
+
+  it("routes /ws/matchmaking/:userId to MATCHMAKING_DO", async () => {
+    const req = new Request("https://example.com/ws/matchmaking/user-1");
     const ctx = createExecutionContext();
     const res = await worker.fetch(req, env, ctx);
     await waitOnExecutionContext(ctx);
 
     expect(env.MATCHMAKING_DO.idFromName).toHaveBeenCalledWith("singleton");
     expect(res.status).toBe(200);
+  });
+
+  it("returns 404 for legacy /ws/matchmaking without userId", async () => {
+    const req = new Request("https://example.com/ws/matchmaking");
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(req, env, ctx);
+    await waitOnExecutionContext(ctx);
+
+    expect(res.status).toBe(404);
   });
 
   it("routes /matchmaking/* HTTP to MATCHMAKING_DO", async () => {
@@ -82,6 +101,15 @@ describe("Worker fetch handler", () => {
     expect(res.status).toBe(404);
     const body = await res.json();
     expect(body).toEqual({ error: "not_found" });
+  });
+
+  it("returns 404 for /ws/game with invalid matchId", async () => {
+    const req = new Request("https://example.com/ws/game/invalid@%23$");
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(req, env, ctx);
+    await waitOnExecutionContext(ctx);
+
+    expect(res.status).toBe(404);
   });
 
   it("passes the original request to the DO stub fetch", async () => {

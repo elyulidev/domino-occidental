@@ -7,8 +7,8 @@ export { MatchmakingDO } from "./matchmaking-do";
 // URL patterns
 // ---------------------------------------------------------------------------
 
-const GAME_WS_RE = /^\/ws\/game\/([^/]+)$/;
-const MATCHMAKING_WS_RE = /^\/ws\/matchmaking$/;
+const GAME_WS_RE = /^\/ws\/game\/([\w-]+)(?:\/([\w-]+))?$/;
+const MATCHMAKING_WS_RE = /^\/ws\/matchmaking\/([^/]+)$/;
 const MATCHMAKING_HTTP_RE = /^\/matchmaking\//;
 
 // ---------------------------------------------------------------------------

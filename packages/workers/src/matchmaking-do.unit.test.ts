@@ -203,6 +203,44 @@ describe("MatchmakingDO", () => {
       expect(response.status).toBe(400);
     });
 
+    it("POST /quick adds player to queue (same as /enqueue)", async () => {
+      const id = env.MATCHMAKING_DO.idFromName("test-quick-1");
+      const stub = env.MATCHMAKING_DO.get(id);
+
+      const response = await stub.fetch(
+        "http://localhost/matchmaking/quick",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: "user-1", elo: 1200 }),
+        },
+      );
+
+      expect(response.status).toBe(200);
+      const data = (await response.json()) as {
+        ok: boolean;
+        queueCount: number;
+      };
+      expect(data.ok).toBe(true);
+      expect(data.queueCount).toBe(1);
+    });
+
+    it("POST /quick rejects missing elo", async () => {
+      const id = env.MATCHMAKING_DO.idFromName("test-quick-bad-1");
+      const stub = env.MATCHMAKING_DO.get(id);
+
+      const response = await stub.fetch(
+        "http://localhost/matchmaking/quick",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: "user-1" }),
+        },
+      );
+
+      expect(response.status).toBe(400);
+    });
+
     it("POST /enqueue replaces existing user entry", async () => {
       const id = env.MATCHMAKING_DO.idFromName("test-enqueue-replace-1");
       const stub = env.MATCHMAKING_DO.get(id);

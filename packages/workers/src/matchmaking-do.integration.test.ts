@@ -77,6 +77,32 @@ describe("MatchmakingDO Integration", () => {
     expect(response.status).toBe(400);
   });
 
+  it("POST /quick enqueues player and verifies via /status", async () => {
+    const stub = getMatchmakingDO("test-quick-flow");
+
+    // Enqueue via /quick
+    const response = await stub.fetch("http://do/matchmaking/quick", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "quick-user-1", elo: 1350 }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { ok: boolean; queueCount: number };
+    expect(body.ok).toBe(true);
+    expect(body.queueCount).toBe(1);
+
+    // Verify via /status
+    const statusRes = await stub.fetch("http://do/matchmaking/status");
+    const statusBody = (await statusRes.json()) as {
+      queueCount: number;
+      queue: Array<{ userId: string; elo: number }>;
+    };
+    expect(statusBody.queueCount).toBe(1);
+    expect(statusBody.queue[0].userId).toBe("quick-user-1");
+    expect(statusBody.queue[0].elo).toBe(1350);
+  });
+
   it("status returns queue info", async () => {
     const stub = getMatchmakingDO("test-status");
 
