@@ -12,7 +12,7 @@
  */
 
 import type { GameStore, UserChannelManager } from "@domino/shared";
-import { createDeck, deal, initializeMatch, shuffle, startHand } from "@domino/shared/src/game";
+import { createDeck, deal, initializeMatch, shuffle, startHand } from "@domino/shared/game";
 import { inArray } from "drizzle-orm";
 import { getDb, getRawSql } from "../db/client";
 import { createGame } from "./store";

@@ -34,7 +34,7 @@ export function useQueueStatus(intervalMs = 2_000): QueueStatus {
         } = await supabase.auth.getSession();
         if (!session?.access_token) return;
 
-        const res = await fetch("/api/v1/matchmaking/status", {
+        const res = await fetch("/matchmaking/status", {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (!res.ok) return;

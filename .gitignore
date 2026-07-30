@@ -34,6 +34,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# cloudflare workers — local dev secrets (never commit real ones)
+.dev.vars
+
 # opencode internal config (personal per-dev)
 .atl/
 
@@ -42,6 +45,9 @@ supabase/snippets/
 
 # vercel
 .vercel
+
+# cloudflare workers
+.wrangler/
 
 # typescript
 *.tsbuildinfo

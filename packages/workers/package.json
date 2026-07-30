@@ -1,0 +1,25 @@
+{
+  "name": "@domino/workers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@domino/shared": "workspace:*",
+    "jose": "^6.0.11"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.18.8",
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.114.0"
+  }
+}

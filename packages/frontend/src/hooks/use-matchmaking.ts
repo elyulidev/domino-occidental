@@ -137,7 +137,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
     }
 
     try {
-      const res = await fetch("/api/v1/matchmaking/quick", {
+      const res = await fetch("/matchmaking/quick", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -178,7 +178,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
     } = await supabase.auth.getSession();
 
     if (session?.access_token) {
-      await fetch("/api/v1/matchmaking/leave", {
+      await fetch("/matchmaking/leave", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -203,7 +203,7 @@ export function useMatchmaking(): UseMatchmakingReturn {
         // Fire-and-forget server leave on unmount
         supabase.auth.getSession().then(({ data: { session } }) => {
           if (session?.access_token) {
-            fetch("/api/v1/matchmaking/leave", {
+            fetch("/matchmaking/leave", {
               method: "POST",
               headers: { Authorization: `Bearer ${session.access_token}` },
             }).catch(() => {});

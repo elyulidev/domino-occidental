@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import {
   computeOpponents,
   connectionDotClass,
@@ -28,11 +28,11 @@ describe("opponent-indicator helpers", () => {
       expect(result[2].label).toBe("P4");
     });
 
-    it("assigns correct pair labels (P1=Pair1, P2=Pair0, P3=Pair1)", () => {
+    it("assigns correct pair labels (P1=Pareja1, P2=Pareja0, P3=Pareja1)", () => {
       const result = computeOpponents([], 0);
-      expect(result[0].pairLabel).toBe("Pair 1"); // index 1 → odd → Pair 1
-      expect(result[1].pairLabel).toBe("Pair 0"); // index 2 → even → Pair 0
-      expect(result[2].pairLabel).toBe("Pair 1"); // index 3 → odd → Pair 1
+      expect(result[0].pairLabel).toBe("Pareja 1"); // index 1 → odd → Pareja 1
+      expect(result[1].pairLabel).toBe("Pareja 0"); // index 2 → even → Pareja 0
+      expect(result[2].pairLabel).toBe("Pareja 1"); // index 3 → odd → Pareja 1
     });
 
     it("defaults all opponents to connected when players array is empty", () => {
