@@ -72,7 +72,7 @@ When modifying git history (rewrite, rebase, filter-branch, remove tracked files
 
 | Layer | Tech | Dev Command | Port |
 |-------|------|-------------|------|
-| Frontend | Next.js 15 + Bun | `cd packages/frontend && bun run dev` | 3000 |
+| Frontend | Next.js 16 + Bun | `cd packages/frontend && bun run dev` | 3000 |
 | Worker | Cloudflare Workers + DO | `cd packages/workers && bunx wrangler dev` | 8787 |
 | Backend (legacy) | Elysia + Bun | `cd packages/backend && bun run dev` | 3001 |
 | Database | Supabase (Postgres) | `supabase start` | 54321 |
@@ -166,8 +166,24 @@ Format:
 
 ---
 
-## 6. COMMUNICATION RULES
+## 6. SDD RULE (HARD GATE)
 
+- **ALL changes use SDD. No exceptions.** There is no "too small" for SDD.
+- If the change is trivial (one file, mechanical, already understood), the SDD
+  cycle is fast: `/sdd-ff <name>` to fast-forward planning → apply → verify.
+- If the change is complex or crosses multiple files, use the full
+  `/sdd-new <name>` → explore → propose → spec → design → tasks → apply → verify.
+- If you're tempted to skip SDD, STOP and run `/sdd-ff` at minimum.
+- The orchestrator contract (in `opencode.json` or the gentle-ai harness) always
+  delegates execution — you never implement outside the SDD pipeline.
+
+---
+
+## 7. COMMUNICATION RULES
+
+- **Ask before acting unilaterally**: Before deleting files, renaming modules,
+  rewriting history, or changing project structure — ASK first and explain WHY.
+  The user knows the project context better than any prompt.
 - **When user shows an error**: Investigate fully before proposing a fix.
   Trace the request path end-to-end.
 - **When user is wrong**: Say "let me verify" in their language, check the code,
