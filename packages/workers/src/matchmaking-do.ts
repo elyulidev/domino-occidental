@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./types";
 import { verifyToken } from "./auth";
+import { supabaseSelect } from "./db";
 import { findMatch, type MatchQueueEntry } from "./matchmaking";
 
 // ---------------------------------------------------------------------------
@@ -104,19 +105,46 @@ export class MatchmakingDO extends DurableObject<Env> {
   }
 
   private async handleEnqueue(request: Request): Promise<Response> {
-    const body = (await request.json()) as { userId?: string; elo?: number };
-    if (!body.userId || typeof body.elo !== "number") {
-      return Response.json(
-        { error: "userId and elo are required" },
-        { status: 400 },
-      );
+    // 1. Extract userId from JWT in Authorization header
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) {
+      return Response.json({ error: "Missing Authorization header" }, { status: 401 });
     }
 
+    const verified = await verifyToken(token, this.env.SUPABASE_URL);
+    if (!verified) {
+      return Response.json({ error: "Invalid or expired token" }, { status: 401 });
+    }
+
+    const userId = verified.userId;
+
+    // 2. Look up the user's ELO from Supabase
+    let elo = 1200;
+    try {
+      const rows = await supabaseSelect(
+        "profiles",
+        "elo_individual",
+        { id: `eq.${userId}` },
+        {
+          supabaseUrl: this.env.SUPABASE_URL,
+          serviceRoleKey: this.env.SUPABASE_SERVICE_ROLE_KEY,
+        },
+      );
+      if (rows && rows.length > 0) {
+        const stored = rows[0].elo_individual;
+        if (typeof stored === "number") elo = stored;
+      }
+    } catch {
+      console.error("[MatchmakingDO] Failed to fetch ELO, using default 1200");
+    }
+
+    // 3. Enqueue the player
     const queue = await this.loadQueue();
-    const existing = queue.findIndex((e) => e.userId === body.userId);
+    const existing = queue.findIndex((e) => e.userId === userId);
     const entry: MatchQueueEntry = {
-      userId: body.userId,
-      elo: body.elo,
+      userId,
+      elo,
       joinedAt: Date.now(),
     };
 
@@ -133,13 +161,19 @@ export class MatchmakingDO extends DurableObject<Env> {
   }
 
   private async handleLeave(request: Request): Promise<Response> {
-    const body = (await request.json()) as { userId?: string };
-    if (!body.userId) {
-      return Response.json({ error: "userId is required" }, { status: 400 });
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) {
+      return Response.json({ error: "Missing Authorization header" }, { status: 401 });
+    }
+
+    const verified = await verifyToken(token, this.env.SUPABASE_URL);
+    if (!verified) {
+      return Response.json({ error: "Invalid or expired token" }, { status: 401 });
     }
 
     const queue = await this.loadQueue();
-    const index = queue.findIndex((e) => e.userId === body.userId);
+    const index = queue.findIndex((e) => e.userId === verified.userId);
     if (index === -1) {
       return Response.json({ error: "User not in queue" }, { status: 404 });
     }

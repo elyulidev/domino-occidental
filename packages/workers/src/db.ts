@@ -14,6 +14,12 @@ interface SupabaseRestConfig {
   serviceRoleKey: string;
 }
 
+/**
+ * Result shape returned by Supabase PostgREST for a row-based query.
+ */
+// biome-ignore lint/complexity/noBannedTypes: generic row shape
+export type SupabaseRow = Record<string, unknown>;
+
 interface SupabaseErrorResponse {
   message: string;
   details: string;
@@ -100,5 +106,56 @@ export async function supabaseUpsert(
       // body may not be JSON
     }
     console.error(`[db] upsert failed table=${table} status=${res.status}: ${errMsg}`);
+  }
+}
+
+/**
+ * Select rows from a Supabase table via PostgREST REST API.
+ * Returns the parsed JSON array, or null on error (never throws).
+ *
+ * @param table  - Table name (e.g. "profiles")
+ * @param select - Column list (e.g. "id,elo_individual")
+ * @param filter - Optional query filter object, each entry becomes `?key=eq.value`
+ */
+export async function supabaseSelect(
+  table: string,
+  select: string,
+  filter: Record<string, string> | null,
+  config: SupabaseRestConfig,
+): Promise<SupabaseRow[] | null> {
+  const url = new URL(`${config.supabaseUrl}/rest/v1/${table}`);
+  url.searchParams.set("select", select);
+
+  if (filter) {
+    for (const [key, value] of Object.entries(filter)) {
+      url.searchParams.set(key, value);
+    }
+  }
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${config.serviceRoleKey}`,
+        apikey: config.serviceRoleKey,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      let errMsg = `HTTP ${res.status}`;
+      try {
+        const body = (await res.json()) as SupabaseErrorResponse;
+        errMsg = body.message ?? errMsg;
+      } catch {
+        // body may not be JSON
+      }
+      console.error(`[db] select failed table=${table} status=${res.status}: ${errMsg}`);
+      return null;
+    }
+
+    return (await res.json()) as SupabaseRow[];
+  } catch (err) {
+    console.error(`[db] select exception table=${table}:`, err);
+    return null;
   }
 }
