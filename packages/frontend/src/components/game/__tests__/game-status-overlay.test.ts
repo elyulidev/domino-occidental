@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { buildMatchResultMessage, resolveOverlayMode } from "../game-status-overlay";
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,28 @@
+name = "domino-occidental"
+main = "src/index.ts"
+compatibility_date = "2026-07-25"
+compatibility_flags = ["nodejs_compat"]
+
+# ---------------------------------------------------------------------------
+# Durable Object bindings
+# ---------------------------------------------------------------------------
+[durable_objects]
+bindings = [
+  { name = "GAME_DO", class_name = "GameDO" },
+  { name = "MATCHMAKING_DO", class_name = "MatchmakingDO" },
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameDO", "MatchmakingDO"]
+
+# ---------------------------------------------------------------------------
+# Environment-specific values are handled by:
+#   Local:  .dev.vars  (loaded automatically by `wrangler dev`)
+#   Prod:   `wrangler secret put` (set once, used by `wrangler deploy`)
+#
+# Secrets required in production:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   SUPABASE_JWKS (optional: local JWKS JSON, overrides remote JWKS for testing)
+# ---------------------------------------------------------------------------

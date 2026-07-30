@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { PlacedTile, Tile } from "@domino/shared";
 import {
   buildDisplayOrder,
@@ -92,15 +92,22 @@ describe("game-board helpers", () => {
   // ── playerIdToIndex ──
 
   describe("playerIdToIndex", () => {
-    it("extracts trailing digits from player id", () => {
-      expect(playerIdToIndex("p0")).toBe(0);
-      expect(playerIdToIndex("p1")).toBe(1);
-      expect(playerIdToIndex("p2")).toBe(2);
-      expect(playerIdToIndex("p3")).toBe(3);
+    const players = [
+      { id: "p0" },
+      { id: "p1" },
+      { id: "p2" },
+      { id: "p3" },
+    ];
+
+    it("finds matching player id in the players array", () => {
+      expect(playerIdToIndex("p0", players)).toBe(0);
+      expect(playerIdToIndex("p1", players)).toBe(1);
+      expect(playerIdToIndex("p2", players)).toBe(2);
+      expect(playerIdToIndex("p3", players)).toBe(3);
     });
 
-    it("returns 0 for ids without digits", () => {
-      expect(playerIdToIndex("unknown")).toBe(0);
+    it("returns 0 for unknown player id", () => {
+      expect(playerIdToIndex("unknown", players)).toBe(0);
     });
   });
 

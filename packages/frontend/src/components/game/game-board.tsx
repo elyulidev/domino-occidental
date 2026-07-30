@@ -26,12 +26,15 @@ import {
 
 // Re-export types from grid-layout-engine (same interface as layout-engine)
 export type { LayoutResult, TilePosition } from "./grid-layout-engine";
-// Re-export for tests
-
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
 // ---------------------------------------------------------------------------
+
+/** Check whether a tile is a double (top === bottom). */
+export function isDoubleTile(tile: Tile): boolean {
+  return tile.top === tile.bottom;
+}
 
 /** Display a pip value: 0 renders blank, otherwise the number itself. */
 export function formatPipValue(value: number): string {

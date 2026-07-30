@@ -99,26 +99,26 @@ export function ensureRoundId(matchId: string, roundNumber: number): string {
  * Generates a UUID for the round so match_moves can reference it via FK.
  */
 export async function recordRound(round: RoundRecord): Promise<void> {
-  const db = await getDb();
+  // ALWAYS buffer to memory — DB availability only gates the console log.
+  // Buffering must happen regardless of getDb() state so that flushMatchRounds()
+  // can insert all rounds when persistMatch() runs later.
+  const rounds = bufferedRounds.get(round.matchId) ?? [];
+  rounds.push(round);
+  bufferedRounds.set(round.matchId, rounds);
 
-  if (db) {
-    // Buffer the round — will be flushed after the match row is created in the DB.
-    // match_rounds has FK to matches, so we can't insert until persistMatch() runs.
-    const rounds = bufferedRounds.get(round.matchId) ?? [];
-    rounds.push(round);
-    bufferedRounds.set(round.matchId, rounds);
-
-    // Register round ID for moves lookup (or reuse existing from ensureRoundId)
-    const key = roundKey(round.matchId, round.roundNumber);
-    const existingId = roundIdLookup.get(key);
-    if (existingId) {
-      // Round was already registered by ensureRoundId — use that UUID
-      round.roundId = existingId;
-    } else {
-      roundIdLookup.set(key, round.roundId);
-    }
+  // Register round ID for moves lookup (or reuse existing from ensureRoundId)
+  const key = roundKey(round.matchId, round.roundNumber);
+  const existingId = roundIdLookup.get(key);
+  if (existingId) {
+    // Round was already registered by ensureRoundId — use that UUID
+    round.roundId = existingId;
   } else {
-    // Dev fallback: log to console
+    roundIdLookup.set(key, round.roundId);
+  }
+
+  // Dev fallback: log to console when DB is unavailable
+  const db = await getDb();
+  if (!db) {
     console.log(
       `[db/rounds] ROUND  match=${round.matchId.slice(0, 8)} ` +
         `round=${round.roundNumber} winner=${round.winningPair ?? "null"} ` +

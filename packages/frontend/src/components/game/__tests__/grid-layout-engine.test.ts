@@ -1,6 +1,6 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { PlacedTile, Tile } from "@domino/shared";
-import { computeGridLayout } from "@domino/shared/src/game/grid-layout";
+import { computeGridLayout } from "@domino/shared/game";
 import {
   calculateGridLayout,
 } from "../grid-layout-engine";

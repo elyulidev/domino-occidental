@@ -6,6 +6,7 @@ import { GameBoard } from "@/components/game/game-board";
 import { GameStatusOverlay } from "@/components/game/game-status-overlay";
 import { HandOverModal } from "@/components/game/hand-over-modal";
 import { LeaveMatchConfirmModal } from "@/components/game/leave-match-confirm-modal";
+import { MatchNavBar } from "@/components/game/match-navbar";
 import { PlayerHand } from "@/components/game/player-hand";
 import { ScorePanel } from "@/components/game/score-panel";
 import type { WsStatus } from "@/hooks/use-websocket";
@@ -123,7 +124,7 @@ function MatchContent() {
 	return (
 		<div className='relative min-h-screen bg-domino-950 text-domino-50'>
 			{/* Grid: 2 rows × 2 columns */}
-			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 h-screen max-h-screen'>
+			<div className='grid grid-rows-[1fr_auto] grid-cols-1 lg:grid-cols-[280px_1fr] gap-2 p-2 pb-16 lg:pb-2 h-screen max-h-screen'>
 				{/* Row 1: Board (spans both columns) */}
 				<div className='lg:col-span-2 min-h-0'>
 					<GameBoard />
@@ -138,15 +139,34 @@ function MatchContent() {
 				<div className='relative min-h-0' data-hand-area>
 					<PlayerHand />
 
-					{/* Leave match button — bottom right, floating over hand */}
-					<div className='absolute bottom-2 right-2 z-20'>
+					{/* Leave match button — bottom right, floating over hand (desktop only) */}
+					<div className='absolute bottom-2 right-2 z-20 hidden lg:block'>
 						<button
 							type='button'
 							onClick={handleLeaveMatch}
 							disabled={isMatchOver}
-							className='rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-500/10 disabled:hover:text-red-400'
+							aria-label='Abandonar Partida'
+							className='rounded-lg border border-red-500/30 bg-red-500/10 p-1.5 sm:px-3 sm:py-1.5 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-red-500/10 disabled:hover:text-red-400'
 						>
-							Abandonar Partida
+							{/* Door-exit icon — visible only on mobile */}
+							<svg
+								className='h-4 w-4 sm:hidden'
+								viewBox='0 0 24 24'
+								fill='none'
+								stroke='currentColor'
+								strokeWidth={2}
+								strokeLinecap='round'
+								strokeLinejoin='round'
+								aria-hidden='true'
+							>
+								<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
+								<polyline points='16 17 21 12 16 7' />
+								<line x1='21' y1='12' x2='9' y2='12' />
+							</svg>
+							{/* Text label — visible only on desktop */}
+							<span className='hidden text-[11px] font-semibold sm:inline'>
+								Abandonar Partida
+							</span>
 						</button>
 					</div>
 				</div>
@@ -160,6 +180,9 @@ function MatchContent() {
 				onClose={() => setShowLeaveModal(false)}
 				onConfirm={handleConfirmLeave}
 			/>
+
+			{/* Mobile bottom navbar */}
+			<MatchNavBar onLeaveMatch={handleLeaveMatch} />
 		</div>
 	);
 }

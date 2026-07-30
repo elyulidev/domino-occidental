@@ -1,6 +1,6 @@
 "use client";
 
-import type { WsClientMessage, WsServerMessage } from "@domino/shared";
+import type { GameEvent, WsClientMessage, WsServerMessage } from "@domino/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WsGameEngine } from "@/lib/game/ws-engine";
 import { useGameStore } from "@/stores/game-store";
@@ -152,6 +152,33 @@ export function useWebSocket(matchId: string, playerId: string, disabled = false
               useGameStore.setState((s) => ({
                 game: { ...s.game, matchAbandonedBy: abandoned.disconnectedPlayerId },
               }));
+            }
+
+            // Handle player_passed → show "Se pasó" badge for all clients
+            const passed = msg.events?.find(
+              (e): e is { type: "player_passed"; playerId: string } =>
+                e.type === "player_passed",
+            );
+            if (passed) {
+              useGameStore.getState().markPassed(passed.playerId);
+            }
+
+            // Handle turn_timeout with forcedPass → show "Se pasó" badge for timed-out player
+            const timeout = msg.events?.find(
+              (e): e is { type: "turn_timeout"; playerId: string; forcedPass: boolean } =>
+                e.type === "turn_timeout",
+            );
+            if (timeout?.forcedPass) {
+              useGameStore.getState().markPassed(timeout.playerId);
+            }
+
+            // Handle tile_played → clear "Se pasó" badge (someone made a move)
+            const tilePlayed = msg.events?.find(
+              (e): e is GameEvent & { type: "tile_played" } =>
+                e.type === "tile_played",
+            );
+            if (tilePlayed) {
+              useGameStore.getState().clearPassed();
             }
 
             const sanitized = msg.state;
