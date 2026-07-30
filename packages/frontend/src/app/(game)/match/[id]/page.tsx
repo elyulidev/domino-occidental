@@ -54,8 +54,8 @@ function MatchContent() {
 		});
 	}, [supabase]);
 
-	// Always call hooks (rules of hooks)
-	const wsHook = useWebSocket(params.id ?? "", playerId, false, wsToken);
+	// Don't connect WS until we have the auth token (avoids 401 reconnect loop)
+	const wsHook = useWebSocket(params.id ?? "", playerId, !wsToken, wsToken);
 
 	// Leave-match modal state
 	const [showLeaveModal, setShowLeaveModal] = useState(false);
